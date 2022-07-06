@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 
 #include "exceptions.h"
 
@@ -12,9 +13,9 @@ enum CONFIG_ERROR { CONF_SUCCESS, CONF_NOT_FOUND };
 class Config
 {
 private:
-	std::vector<std::tuple<std::string, int>> para_int; // evt. rewrite to unordered_map
-	std::vector<std::tuple<std::string, float>> para_float;
-	std::vector<std::tuple<std::string, std::string>> para_string;
+	std::unordered_map<std::string, int> para_int; // evt. rewrite to unordered_map
+	std::unordered_map<std::string, float> para_float;
+	std::unordered_map<std::string, std::string> para_string;
 	CONFIG_ERROR set_file(const std::string& name, std::string& value);
 	std::string filepath;
 public:

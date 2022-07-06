@@ -156,6 +156,7 @@
     <ClInclude Include="Config.h" />
     <ClInclude Include="conversions.h" />
     <ClInclude Include="exceptions.h" />
+    <ClInclude Include="log.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>

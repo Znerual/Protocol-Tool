@@ -41,6 +41,9 @@
     <ClInclude Include="exceptions.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="log.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="para.conf">
