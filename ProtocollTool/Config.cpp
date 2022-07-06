@@ -72,8 +72,15 @@ Config::Config(const string& filepath)
             // separate name and value of the parameter
             istringstream iss(line);
             string name, value;
-            if (!(iss >> name >> value)) {
+            if (!(iss >> name)) {
                 cout << "Error in reading line " << line_counter << ": " << line << '\n' << "Skipp to next line...";
+                line_counter += 1;
+                continue;
+            }
+
+            // empty entry
+            if (!(iss >> value)) {
+                this->para_string[name] = "";
                 line_counter += 1;
                 continue;
             }

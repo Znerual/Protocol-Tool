@@ -28,13 +28,15 @@ int main()
     Config conf;
 
     try {
-        conf = Config("D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\para.conf");
-        cout << "Loaded the configuration file from " << "D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\para.conf" << '\n';
+        //conf = Config("D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\para.conf");
+        conf = Config("para.conf");
+        cout << "Loaded the configuration file\n";
     }
     catch (IOException& e) {
         string config_path;
         cout << "Error " << e.what() << " while loading the configuration file from " << "D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\para.conf" << '\n';
         cout << "Please specify the path where the configuration file (para.conf) can be found:" << endl;
+        cout << "Path to para.conf: ";
         
         bool found_config = false;
         while (!found_config)
@@ -48,8 +50,9 @@ int main()
                 break;
             }
             catch (IOException& e2) {
-                cout << "Error " << e2.what() << " while loading the configuration file from " << "D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\para.conf" << '\n';
-                cout << "Please specify the path where the configuration file (para.conf) can be found:" << endl;
+                cout << "Error " << e2.what() << " while loading the configuration file " << "para.conf" << '\n';
+                cout << "Please specify the path where the configuration file (para.conf) can be found. \nIn order to avoid this error, place the conf.para file ";
+                cout << "in the same directory as the .exe file.\nPath to conf.para:";
             }
         }
         
@@ -95,7 +98,7 @@ int main()
             mode_names[i] = tmp_mode_name;
         }
     }
-    Log logger(paths.base_path / log_path, write_log);
+    
     
     if (!filesystem::exists(paths.base_path))
     {
@@ -103,25 +106,26 @@ int main()
         while (!found_base_path)
         {
             string base_path_str;
-            logger << "No path for the note files was set. Set to an existing directory to include those notes or chose a new, empty directory" << endl;
+            cout << "No path for the note files was set. Set to an existing directory to include those notes or chose a new, empty directory" << endl;
+            cout << "Base Path: ";
             cin >> base_path_str;
             cin.clear();
             cin.ignore(10000, '\n');
-            logger.input(base_path_str);
+            
 
             if (filesystem::create_directories(base_path_str)) // created new folder
             {
-                logger << "Created a new folder at " << base_path_str << endl;
+                cout << "Created a new folder at " << base_path_str << endl;
                 found_base_path = true;
             }
             else { // use existing folder
-                logger << "Found the folder " << base_path_str << endl;
+                cout << "Found the folder " << base_path_str << endl;
                 bool invalid_files = false;
-                for (const auto& entry : filesystem::directory_iterator(filesystem::path(base_path_str)))
+                for (const auto& entry : filesystem::directory_iterator(filesystem::path(base_path_str) / paths.file_path))
                 {
                     if (entry.path().extension() != ".md" || entry.path().stem().string().size() != 9)
                     {
-                        logger << "It seems as if invalid files are in this folder!\nFound the file " << entry.path().filename() << " in the folder, which is not an appropiate note markdown file" << endl;
+                        cout << "It seems as if invalid files are in the existing file folder!\nFound the file " << entry.path().filename() << " in the folder, which is not an appropiate note markdown file" << endl;
                         invalid_files = true;
                         break;
                     }
@@ -129,7 +133,9 @@ int main()
                 if (!invalid_files)
                 {
                     found_base_path = true;
-                    break;
+                }
+                else {
+                    continue;
                 }
             }
 
@@ -138,6 +144,8 @@ int main()
         }
         
     }
+    Log logger(paths.base_path / log_path, write_log);
+
     logger << "The base path for all files is: " << paths.base_path.string() << ".\nThe path to the notes is " << paths.file_path.string() << " and to the data is " << paths.data_path.string() << '\n' << endl;
     
     if (!filesystem::exists(paths.base_path / paths.file_path))

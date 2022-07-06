@@ -49,5 +49,8 @@
     <None Include="para.conf">
       <Filter>Ressourcendateien</Filter>
     </None>
+    <None Include="Readme.md">
+      <Filter>Ressourcendateien</Filter>
+    </None>
   </ItemGroup>
 </Project>
