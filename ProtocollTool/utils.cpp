@@ -8,6 +8,10 @@
 #include <boost/algorithm/string.hpp>
 #include <array>
 #include <Windows.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <tchar.h>
+#include <set>
 #include "utils.h"
 #include "conversions.h"
 #include "Config.h"
@@ -153,7 +157,7 @@ void update_tags(Log& logger, const PATHS& paths, map<string, time_t>& file_map,
 }
 
 
-string get_filename(const PATHS& paths, time_t date, vector<string> tags, const string& file_ending)
+string get_filename(const PATHS& paths, time_t date, const string& file_ending)
 {
 	
 	filesystem::path dir = paths.base_path / paths.file_path;
@@ -855,7 +859,7 @@ void parse_add_note(Log& logger, std::istringstream& iss, const PATHS& paths, co
 		tags.push_back(argument);
 	}
 
-	filename = get_filename(paths, date_t, tags, file_ending);
+	filename = get_filename(paths, date_t, file_ending);
 }
 
 
@@ -1101,8 +1105,10 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, const OPEN_MODE d
 
 }
 
-void create_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, OPEN_MODE& open_mode)
+void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, OPEN_MODE& open_mode, const string& file_ending, bool& update_files)
 {
+	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, open_mode);
+
 	string mode_name;
 	mode_tags = vector<string>();
 	
@@ -1136,17 +1142,14 @@ void create_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_mo
 		conf.set("MODE_" + to_string(active_mode) + "_TAG_" + to_string(i), mode_tags.at(i));
 	}
 
+	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, open_mode, file_ending, update_files);
+
 }
 
-void delete_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, OPEN_MODE& open_mode)
+void delete_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, OPEN_MODE& open_mode)
 {
 	string mode_name;
-	mode_tags = vector<string>();
-	active_mode = -1; // set id to next free number
-
-	int open_mode_int;
-	conf.get("DEFAULT_OPEN_MODE", open_mode_int);
-	open_mode = static_cast<OPEN_MODE>(open_mode_int);
+	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, open_mode);
 
 	if (!iss)
 	{
@@ -1215,12 +1218,11 @@ void set_mode_tags(Config& conf, const int& mode_id, vector<string>& mode_tags) 
 
 }
 
-void edit_mode(Log& logger, std::istringstream& iss, Config& conf, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, OPEN_MODE& open_mode)
+void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, OPEN_MODE& open_mode, const string& file_ending, bool& update_files)
 {
-	string mode_name;
-	mode_tags = vector<string>();
-	active_mode = -1; // set id to next free number
+	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, open_mode);
 
+	string mode_name;
 	if (!iss)
 	{
 		logger << "Specify name of the mode that should be edited" << endl;
@@ -1245,9 +1247,6 @@ void edit_mode(Log& logger, std::istringstream& iss, Config& conf, unordered_map
 		return;
 	}
 
-	int open_mode_int;
-	conf.get("DEFAULT_OPEN_MODE", open_mode_int);
-	open_mode = static_cast<OPEN_MODE>(open_mode_int);
 
 	get_mode_tags(conf, mode_id, mode_tags);
 	
@@ -1326,7 +1325,8 @@ void edit_mode(Log& logger, std::istringstream& iss, Config& conf, unordered_map
 	remove(mode_options, remove_opt);
 	set_mode_options(conf, mode_options, mode_id);
 	set_mode_tags(conf, mode_id, mode_tags);
-	active_mode = mode_id;
+
+	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, open_mode, file_ending, update_files);
 }
 
 void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unordered_map<int, std::string>& mode_names, int& active_mode, OPEN_MODE& open_mode)
@@ -1585,7 +1585,7 @@ void find_notes(Log& logger, istringstream& iss, const PATHS& paths, vector<stri
 	filter_notes(logger, iss, paths, filter_selection, file_map, tag_map, mode_tags);
 }
 
-void add_note(Log& logger, std::istringstream& iss, const PATHS& paths, const std::string& file_ending, std::map<std::string, time_t> file_map, std::map<std::string, std::vector<std::string>> tag_map, vector<string> mode_tags, vector<string> filter_selection)
+void add_note(Log& logger, std::istringstream& iss, const PATHS& paths, const std::string& file_ending, std::map<std::string, time_t>& file_map, std::map<std::string, std::vector<std::string>>& tag_map, vector<string>& mode_tags, vector<string>& filter_selection)
 {
 	string filename;
 	vector<string> tags;
@@ -1719,7 +1719,58 @@ void open_selection(Log& logger, const PATHS& paths, std::vector<std::string> fi
 	}
 }
 
-void activate_mode(Log& logger, std::istringstream& iss, Config& conf, std::unordered_map<int, std::string>& mode_names, int& active_mode, vector<string>& mode_tags, OPEN_MODE& open_mode)
+void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, OPEN_MODE& open_mode, const string& file_ending, bool& update_files)
+{
+	// read in open mode
+	int open_mode_int;
+	conf.get("MODE_" + to_string(active_mode) + "_OPEN_AS", open_mode_int);
+	open_mode = static_cast<OPEN_MODE>(open_mode_int);
+
+	// read in mode tags
+	int num_tags;
+	conf.get("MODE_" + to_string(active_mode) + "_NUM_TAGS", num_tags);
+	string tag;
+	for (auto i = 0; i < num_tags; i++)
+	{
+		conf.get("MODE_" + to_string(active_mode) + "_TAG_" + to_string(i), tag);
+		mode_tags.push_back(tag);
+	}
+
+	// read in folders to watch and their tags and start watching
+	int num_folders;
+	string folder_path_str;
+	conf.get("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS", num_folders);
+	for (auto i = 0; i < num_folders; i++)
+	{
+		int num_folder_tags;
+		vector<string> folder_tags;
+		conf.get("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_NUM_TAGS", num_folder_tags);
+		conf.get("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_PATH", folder_path_str);
+		for (auto j = 0; j < num_folder_tags; j++)
+		{
+			conf.get("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_TAG_" + to_string(j), tag);
+			folder_tags.push_back(tag);
+			
+		}
+		file_watchers.push_back(jthread(file_change_watcher, ref(logger), filesystem::path(folder_path_str), paths, file_ending, folder_tags, ref(update_files)));
+	}
+}
+
+void deactivate_mode(Log& logger, Config& conf, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, OPEN_MODE& open_mode) {
+	active_mode = -1;
+	mode_tags = vector<string>();
+	int open_mode_int;
+	conf.get("DEFAULT_OPEN_MODE", open_mode_int);
+	open_mode = static_cast<OPEN_MODE>(open_mode_int);
+
+	for (jthread& watcher : file_watchers) {
+		watcher.request_stop();
+	}
+
+	file_watchers = vector<jthread>();
+}
+
+void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, std::unordered_map<int, std::string>& mode_names, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, OPEN_MODE& open_mode, const string& file_ending, bool& update_files)
 {
 	mode_tags = vector<string>();
 	active_mode = -1;
@@ -1742,24 +1793,14 @@ void activate_mode(Log& logger, std::istringstream& iss, Config& conf, std::unor
 
 	if (active_mode != -1)
 	{
-		int open_mode_int;
-		conf.get("MODE_" + to_string(active_mode) + "_OPEN_AS", open_mode_int);
-		open_mode = static_cast<OPEN_MODE>(open_mode_int);
-
-		int num_tags;
-		conf.get("MODE_" + to_string(active_mode) + "_NUM_TAGS", num_tags);
-		string tag;
-		for (auto i = 0; i < num_tags; i++)
-		{
-			conf.get("MODE_" + to_string(active_mode) + "_TAG_" + to_string(i), tag);
-			mode_tags.push_back(tag);
-		}
+		activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, open_mode, file_ending, update_files);
 	}
 	else {
 		logger << "Mode " << mode_name << " not found." << endl;
 	}
 
 }
+
 
 map<string, int> get_tag_count(map<string, vector<string>>& tag_map, vector<string> filter_selection)
 {
@@ -1796,5 +1837,99 @@ void format2open_mode(Config& conf, FORMAT_OPTIONS& format_options, OPEN_MODE& o
 		int open_mode_int;
 		conf.get("DEFAULT_OPEN_MODE", open_mode_int);
 		open_mode = static_cast<OPEN_MODE>(open_mode_int);
+	}
+}
+
+void file_change_watcher(Log& logger, const filesystem::path watch_path, const PATHS paths, const std::string file_ending, vector<string> watch_path_tags, bool& update_files)
+{
+	DWORD dwWaitStatus;
+	HANDLE dwChangeHandles;
+	TCHAR lpDrive[4];
+	TCHAR lpFile[_MAX_FNAME];
+	TCHAR lpExt[_MAX_EXT];
+
+	_tsplitpath_s(watch_path.wstring().c_str(), lpDrive, 4, NULL, 0, lpFile, _MAX_FNAME, lpExt, _MAX_EXT);
+
+	lpDrive[2] = (TCHAR)'\\';
+	lpDrive[3] = (TCHAR)'\0';
+
+
+	// save state of directory to find changed files later on
+	set<filesystem::path> files;
+	for (const auto& entry : filesystem::directory_iterator(watch_path))
+	{
+		files.insert(entry.path());
+	}
+
+	// Watch the directory for file creation and deletion. 
+
+	dwChangeHandles = FindFirstChangeNotification(
+		watch_path.wstring().c_str(),                         // directory to watch 
+		FALSE,                         // do not watch subtree 
+		FILE_NOTIFY_CHANGE_FILE_NAME); // watch file name changes 
+
+	if (dwChangeHandles == INVALID_HANDLE_VALUE)
+	{
+		logger << "ERROR: FindFirstChangeNotification function failed.\n";
+		ExitProcess(GetLastError());
+	}
+
+	if (dwChangeHandles == NULL)
+	{
+		logger << "ERROR: Unexpected NULL from FindFirstChangeNotification.\n";
+		ExitProcess(GetLastError());
+	}
+	while (true)
+	{
+		// Wait for notification.
+
+
+		dwWaitStatus = WaitForSingleObject(dwChangeHandles, INFINITE);
+		time_t date = time(NULL);
+		string filename = get_filename(paths, date, file_ending);
+		switch (dwWaitStatus)
+		{
+		case WAIT_OBJECT_0:
+
+			// A file was created, renamed, or deleted in the directory.
+			// Refresh this directory and restart the notification.
+			logger << "Monitored folder " << watch_path.string() << " had file changes." << endl;
+
+			for (const auto& entry : filesystem::directory_iterator(watch_path))
+			{
+				if (!files.contains(entry.path())) {
+					logger << "Add file: " << entry.path().filename().string() << endl;
+					// add note
+					//write_file(logger, paths, filename, date, watch_path_tags, file_ending, false);
+					//ShellExecute(0, L"open", (paths.base_path / paths.file_path / filesystem::path(filename)).wstring().c_str(), 0, 0, SW_SHOW);
+					
+					// restart handle to listen for next change
+					if (FindNextChangeNotification(dwChangeHandles) == FALSE)
+					{
+						printf("\n ERROR: FindNextChangeNotification function failed.\n");
+						ExitProcess(GetLastError());
+					}
+					files.insert(entry.path());
+				}
+			}
+			
+			
+			break;
+
+		case WAIT_TIMEOUT:
+
+			// A timeout occurred, this would happen if some value other 
+			// than INFINITE is used in the Wait call and no changes occur.
+			// In a single-threaded environment you might not want an
+			// INFINITE wait.
+
+			printf("\nNo changes in the timeout period.\n");
+			break;
+
+		default:
+			printf("\n ERROR: Unhandled dwWaitStatus.\n");
+			ExitProcess(GetLastError());
+			break;
+		}
 	}
 }

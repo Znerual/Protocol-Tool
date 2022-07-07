@@ -1,5 +1,6 @@
 // ProtocollTool.cpp : Diese Datei enthält die Funktion "main". Hier beginnt und endet die Ausführung des Programms.
 //
+
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -15,6 +16,7 @@
 #include "Config.h"
 #include "conversions.h"
 #include "log.h"
+#include <thread>
 
 using namespace std;
 
@@ -66,6 +68,7 @@ int main()
     PATHS paths;
     filesystem::path log_path;
     string file_ending, tmp_filename;
+    
     {
         string base_path_str, file_path_str, data_path_str, tmp_path_str, tmp_mode_name, log_path_str;
         int open_mode_int;
@@ -91,14 +94,16 @@ int main()
         open_mode = static_cast<OPEN_MODE>(open_mode_int);
 
         conf.get("NUM_MODES", num_modes);
+        int num_watch_folders = 0;
         for (auto i = 0; i < num_modes; i++)
         {
             conf.get("MODE_" + to_string(i) + "_NAME", tmp_mode_name);
             tmp_mode_name = trim(tmp_mode_name);
             mode_names[i] = tmp_mode_name;
+
         }
     }
-    
+    // TODO check error if all paths do not exist
     
     if (!filesystem::exists(paths.base_path))
     {
@@ -201,15 +206,11 @@ int main()
         has_pandoc = false;
         conf.set("HAS_PANDOC", false);
     }
-    
-
 
     vector<string> filter_selection;
     map<string, time_t> file_map = list_all_files(paths);
     map<string, vector<string>> tag_map = list_all_tags(logger, paths);
     int active_mode = -1;
-    vector<string> mode_tags;
-
     filter_selection.reserve(tag_map.size());
     for (const auto& [path, tag] : tag_map)
     {
@@ -217,9 +218,27 @@ int main()
     }
     map<string, int> tag_count = get_tag_count(tag_map, filter_selection);
 
+    // mode tag variables
+    vector<string> mode_tags;
+    vector<jthread> file_watchers;
+
+    /*filesystem::path desktop{"C:\\Users\\karst\\Desktop"};
+    bool update_files;
+    vector<string> folder_watcher_tags;
+    std::jthread t1(file_change_watcher, ref(logger), ref(desktop), ref(paths), ref(file_ending),  ref(folder_watcher_tags), ref(update_files));
+    */
+
+    bool update_files = false;
     bool running = true;
     while (running)
     {
+        if (update_files)
+        {
+            update_tags(logger, paths, file_map, tag_map, tag_count, filter_selection);
+            update_files = false;
+        }
+
+
         logger << "Input";
         if (active_mode != -1)
         {
@@ -287,23 +306,19 @@ int main()
         }
         else if (command == "c" || command == "create" || command == "create_mode")
         {
-            create_mode(logger, iss, conf, num_modes, mode_names, mode_tags, active_mode, open_mode);
+            create_mode(logger, iss, conf, paths, num_modes, mode_names, mode_tags, active_mode, file_watchers, open_mode, file_ending, update_files);
         }
         else if (command == "del" || command == "delete" || command == "delete_mode")
         {
-            delete_mode(logger, iss, conf, num_modes, mode_names, mode_tags, active_mode, open_mode);
+            delete_mode(logger, iss, conf, num_modes, mode_names, mode_tags, active_mode, file_watchers, open_mode);
         }
         else if (command == "act" || command == "activate" || command == "activate_mode")
         {
-            activate_mode(logger, iss, conf, mode_names, active_mode, mode_tags, open_mode);
+            activate_mode_command(logger, iss, conf, paths, mode_names, active_mode, mode_tags, file_watchers, open_mode, file_ending, update_files);
         }
         else if (command == "deac" || command == "deactivate" || command == "deactivate_mode")
         {
-            active_mode = -1;
-            mode_tags = vector<string>();
-            int open_mode_int;
-            conf.get("DEFAULT_OPEN_MODE", open_mode_int);
-            open_mode = static_cast<OPEN_MODE>(open_mode_int);
+            deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, open_mode);
         }
         else if (command == "modes" ||  command == "show_modes")
         {
@@ -311,7 +326,7 @@ int main()
         }
         else if (command == "edit_mode" || command == "edit")
         {
-            edit_mode(logger, iss, conf, mode_names, mode_tags, active_mode, open_mode);
+            edit_mode(logger, iss, conf, paths, mode_names, mode_tags, active_mode, file_watchers, open_mode, file_ending, update_files);
         }
         else if (command == "u" || command == "update")
         {

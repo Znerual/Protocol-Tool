@@ -4,6 +4,7 @@
 #include <map>
 #include <filesystem>
 #include <vector>
+#include <thread>
 #include "Config.h"
 #include "log.h"
 enum ARGUMENT_MODE {NONE, ARG_DATE, CONTAINS_TAGS, CONTAINS_ALL_TAGS, NO_TAGS, REG_TEXT, VERSIONS};
@@ -55,7 +56,7 @@ std::string trim(const std::string& s);
 template<typename T>
 void pad(std::basic_string<T>& s, typename std::basic_string<T>::size_type n, T c);
 
-
+void file_change_watcher(Log& logger, const std::filesystem::path watch_path, const PATHS paths, const std::string file_ending, std::vector<std::string> watch_path_tags, bool& update_files);
 int get_console_columns();
 
  std::map<std::string, time_t> list_all_files(const PATHS& paths);
@@ -65,7 +66,7 @@ int get_console_columns();
  
  void update_tags(Log& logger, const PATHS& paths, std::map<std::string, time_t>& file_map, std::map<std::string, std::vector<std::string>>& tag_map, std::map<std::string, int>& tag_count, std::vector<std::string>& filter_selection);
 
- std::string get_filename(const PATHS& paths, time_t date, std::vector<std::string> tags, const std::string& file_ending);
+ std::string get_filename(const PATHS& paths, time_t date, const std::string& file_ending);
 
  void add(FORMAT_OPTIONS& to, FORMAT_OPTIONS& from);
  void add(SHOW_OPTIONS& to, SHOW_OPTIONS& from);
@@ -88,14 +89,16 @@ int get_console_columns();
  void filter_notes(Log& logger, std::istringstream& iss, const PATHS& paths, std::vector<std::string>& filter_selection, std::map<std::string, time_t>& file_map, std::map<std::string, std::vector<std::string>> tag_map, std::vector<std::string> mode_tags);
  void find_notes(Log& logger, std::istringstream& iss, const PATHS& paths, std::vector<std::string>& filter_selection, std::map<std::string, time_t>& file_map, std::map<std::string, std::vector<std::string>> tag_map, std::vector<std::string> mode_tags);
  void show_filtered_notes(Log& logger, std::istringstream& iss, const OPEN_MODE default_open, Config& conf, int& active_mode, const PATHS& paths, const std::string& tmp_filename, std::vector<std::string>& filter_selection, const bool& has_pandoc);
- void add_note(Log& logger, std::istringstream& iss, const PATHS& paths, const std::string& file_ending, std::map<std::string, time_t> file_map, std::map<std::string, std::vector<std::string>> tag_map, std::vector<std::string> mode_tags, std::vector<std::string> filter_selection);
+ void add_note(Log& logger, std::istringstream& iss, const PATHS& paths, const std::string& file_ending, std::map<std::string, time_t>& file_map, std::map<std::string, std::vector<std::string>>& tag_map, std::vector<std::string>& mode_tags, std::vector<std::string>& filter_selection);
  void add_data(Log& logger, std::istringstream& iss, const PATHS& paths, std::vector<std::string> filter_selection);
  void show_details(Log& logger, std::istringstream& iss, const PATHS& paths, Config& conf, int& active_mode, std::vector<std::string> filter_selection, std::map<std::string, time_t> file_map, std::map<std::string, std::vector<std::string>> tag_map);
  void open_selection(Log& logger, const PATHS& paths, std::vector<std::string> filter_selection);
- void create_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_modes, std::unordered_map<int, std::string>& mode_names, std::vector<std::string>& mode_tags, int& active_mode, OPEN_MODE& open_mode);
- void delete_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_modes, std::unordered_map<int, std::string>& mode_names, std::vector<std::string>& mode_tags, int& active_mode, OPEN_MODE& open_mode);
- void edit_mode(Log& logger, std::istringstream& iss, Config& conf, std::unordered_map<int, std::string>& mode_names, std::vector<std::string>& mode_tags, int& active_mode, OPEN_MODE& open_mode);
- void activate_mode(Log& logger, std::istringstream& iss, Config& conf, std::unordered_map<int, std::string>& mode_names, int& active_mode, std::vector<std::string>& mode_tags, OPEN_MODE& open_mode);
+ void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, int& num_modes, std::unordered_map<int, std::string>& mode_names, std::vector<std::string>& mode_tags, int& active_mode, std::vector<std::jthread>& file_watchers, OPEN_MODE& open_mode, const std::string& file_ending, bool& update_files);
+ void delete_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_modes, std::unordered_map<int, std::string>& mode_names, std::vector<std::string>& mode_tags, int& active_mode, std::vector<std::jthread>& file_watchers, OPEN_MODE& open_mode);
+ void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, std::unordered_map<int, std::string>& mode_names, std::vector<std::string>& mode_tags, int& active_mode, std::vector<std::jthread>& file_watchers, OPEN_MODE& open_mode, const std::string& file_ending, bool& update_files);
+ void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, std::unordered_map<int, std::string>& mode_names, int& active_mode, std::vector<std::string>& mode_tags, std::vector<std::jthread>& file_watchers, OPEN_MODE& open_mode, const std::string& file_ending, bool& update_files);
+ void deactivate_mode(Log& logger, Config& conf, int& active_mode, std::vector<std::string>& mode_tags, std::vector<std::jthread>& file_watchers, OPEN_MODE& open_mode);
+ void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mode, std::vector<std::string>& mode_tags, std::vector<std::jthread>& file_watchers, OPEN_MODE& open_mode, const std::string& file_ending, bool& update_files);
  void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unordered_map<int, std::string>& mode_names, int& active_mode, OPEN_MODE& open_mode);
 
  void parse_find_args(Log& logger, std::string& input, bool& data_only, std::vector<time_t>& date_args, std::vector<std::string>& ctags_args, std::vector<std::string>& catags_args, std::vector<std::string>& ntags_args, std::string& regex, std::vector<char>& version_args);
