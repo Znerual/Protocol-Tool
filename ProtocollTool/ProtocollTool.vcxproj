@@ -160,7 +160,9 @@
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="para.conf" />
+    <None Include="para.conf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="Readme.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

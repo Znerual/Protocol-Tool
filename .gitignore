@@ -32,6 +32,7 @@
 *.app
 x64/
 Debug/
+Release/
 
 # Note files
 show.*

@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ProtocollTool", "ProtocollT
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ProtocollToolTests", "ProtocollToolTests\ProtocollToolTests.vcxproj", "{44F2B499-BD80-490B-BC7B-5E6D61658412}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "ProtocolToolSetup", "ProtocolToolSetup\ProtocolToolSetup.vdproj", "{31ECE00C-A2D5-4DA3-8114-8701B606EA73}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,10 @@ Global
 		{44F2B499-BD80-490B-BC7B-5E6D61658412}.Release|x64.Build.0 = Release|x64
 		{44F2B499-BD80-490B-BC7B-5E6D61658412}.Release|x86.ActiveCfg = Release|Win32
 		{44F2B499-BD80-490B-BC7B-5E6D61658412}.Release|x86.Build.0 = Release|Win32
+		{31ECE00C-A2D5-4DA3-8114-8701B606EA73}.Debug|x64.ActiveCfg = Debug
+		{31ECE00C-A2D5-4DA3-8114-8701B606EA73}.Debug|x86.ActiveCfg = Debug
+		{31ECE00C-A2D5-4DA3-8114-8701B606EA73}.Release|x64.ActiveCfg = Release
+		{31ECE00C-A2D5-4DA3-8114-8701B606EA73}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
