@@ -393,14 +393,20 @@ int main()
                     logger << "(c)reate_mode: mode_name tag1 tag2 ... [-(o)pen_as format] [-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] [-(s)how_(d)ata] ";
                     logger << "[-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_(docx)] ";
                     logger << "[-(s)how_open_as_(pdf)] [-(s)how_open_as_la(tex)] [-(d)etail_(t)ags] [-(d)etail_(p)ath] [-(d)etail_(l)ong_(p)ath] ";
-                    logger << "[-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent]\n\n";
+                    logger << "[-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent] [-(w)atch_(f)older path_to_folder1 tag1 tag2 ...] [-(w)atch_(f)older path_to_folder2 tag1 tag2 ...]\n";
                     logger << "A mode allows you to set the standard behavior of the (s)how and (d)etail command, as well as influence the (n)ew, (f)ind and (f)ilter commands. ";
                     logger << "Options starting with show in the name control the (s)how command and options starting with detail control the (d)etails command. All set ";
                     logger << "options will always be added to the commands when the mode is active. The mode tags will be added to the tags that are manually specified in the (n)ew command ";
                     logger << "and are also added to the (f)ind and (f)ilter command in the -(c)ontails_(a)ll_(t)ags parameter, meaning only notes contraining all mode tags are selected.\n";
+                    logger << "In addition to setting default (s)how and (d)etail parameter, a path to a folder that should be observed can be added. This means that when a file inside the specified ";
+                    logger << " folder is created, the newly created file is automatically added to the ";
+                    logger << "data folder and a new note is created. Additionally, tags that will be added when this occures can be entered by the following structure of the command: \n";
+                    logger << "[-(w)atch_(f)older path_to_folder tag1 tag2 ...]\n";
+                    logger << "Note that multiple folders can be specified by repeating the [-(w)atch_(f)older path_to_folder tag1 tag2 ...] command ";
+                    logger << "With different paths (and tags).\n";
                     logger << "Modes can be activated by the (act)ivate commandand and deactivated by the ";
                     logger << "(deac)tivate command. Additionally, an existing mode can be edited by the (edit)_mode command and deleted by the (delete)_mode command. ";
-                    logger << "An overview over all modes is given by the (modes) command, which lists the name, open format, tags and all options of all modes.\n\n";
+                    logger << "An overview over all modes is given by the (modes) command, which lists the name, open format, tags, all options and all observed folders with their tags of all modes.\n\n";
                 }
                 else if (argument == "del" || argument == "delete_mode") {
                     logger << "(del)ete_mode: mode_name\n";

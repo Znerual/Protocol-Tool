@@ -19,12 +19,17 @@
 using namespace std;
 
 template<typename T>
-void pad(basic_string<T>& s, typename basic_string<T>::size_type n, T c) {
+void pad(basic_string<T>& s, typename basic_string<T>::size_type n, T c, const bool right) {
 	if (n > s.length()) {
 		s.append(n - s.length(), c);
 	}
 	else {
-		s = s.substr(0, n - 2) + "..";
+		if (right) {
+			s = s.substr(0, n - 2) + "..";
+		}
+		else {
+			s = ".." + s.substr(s.length() - n - 1);
+		}
 	}
 }
 
@@ -466,81 +471,116 @@ void parse_show_args(Log& logger, std::istringstream& iss, OPEN_MODE default_ope
 	}
 }
 
-void parse_mode_option(Log& logger, string& argument, MODE_OPTIONS& mode_options)
+bool parse_mode_option(string& argument, MODE_OPTIONS& mode_options)
 {
 	if (argument == "-show_tags" || argument == "-st")
 	{
 		mode_options.show_options.show_tags = true;
+		return true;
 	}
 	else if (argument == "-show_metadata" || argument == "-sm")
 	{
 		mode_options.show_options.show_metadata = true;
+		return true;
 	}
 	else if (argument == "-show_table_of_content" || argument == "-sc")
 	{
 		mode_options.show_options.show_table_of_content = true;
+		return true;
 	}
 	else if (argument == "-show_data" || argument == "-sd")
 	{
 		mode_options.show_options.show_data = true;
+		return true;
 	}
 	else if (argument == "-show_hide_date" || argument == "-shd")
 	{
 		mode_options.show_options.hide_date = true;
+		return true;
 	}
 	else if (argument == "-show_open_images" || argument == "-show_images" || argument == "-si")
 	{
 		mode_options.show_options.open_image_data = true;
+		return true;
 	}
 	else if (argument == "-show_open_as_html" || argument == "-shtml")
 	{
 		mode_options.format_options.html = true;
+		return true;
 	}
 	else if (argument == "-show_open_as_pdf" || argument == "-spdf")
 	{
 		mode_options.format_options.pdf = true;
+		return true;
 	}
 	else if (argument == "-show_open_as_markdown" || argument == "-smd")
 	{
 		mode_options.format_options.markdown = true;
+		return true;
 	}
 	else if (argument == "-show_open_as_docx" || argument == "-sdocx")
 	{
 		mode_options.format_options.docx = true;
+		return true;
 	}
 	else if (argument == "-show_open_as_tex" || argument == "-show_open_as_latex" || argument == "-stex")
 	{
 		mode_options.format_options.tex = true;
+		return true;
 	}
 	else if (argument == "-detail_tags" || argument == "-dt")
 	{
 		mode_options.detail_options.detail_tags = true;
+		return true;
 	}
 	else if (argument == "-detail_path" || argument == "-dp")
 	{
 		mode_options.detail_options.detail_path = true;
+		return true;
 	}
 	else if (argument == "-detail_long_path" || argument == "-dlt")
 	{
 		mode_options.detail_options.detail_long_path = true;
+		return true;
 	}
 	else if (argument == "-detail_last_modified" || argument == "-dlm")
 	{
 		mode_options.detail_options.detail_last_modified = true;
+		return true;
 	}
 	else if (argument == "-detail_content" || argument == "-dc")
 	{
 		mode_options.detail_options.detail_content = true;
+		return true;
 	}
 	else {
-		logger << "Did not recognize parameter " << argument << ".\n It should be one of the following options controlling the (s)how command:\n";
-		logger << "[-(o)pen_as format] [-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] ";
-		logger << "[-(s)how_(d)ata] [-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] ";
-		logger << "[-(s)how_open_as_(pdf)] [-(s)how_open_as_(docx)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_la(tex)]\n";
-		logger << "And one of the following for controlling the (d)etails command:\n";
-		logger << "[-(d)etail_tags] [-(d)etail_(p)ath] [-(d)etail_(l)ong_(p)ath] [-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent]\n\n";	
+		return false;
 	}
 
+}
+
+bool parse_folder_watcher(string& argument, FOLDER_WATCHER_MODE& mode, string& current_folder, unordered_map<string, vector<string>>& folder_watcher_tags)
+{
+	if (argument == "-watch_folder" || argument == "-watch" || argument == "-folder" || argument == "-wf") {
+		mode = READ_FOLDER;
+		current_folder = "";
+		return true;
+	}
+	else if (mode == READ_FOLDER) {
+		if (!filesystem::exists(argument)) {
+			mode = READ_NONE;
+			return false;
+		}
+		folder_watcher_tags[argument] = vector<string>();
+		current_folder = argument;
+		mode = READ_TAGS;
+		return true;
+	}
+	else if (mode == READ_TAGS) {
+		folder_watcher_tags[current_folder].push_back(argument);
+		return true;
+	}
+	return false;
 }
 
 bool parse_format(Log& logger, string& argument, FORMAT_OPTIONS& format_options) {
@@ -745,7 +785,7 @@ void parse_find_args(Log& logger, istringstream& iss, bool& data_only, vector<ti
 	}
 }
 
-void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, string& mode_name, std::vector<std::string>& mode_tags, OPEN_MODE& open_mode, 
+void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, string& mode_name, std::vector<std::string>& mode_tags, unordered_map<string, vector<string>>& folder_watcher_tags, OPEN_MODE& open_mode,
 	MODE_OPTIONS& mode_options)
 {
 	// set default values
@@ -767,15 +807,29 @@ void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, strin
 
 	bool read_open_mode = false;
 	string argument;
+	string current_folder { "" };
+	FOLDER_WATCHER_MODE mode {READ_NONE};
 	while (iss >> argument)
 	{
 		boost::to_lower(argument);
 		if (argument == "-o" || argument == "-open_as") {
 			read_open_mode = true;
 		}
-		else if (argument[0] == '-')
+		else if (argument[0] == '-' || mode == READ_TAGS || mode == READ_FOLDER)
 		{
-			parse_mode_option(logger, argument, mode_options);
+			if (!parse_mode_option(argument, mode_options) && !parse_folder_watcher(argument,  mode, current_folder, folder_watcher_tags)) {
+				logger << "Did not recognize parameter " << argument << ".\n It should be one of the following options controlling the (s)how command:\n";
+				logger << "[-(o)pen_as format] [-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] ";
+				logger << "[-(s)how_(d)ata] [-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] ";
+				logger << "[-(s)how_open_as_(pdf)] [-(s)how_open_as_(docx)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_la(tex)]\n";
+				logger << "And one of the following for controlling the (d)etails command:\n";
+				logger << "[-(d)etail_tags] [-(d)etail_(p)ath] [-(d)etail_(l)ong_(p)ath] [-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent]\n";
+				logger << "Or a path to a folder that should be observed such that when a file is created, the newly created file is added to the ";
+				logger << "data folder and a new note is created. Additionally, tags that will be added when this occures can be entered: \n";
+				logger << "[-(w)atch_(f)older path_to_folder tag1 tag2 ...]\n";
+				logger << "Note that multiple folders can be specified by repeating the [-(w)atch_(f)older path_to_folder tag1 tag2 ...] command ";
+				logger << "With different paths (and tags).\n\n";
+			}
 		}
 		else if (read_open_mode) {
 			FORMAT_OPTIONS fo;
@@ -1111,9 +1165,9 @@ void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS
 
 	string mode_name;
 	mode_tags = vector<string>();
-	
+	unordered_map<string, vector<string>> folder_watcher_tags;
 	MODE_OPTIONS mode_options;
-	parse_create_mode(logger, iss,conf, mode_name, mode_tags, open_mode, mode_options);
+	parse_create_mode(logger, iss,conf, mode_name, mode_tags, folder_watcher_tags, open_mode, mode_options);
 
 	boost::algorithm::to_lower(mode_name);
 
@@ -1141,6 +1195,22 @@ void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS
 	{
 		conf.set("MODE_" + to_string(active_mode) + "_TAG_" + to_string(i), mode_tags.at(i));
 	}
+
+	
+	conf.set("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS", static_cast<int>(folder_watcher_tags.size()));
+	int folder_counter = 0; // not ideal, order in map can change but does not matter because all entries are treated equal
+	for (const auto& [folder_path, tags] : folder_watcher_tags) { 
+		conf.set("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_NUM_TAGS", static_cast<int>(tags.size()));
+		conf.set("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_PATH", folder_path);
+
+		for (auto j = 0; j < tags.size(); j++)
+		{
+			conf.set("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_TAG_" + to_string(j), tags.at(j));
+
+		}
+		folder_counter++;
+	}
+	
 
 	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, open_mode, file_ending, update_files);
 
@@ -1252,10 +1322,15 @@ void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& 
 	
 	MODE_OPTIONS mode_options;
 	get_mode_options(conf, mode_options, mode_id);
+	unordered_map<string, vector<string>> folder_watcher_tags;
+	get_folder_watcher(conf, mode_id, folder_watcher_tags);
 
-	enum EDIT_MODE {NONE, ADD_OPTIONS, REMOVE_OPTIONS, CHANGE_FORMAT, ADD_TAGS, REMOVE_TAGS, CHANGE_MODE_NAME};
+	enum EDIT_MODE {NONE, ADD_OPTIONS, REMOVE_OPTIONS, CHANGE_FORMAT, ADD_TAGS, REMOVE_TAGS, CHANGE_MODE_NAME, ADD_FOLDER_WATCHER, REMOVE_FOLDER_WATCHER};
 	EDIT_MODE mode = NONE;
+	FOLDER_WATCHER_MODE folder_mode = READ_NONE;
 	MODE_OPTIONS add_opt, remove_opt;
+	unordered_map<string, vector<string>> add_folder_watcher_tags, remove_folder_watcher_tags;
+	string current_folder;
 	string new_mode_name;
 	string argument;
 	while (iss >> argument)
@@ -1281,11 +1356,36 @@ void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& 
 		else if (argument == "-change_name" || argument == "-change_mode_name") {
 			mode = CHANGE_MODE_NAME;
 		}
+		else if (argument == "-add_watch_folder" || argument == "-add_folder" || argument == "-add_watch") {
+			mode = ADD_FOLDER_WATCHER;
+			current_folder = "";
+			folder_mode = READ_NONE;
+		}
+		else if (argument == "-remove_watch_folder" || argument == "-remove_folder" || argument == "-remove_watch") {
+			mode = REMOVE_FOLDER_WATCHER;
+			current_folder = "";
+			folder_mode = READ_NONE;
+		}
 		else if (mode == ADD_OPTIONS) {
-			parse_mode_option(logger, argument, add_opt);
+			if (!parse_mode_option(argument, add_opt)) {
+				logger << "Did not recognize parameter " << argument << ".\n It should be one of the following options controlling the (s)how command:\n";
+				logger << "[-(o)pen_as format] [-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] ";
+				logger << "[-(s)how_(d)ata] [-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] ";
+				logger << "[-(s)how_open_as_(pdf)] [-(s)how_open_as_(docx)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_la(tex)]\n";
+				logger << "And one of the following for controlling the (d)etails command:\n";
+				logger << "[-(d)etail_tags] [-(d)etail_(p)ath] [-(d)etail_(l)ong_(p)ath] [-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent]\n\n";
+			}
+
 		}
 		else if (mode == REMOVE_OPTIONS) {
-			parse_mode_option(logger, argument, remove_opt);
+			if (!parse_mode_option(argument, remove_opt)) {
+				logger << "Did not recognize parameter " << argument << ".\n It should be one of the following options controlling the (s)how command:\n";
+				logger << "[-(o)pen_as format] [-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] ";
+				logger << "[-(s)how_(d)ata] [-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] ";
+				logger << "[-(s)how_open_as_(pdf)] [-(s)how_open_as_(docx)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_la(tex)]\n";
+				logger << "And one of the following for controlling the (d)etails command:\n";
+				logger << "[-(d)etail_tags] [-(d)etail_(p)ath] [-(d)etail_(l)ong_(p)ath] [-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent]\n\n";
+			}
 		}
 		else if (mode == CHANGE_FORMAT) {
 			parse_format(logger, argument, mode_options.format_options);
@@ -1314,6 +1414,48 @@ void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& 
 		else if (mode == CHANGE_MODE_NAME) {
 			new_mode_name = argument;
 		}
+		else if (mode == ADD_FOLDER_WATCHER) {
+			// if folder is already watched, add tags to watcher else add watcher
+			parse_folder_watcher(argument, folder_mode, current_folder, add_folder_watcher_tags);
+			for (const auto& [new_folder, new_folder_tags] : add_folder_watcher_tags)
+			{
+				if (folder_watcher_tags.contains(new_folder)) // add tags
+				{
+					// TODO: convert vector<string> tags to set<string>
+					for (const auto& new_tag : new_folder_tags) {
+						if (find(folder_watcher_tags[new_folder].begin(), folder_watcher_tags[new_folder].end(), new_tag) == mode_tags.end()) {
+							folder_watcher_tags[new_folder].push_back(new_tag);
+						}
+						else {
+							logger << "Tag " << new_tag << " already exists for folder watcher " << new_folder << endl;
+						}
+					}
+					
+				}
+				else { // add new watcher
+					folder_watcher_tags[new_folder] = new_folder_tags;
+				}
+			}
+		}
+		else if (mode == REMOVE_FOLDER_WATCHER) {
+			// if folder is already watched and tags are specified, remove tags from watcher else remove watcher
+			parse_folder_watcher(argument, folder_mode, current_folder, remove_folder_watcher_tags);
+		
+			for (const auto& [remove_folder, remove_folder_tags] : remove_folder_watcher_tags)
+			{
+				if (remove_folder_tags.size() > 0  && folder_watcher_tags.contains(remove_folder)) // remove tags
+				{
+					// TODO: convert vector<string> tags to set<string>
+					for (auto& old_tag : folder_watcher_tags[remove_folder]) {
+						folder_watcher_tags[remove_folder].erase(remove(folder_watcher_tags[remove_folder].begin(), folder_watcher_tags[remove_folder].end(), old_tag));
+					}
+				}
+				else { // add new watcher
+					folder_watcher_tags.erase(remove_folder);
+				}
+			}
+		}
+
 	}
 
 	if (!new_mode_name.empty()) {
@@ -1326,20 +1468,36 @@ void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& 
 	set_mode_options(conf, mode_options, mode_id);
 	set_mode_tags(conf, mode_id, mode_tags);
 
+	conf.set("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS", static_cast<int>(folder_watcher_tags.size()));
+	int folder_counter = 0; // not ideal, order in map can change but does not matter because all entries are treated equal
+	for (const auto& [folder_path, tags] : folder_watcher_tags) {
+		conf.set("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_NUM_TAGS", static_cast<int>(tags.size()));
+		conf.set("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_PATH", folder_path);
+
+		for (auto j = 0; j < tags.size(); j++)
+		{
+			conf.set("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_TAG_" + to_string(j), tags.at(j));
+
+		}
+		folder_counter++;
+	}
+
 	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, open_mode, file_ending, update_files);
 }
 
 void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unordered_map<int, std::string>& mode_names, int& active_mode, OPEN_MODE& open_mode)
 {
 	int con_col = get_console_columns();
-	string mode_name{ "Mode name:" }, mode_tags{ "Mode tags:" }, mode_format{ "Open:" }, mode_options{ "Options:" }, filler {};
+	string mode_name{ "Mode name:" }, mode_tags{ "Mode tags: ..." }, mode_format{ "Open: " }, mode_options{ "Options: ..." }, watch_folder{ "Watch folders: ..." }, folder_tags{ " with tags: ..." }, filler{};
 	pad(mode_name, 26, ' ');
 	pad(mode_tags, con_col - 34, ' '); //46
 	pad(mode_format, 8, ' ');
 	pad(mode_options, con_col, ' ');
+	pad(watch_folder, 30, ' ');
+	pad(folder_tags, con_col - 30, ' ');
 	pad(filler, con_col, '-');
 	logger << filler << '\n';
-	logger << mode_name << mode_tags << mode_format << '\n' << mode_options << '\n';
+	logger << mode_name << mode_tags << mode_format << '\n' << mode_options << '\n' << watch_folder << folder_tags << '\n';
 	logger << filler << "\n";
 	for (const auto& [id, name] : mode_names)
 	{
@@ -1446,6 +1604,40 @@ void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unorder
 
 		pad(options, con_col, ' ');
 		logger << options << '\n';
+
+		// show watched folders and tags
+		int num_folders;
+		string folder_path_str;
+		conf.get("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS", num_folders);
+		for (auto i = 0; i < num_folders; i++)
+		{
+			int num_folder_tags;
+			int tag_width = 0;
+			if (num_tags > 0) {
+				tag_width = ((con_col - 34 - 1) / num_tags) - 1;
+			}
+			if (tag_width < 8) {
+				tag_width = 7;
+			}
+
+			string folder_tags_str;
+			ostringstream folder_tags;
+			conf.get("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_NUM_TAGS", num_folder_tags);
+			conf.get("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_PATH", folder_path_str);
+
+			for (auto j = 0; j < num_folder_tags; j++)
+			{
+				conf.get("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_TAG_" + to_string(j), tag);
+				pad(tag, tag_width, ' ');
+				folder_tags << tag;
+
+			}
+			folder_tags_str = folder_tags.str();
+			pad(folder_path_str, 28, ' ', false);
+			pad(folder_tags_str, con_col - 30, ' ');
+			logger << folder_path_str << ": " << folder_tags_str << '\n';
+		}
+
 		logger << filler << '\n';
 	}
 }
@@ -1737,7 +1929,7 @@ void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mo
 	}
 
 	// read in folders to watch and their tags and start watching
-	int num_folders;
+	int num_folders = 0;
 	string folder_path_str;
 	conf.get("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS", num_folders);
 	for (auto i = 0; i < num_folders; i++)
@@ -1768,6 +1960,26 @@ void deactivate_mode(Log& logger, Config& conf, int& active_mode, vector<string>
 	}
 
 	file_watchers = vector<jthread>();
+}
+
+void get_folder_watcher(Config& conf, int& active_mode, unordered_map<string, vector<string>>& folder_watcher_tags) {
+	int num_folders = 0;
+	string folder_path_str, tag;
+	conf.get("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS", num_folders);
+	for (auto i = 0; i < num_folders; i++)
+	{
+		int num_folder_tags;
+		vector<string> folder_tags;
+		conf.get("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_NUM_TAGS", num_folder_tags);
+		conf.get("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_PATH", folder_path_str);
+		for (auto j = 0; j < num_folder_tags; j++)
+		{
+			conf.get("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_TAG_" + to_string(j), tag);
+			folder_tags.push_back(tag);
+
+		}
+		folder_watcher_tags[folder_path_str] = folder_tags;
+	}
 }
 
 void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, std::unordered_map<int, std::string>& mode_names, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, OPEN_MODE& open_mode, const string& file_ending, bool& update_files)
@@ -1898,10 +2110,14 @@ void file_change_watcher(Log& logger, const filesystem::path watch_path, const P
 			for (const auto& entry : filesystem::directory_iterator(watch_path))
 			{
 				if (!files.contains(entry.path())) {
-					logger << "Add file: " << entry.path().filename().string() << endl;
-					// add note
-					//write_file(logger, paths, filename, date, watch_path_tags, file_ending, false);
-					//ShellExecute(0, L"open", (paths.base_path / paths.file_path / filesystem::path(filename)).wstring().c_str(), 0, 0, SW_SHOW);
+					logger << "Add file: " << entry.path().filename().string() << " to the data folder " << filesystem::path(filename).stem().string() << endl;
+
+					// add note and copy found file to the corresponding data folder
+					write_file(logger, paths, filename, date, watch_path_tags, file_ending, true);
+					ShellExecute(0, L"open", (paths.base_path / paths.file_path / filesystem::path(filename)).wstring().c_str(), 0, 0, SW_SHOW);
+					filesystem::copy_file(entry.path(), paths.base_path / paths.data_path / filesystem::path(filename).stem() / entry.path().filename());
+					
+					files.insert(entry.path());
 					
 					// restart handle to listen for next change
 					if (FindNextChangeNotification(dwChangeHandles) == FALSE)
@@ -1909,7 +2125,6 @@ void file_change_watcher(Log& logger, const filesystem::path watch_path, const P
 						printf("\n ERROR: FindNextChangeNotification function failed.\n");
 						ExitProcess(GetLastError());
 					}
-					files.insert(entry.path());
 				}
 			}
 			

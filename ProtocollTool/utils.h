@@ -9,7 +9,7 @@
 #include "log.h"
 enum ARGUMENT_MODE {NONE, ARG_DATE, CONTAINS_TAGS, CONTAINS_ALL_TAGS, NO_TAGS, REG_TEXT, VERSIONS};
 enum OPEN_MODE {HTML, MARKDOWN, LATEX, PDF, DOCX};
-
+enum FOLDER_WATCHER_MODE { READ_NONE, READ_FOLDER, READ_TAGS};
 struct SHOW_OPTIONS {
 	bool show_tags = false;
 	bool show_metadata = false;
@@ -54,7 +54,7 @@ std::string rtrim(const std::string& s);
 std::string trim(const std::string& s);
 
 template<typename T>
-void pad(std::basic_string<T>& s, typename std::basic_string<T>::size_type n, T c);
+void pad(std::basic_string<T>& s, typename std::basic_string<T>::size_type n, T c, const bool right = true);
 
 void file_change_watcher(Log& logger, const std::filesystem::path watch_path, const PATHS paths, const std::string file_ending, std::vector<std::string> watch_path_tags, bool& update_files);
 int get_console_columns();
@@ -105,10 +105,13 @@ int get_console_columns();
  void parse_details_args(Log& logger, std::istringstream& iss, Config& conf, int& active_mode, DETAIL_OPTIONS& detail_options);
  void parse_show_args(Log& logger, std::istringstream& iss, OPEN_MODE default_open, Config& conf, int& active_mode, SHOW_OPTIONS& show_options, FORMAT_OPTIONS& format_options);
  void parse_add_note(Log& logger, std::istringstream& iss, const PATHS& paths, const std::string& file_ending, std::string& filename, time_t& date_t, std::vector<std::string>& tags, bool& add_data);
- void parse_mode_option(Log& logger, std::string& argument, MODE_OPTIONS& mode_options);
+ bool parse_mode_option(std::string& argument, MODE_OPTIONS& mode_options);
+ bool parse_folder_watcher(std::string& argument, FOLDER_WATCHER_MODE& mode, std::string& current_folder, std::unordered_map<std::string, std::vector<std::string>>& folder_watcher_tags);
  bool parse_format(Log& logger, std::string& argument, FORMAT_OPTIONS& format_options);
- void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, std::string& mode_name, std::vector<std::string>& mode_tags, OPEN_MODE& open_mode,
+ void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, std::string& mode_name, std::vector<std::string>& mode_tags, std::unordered_map<std::string, std::vector<std::string>>& folder_watcher_tags, OPEN_MODE& open_mode,
 	 MODE_OPTIONS& mode_options);
+
+ void get_folder_watcher(Config& conf, int& active_mode, std::unordered_map<std::string, std::vector<std::string>>& folder_watcher_tags);
 
  void format2open_mode(Config& conf, FORMAT_OPTIONS& format_options, OPEN_MODE& open_mode);
  int convert_document_to(const std::string& format, const std::string& ending, const PATHS& paths, const std::string& filename, const std::string& output_filename = "show");
