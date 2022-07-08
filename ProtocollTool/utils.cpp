@@ -7,10 +7,6 @@
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <array>
-#include <Windows.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <tchar.h>
 #include <set>
 #include <regex>
 #include "utils.h"
@@ -665,6 +661,7 @@ void parse_find_args(Log& logger, istringstream& iss, bool& data_only, vector<ti
 			if (argument.size() > 1 && argument[0] == '-') {
 				logger << "The argument " << argument << " was not recognized. It should be one of the following options: \n";
 				logger << "-d, -date: finds notes between start and end date. \n";
+				logger << "-v, -versions: selectes all notes in the given versions range. \n";
 				logger << "-ct, -contains_tags: selects notes containing at least one of the specified tags.\n";
 				logger << "-cat, -contains_all_tags: selectes notes containing all of the specified tags.\n";
 				logger << "-nt, -no_tags: selects notes that do not contain the specified tags.\n";
@@ -678,6 +675,7 @@ void parse_find_args(Log& logger, istringstream& iss, bool& data_only, vector<ti
 			case NONE:
 				logger << "Could not parse the find command " << argument << ". It should be one of the following: \n";
 				logger << "-d, -date: finds notes between start and end date. \n";
+				logger << "-v, -versions: selectes all notes in the given versions range. \n";
 				logger << "-ct, -contains_tags: selects notes containing at least one of the specified tags.\n";
 				logger << "-cat, -contains_all_tags: selectes notes containing all of the specified tags.\n";
 				logger << "-nt, -no_tags: selects notes that do not contain the specified tags.\n";
@@ -901,8 +899,6 @@ void parse_add_note(Log& logger, std::istringstream& iss, const PATHS& paths, co
 	ret = str2date(date_t, date_str);
 	if (ret != CONV_ERROR::CONV_SUCCESS) {
 		logger << "First argument of the new command has to be the date: ((t)oday, (y)esterday, dd, dd.mm, dd.mm.yyyy), set date to today" << endl;
-	}
-	else {
 		date_t = time(NULL);
 	}
 
@@ -1162,9 +1158,9 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 
 }
 
-void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, const string& file_ending, bool& update_files)
+void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent)
 {
-	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers);
+	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, hStopEvent);
 
 	string mode_name;
 	mode_tags = vector<string>();
@@ -1214,14 +1210,14 @@ void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS
 	}
 	
 
-	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files);
+	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files, hStopEvent);
 
 }
 
-void delete_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers)
+void delete_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, HANDLE& hStopEvent)
 {
 	string mode_name;
-	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers);
+	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, hStopEvent);
 
 	if (!iss)
 	{
@@ -1305,9 +1301,9 @@ void set_mode_tags(Config& conf, const int& mode_id, vector<string>& mode_tags) 
 
 }
 
-void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, const string& file_ending, bool& update_files)
+void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent)
 {
-	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers);
+	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, hStopEvent);
 
 	string mode_name;
 	if (!iss)
@@ -1492,7 +1488,7 @@ void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& 
 		folder_counter++;
 	}
 
-	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files);
+	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files, hStopEvent);
 }
 
 void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unordered_map<int, std::string>& mode_names, int& active_mode)
@@ -1708,7 +1704,7 @@ void filter_notes(Log& logger, istringstream& iss, const PATHS& paths, vector<st
 		// filter for having a data folder
 		if (data_only) 
 		{
-			if (!filesystem::exists(paths.base_path / paths.data_path / filesystem::path(path).filename())) {
+			if (!filesystem::exists(paths.base_path / paths.data_path / filesystem::path(path).stem())) {
 				continue;
 			}
 		}
@@ -1964,7 +1960,7 @@ void open_selection(Log& logger, const PATHS& paths, std::vector<std::string> fi
 	}
 }
 
-void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, const string& file_ending, bool& update_files)
+void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent)
 {
 	
 	// read in mode tags
@@ -1993,14 +1989,15 @@ void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mo
 			folder_tags.push_back(tag);
 			
 		}
-		file_watchers.push_back(jthread(file_change_watcher, ref(logger), filesystem::path(folder_path_str), paths, file_ending, folder_tags, ref(update_files)));
+		file_watchers.push_back(jthread(file_change_watcher, ref(logger), filesystem::path(folder_path_str), paths, file_ending, folder_tags, ref(update_files), ref(hStopEvent)));
 	}
 }
 
-void deactivate_mode(Log& logger, Config& conf, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers) {
+void deactivate_mode(Log& logger, Config& conf, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, HANDLE& hStopEvent) {
 	active_mode = -1;
 	mode_tags = vector<string>();
 
+	SetEvent(hStopEvent);
 	for (jthread& watcher : file_watchers) {
 		watcher.request_stop();
 	}
@@ -2028,7 +2025,7 @@ void get_folder_watcher(Config& conf, int& active_mode, unordered_map<string, ve
 	}
 }
 
-void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, std::unordered_map<int, std::string>& mode_names, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, const string& file_ending, bool& update_files)
+void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, std::unordered_map<int, std::string>& mode_names, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent)
 {
 	mode_tags = vector<string>();
 	active_mode = -1;
@@ -2051,7 +2048,7 @@ void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, c
 
 	if (active_mode != -1)
 	{
-		activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files);
+		activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files, hStopEvent);
 	}
 	else {
 		logger << "Mode " << mode_name << " not found." << endl;
@@ -2076,10 +2073,10 @@ map<string, int> get_tag_count(map<string, vector<string>>& tag_map, vector<stri
 }
 
 
-void file_change_watcher(Log& logger, const filesystem::path watch_path, const PATHS paths, const std::string file_ending, vector<string> watch_path_tags, bool& update_files)
+void file_change_watcher(Log& logger, const filesystem::path watch_path, const PATHS paths, const std::string file_ending, vector<string> watch_path_tags, bool& update_files, HANDLE& hStopEvent)
 {
 	DWORD dwWaitStatus;
-	HANDLE dwChangeHandles;
+	HANDLE dwChangeHandles[3];
 	TCHAR lpDrive[4];
 	TCHAR lpFile[_MAX_FNAME];
 	TCHAR lpExt[_MAX_EXT];
@@ -2091,36 +2088,53 @@ void file_change_watcher(Log& logger, const filesystem::path watch_path, const P
 
 
 	// save state of directory to find changed files later on
-	set<filesystem::path> files;
+	unordered_map<string, filesystem::file_time_type> files;
 	for (const auto& entry : filesystem::directory_iterator(watch_path))
 	{
-		files.insert(entry.path());
+		files[entry.path().string()] = entry.last_write_time();
 	}
 
 	// Watch the directory for file creation and deletion. 
 
-	dwChangeHandles = FindFirstChangeNotification(
-		watch_path.wstring().c_str(),                         // directory to watch 
+	dwChangeHandles[0] = FindFirstChangeNotification(
+		watch_path.wstring().c_str(),  // directory to watch 
 		FALSE,                         // do not watch subtree 
 		FILE_NOTIFY_CHANGE_FILE_NAME); // watch file name changes 
 
-	if (dwChangeHandles == INVALID_HANDLE_VALUE)
+	dwChangeHandles[1] = FindFirstChangeNotification(
+		watch_path.wstring().c_str(),
+		FALSE,
+		FILE_NOTIFY_CHANGE_LAST_WRITE);
+
+	dwChangeHandles[2] = hStopEvent;
+
+	if (dwChangeHandles[0] == INVALID_HANDLE_VALUE || dwChangeHandles[1] == INVALID_HANDLE_VALUE)
 	{
 		logger << "ERROR: FindFirstChangeNotification function failed.\n";
 		ExitProcess(GetLastError());
 	}
 
-	if (dwChangeHandles == NULL)
+	if (dwChangeHandles[0] == NULL || dwChangeHandles[1] == NULL)
 	{
 		logger << "ERROR: Unexpected NULL from FindFirstChangeNotification.\n";
+		ExitProcess(GetLastError());
+	}
+
+	if (dwChangeHandles[2] == INVALID_HANDLE_VALUE)
+	{
+		logger << "ERROR: StopThread function failed.\n";
+		ExitProcess(GetLastError());
+	}
+
+	if (dwChangeHandles[2] == NULL)
+	{
+		logger << "ERROR: Unexpected NULL from StopThread.\n";
 		ExitProcess(GetLastError());
 	}
 	while (true)
 	{
 		// Wait for notification.
-
-
-		dwWaitStatus = WaitForSingleObject(dwChangeHandles, INFINITE);
+		dwWaitStatus = WaitForMultipleObjects(3, dwChangeHandles, FALSE, INFINITE);
 		time_t date = time(NULL);
 		string filename = get_filename(paths, date, file_ending);
 		switch (dwWaitStatus)
@@ -2129,11 +2143,11 @@ void file_change_watcher(Log& logger, const filesystem::path watch_path, const P
 
 			// A file was created, renamed, or deleted in the directory.
 			// Refresh this directory and restart the notification.
-			logger << "Monitored folder " << watch_path.string() << " had file changes." << endl;
+			//logger << "Monitored folder " << watch_path.string() << " had file changes." << endl;
 
 			for (const auto& entry : filesystem::directory_iterator(watch_path))
 			{
-				if (!files.contains(entry.path())) {
+				if (!files.contains(entry.path().string())) {
 					logger << "Add file: " << entry.path().filename().string() << " to the data folder " << filesystem::path(filename).stem().string() << endl;
 
 					// add note and copy found file to the corresponding data folder
@@ -2141,20 +2155,138 @@ void file_change_watcher(Log& logger, const filesystem::path watch_path, const P
 					ShellExecute(0, L"open", (paths.base_path / paths.file_path / filesystem::path(filename)).wstring().c_str(), 0, 0, SW_SHOW);
 					filesystem::copy_file(entry.path(), paths.base_path / paths.data_path / filesystem::path(filename).stem() / entry.path().filename());
 					
-					files.insert(entry.path());
+					files[entry.path().string()] = entry.last_write_time();
 					
-					// restart handle to listen for next change
-					if (FindNextChangeNotification(dwChangeHandles) == FALSE)
-					{
-						printf("\n ERROR: FindNextChangeNotification function failed.\n");
-						ExitProcess(GetLastError());
-					}
+					
 				}
 			}
 			
+			// restart handle to listen for next change
+			if (FindNextChangeNotification(dwChangeHandles[0]) == FALSE)
+			{
+				printf("\n ERROR: FindNextChangeNotification function failed.\n");
+				ExitProcess(GetLastError());
+			}
+			break;
+		case WAIT_OBJECT_0 + 1: // file was written to
+			for (const auto& entry : filesystem::directory_iterator(watch_path))
+			{
+				if (files.contains(entry.path().string()) && files[entry.path().string()] < entry.last_write_time()) {
+					logger << "File " << entry.path().filename().string() << " in the observed folder " << watch_path.string() << " was written to." << endl;
+				}
+			}
 			
+			// restart handle to listen for next change
+			if (FindNextChangeNotification(dwChangeHandles[1]) == FALSE)
+			{
+				printf("\n ERROR: FindNextChangeNotification function failed.\n");
+				ExitProcess(GetLastError());
+			}
+			break;
+		case WAIT_OBJECT_0 + 2: // Stop event
+			logger << "Stop event" << endl;
+			return;
+		case WAIT_TIMEOUT:
+
+			// A timeout occurred, this would happen if some value other 
+			// than INFINITE is used in the Wait call and no changes occur.
+			// In a single-threaded environment you might not want an
+			// INFINITE wait.
+
+			printf("\nNo changes in the timeout period.\n");
 			break;
 
+		default:
+			printf("\n ERROR: Unhandled dwWaitStatus.\n");
+			ExitProcess(GetLastError());
+			break;
+		}
+	}
+}
+
+
+void note_change_watcher(Log& logger, const PATHS paths, bool& update_files, HANDLE& hStopMonitorEvent)
+{
+	DWORD dwWaitStatus;
+	HANDLE dwChangeHandles[3];
+	TCHAR lpDrive[4];
+	TCHAR lpFile[_MAX_FNAME];
+	TCHAR lpExt[_MAX_EXT];
+
+	_tsplitpath_s((paths.base_path / paths.file_path).wstring().c_str(), lpDrive, 4, NULL, 0, lpFile, _MAX_FNAME, lpExt, _MAX_EXT);
+
+	lpDrive[2] = (TCHAR)'\\';
+	lpDrive[3] = (TCHAR)'\0';
+
+
+	dwChangeHandles[0] = FindFirstChangeNotification(
+		(paths.base_path / paths.file_path).wstring().c_str(),  // directory to watch 
+		FALSE,                         // do not watch subtree 
+		FILE_NOTIFY_CHANGE_FILE_NAME); // watch file name changes 
+
+	dwChangeHandles[1] = FindFirstChangeNotification(
+		(paths.base_path / paths.file_path).wstring().c_str(),
+		FALSE,
+		FILE_NOTIFY_CHANGE_LAST_WRITE);
+
+	dwChangeHandles[2] = hStopMonitorEvent;
+
+	if (dwChangeHandles[0] == INVALID_HANDLE_VALUE || dwChangeHandles[1] == INVALID_HANDLE_VALUE)
+	{
+		logger << "ERROR: FindFirstChangeNotification function failed.\n";
+		ExitProcess(GetLastError());
+	}
+
+	if (dwChangeHandles[0] == NULL || dwChangeHandles[1] == NULL)
+	{
+		logger << "ERROR: Unexpected NULL from FindFirstChangeNotification.\n";
+		ExitProcess(GetLastError());
+	}
+
+	if (dwChangeHandles[2] == INVALID_HANDLE_VALUE)
+	{
+		logger << "ERROR: StopThread function failed.\n";
+		ExitProcess(GetLastError());
+	}
+
+	if (dwChangeHandles[2] == NULL)
+	{
+		logger << "ERROR: Unexpected NULL from StopThread.\n";
+		ExitProcess(GetLastError());
+	}
+	while (true)
+	{
+
+		// Wait for notification.
+		dwWaitStatus = WaitForMultipleObjects(3, dwChangeHandles, FALSE, INFINITE);
+		switch (dwWaitStatus)
+		{
+		case WAIT_OBJECT_0: // A file was created, renamed, or deleted in the directory.
+			update_files = true;
+			logger << "File added to file dir" << endl;
+				
+			// restart handle to listen for next change
+			if (FindNextChangeNotification(dwChangeHandles[0]) == FALSE)
+			{
+				printf("\n ERROR: FindNextChangeNotification function failed.\n");
+				ExitProcess(GetLastError());
+			}
+			break;
+
+		case WAIT_OBJECT_0 + 1: // file was written to
+			update_files = true;
+			logger << "File changed in file dir" << endl;
+			// restart handle to listen for next change
+			if (FindNextChangeNotification(dwChangeHandles[1]) == FALSE)
+			{
+				printf("\n ERROR: FindNextChangeNotification function failed.\n");
+				ExitProcess(GetLastError());
+			}
+			break;
+
+		case WAIT_OBJECT_0 + 2: // Stop event
+			logger << "Stop monitoring files for changes" << endl;
+			return;
 		case WAIT_TIMEOUT:
 
 			// A timeout occurred, this would happen if some value other 

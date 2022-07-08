@@ -224,14 +224,14 @@ int main()
     // mode tag variables
     vector<string> mode_tags;
     vector<jthread> file_watchers;
-
-    /*filesystem::path desktop{"C:\\Users\\karst\\Desktop"};
-    bool update_files;
-    vector<string> folder_watcher_tags;
-    std::jthread t1(file_change_watcher, ref(logger), ref(desktop), ref(paths), ref(file_ending),  ref(folder_watcher_tags), ref(update_files));
-    */
+    HANDLE hStopEvent;
+    HANDLE hStopMonitorEvent;
 
     bool update_files = false;
+    hStopEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    hStopMonitorEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    jthread monitor_file_changes(note_change_watcher, ref(logger), paths, ref(update_files), ref(hStopMonitorEvent));
+
     bool running = true;
     while (running)
     {
@@ -341,24 +341,25 @@ int main()
         }
         else if (command == "q" || command == "quit" || command == "exit") 
         {
+            SetEvent(hStopMonitorEvent);
             running = false;
             break;
         }
         else if (command == "c" || command == "create" || command == "create_mode")
         {
-            create_mode(logger, iss, conf, paths, num_modes, mode_names, mode_tags, active_mode, file_watchers, file_ending, update_files);
+            create_mode(logger, iss, conf, paths, num_modes, mode_names, mode_tags, active_mode, file_watchers, file_ending, update_files, hStopEvent);
         }
         else if (command == "del" || command == "delete" || command == "delete_mode")
         {
-            delete_mode(logger, iss, conf, num_modes, mode_names, mode_tags, active_mode, file_watchers);
+            delete_mode(logger, iss, conf, num_modes, mode_names, mode_tags, active_mode, file_watchers, hStopEvent);
         }
         else if (command == "act" || command == "activate" || command == "activate_mode")
         {
-            activate_mode_command(logger, iss, conf, paths, mode_names, active_mode, mode_tags, file_watchers, file_ending, update_files);
+            activate_mode_command(logger, iss, conf, paths, mode_names, active_mode, mode_tags, file_watchers, file_ending, update_files, hStopEvent);
         }
         else if (command == "deac" || command == "deactivate" || command == "deactivate_mode")
         {
-            deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers);
+            deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, hStopEvent);
         }
         else if (command == "modes" ||  command == "show_modes")
         {
@@ -366,7 +367,7 @@ int main()
         }
         else if (command == "edit_mode" || command == "edit")
         {
-            edit_mode(logger, iss, conf, paths, mode_names, mode_tags, active_mode, file_watchers, file_ending, update_files);
+            edit_mode(logger, iss, conf, paths, mode_names, mode_tags, active_mode, file_watchers, file_ending, update_files, hStopEvent);
         }
         else if (command == "u" || command == "update")
         {
@@ -380,9 +381,9 @@ int main()
         else if (command == "h" || command == "-h" || command == "help")
         {
             string argument;
-            if (iss) 
+            if (iss >> argument) 
             {
-                iss >> argument;
+                
                 if (argument == "n" || argument == "new")
                 {
                     logger << "(n)ew: date tag1 tag2 ... [-d]\nCreates a new note file and the optional parameter -d indicates that a data folder will be created. The given date can be in ";
@@ -496,6 +497,7 @@ int main()
         {
             update_tags(logger, paths, file_map, tag_map, tag_count, filter_selection, true);
             update_files = false;
+            // TODO update now
         }
     }
     
