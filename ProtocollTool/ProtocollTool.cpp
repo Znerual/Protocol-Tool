@@ -63,7 +63,6 @@ int main()
     // read in config arguments and setup paths
     bool ask_pandoc, has_pandoc, write_log;
     int  num_modes;
-    OPEN_MODE open_mode;
     unordered_map<int, string> mode_names;
     PATHS paths;
     filesystem::path log_path;
@@ -71,7 +70,6 @@ int main()
     
     {
         string base_path_str, file_path_str, data_path_str, tmp_path_str, tmp_mode_name, log_path_str;
-        int open_mode_int;
         conf.get("ASK_PANDOC", ask_pandoc);
         conf.get("HAS_PANDOC", has_pandoc);
         conf.get("WRITE_LOG", write_log);
@@ -89,9 +87,6 @@ int main()
 
         conf.get("TMP_FILENAME", tmp_filename);
         conf.get("FILE_ENDING", file_ending);
-
-        conf.get("DEFAULT_OPEN_MODE", open_mode_int);
-        open_mode = static_cast<OPEN_MODE>(open_mode_int);
 
         conf.get("NUM_MODES", num_modes);
         int num_watch_folders = 0;
@@ -240,12 +235,6 @@ int main()
     bool running = true;
     while (running)
     {
-        if (update_files)
-        {
-            update_tags(logger, paths, file_map, tag_map, tag_count, filter_selection);
-            update_files = false;
-        }
-
 
         logger << "Input";
         if (active_mode != -1)
@@ -269,25 +258,48 @@ int main()
         else if (command == "f") { // could be find or filter
             if (filter_selection.size() == 0) {
                 find_notes(logger, iss, paths, filter_selection, file_map, tag_map, mode_tags);
-                logger << "Found " << filter_selection.size() << " matching notes.\nRun (s)how, (d)etails, (a)dd_data, (t)ags or (f)ilter." << endl;
+                logger << "Found " << filter_selection.size() << " matching notes.\n";
             }
             else {
                 filter_notes(logger, iss, paths, filter_selection, file_map, tag_map, mode_tags);
-                logger << "Found " << filter_selection.size() << " notes matching the filter.\nRun (s)how, (d)etails, (a)dd_data, (t)ags or (f)ilter." << endl;
+                logger << "Found " << filter_selection.size() << " notes matching the filter.\n";
             }
-            
+            if (active_mode != -1) {
+                logger << "Tags ";
+                for (const auto& tag : mode_tags) {
+                    logger << tag << " ";
+                }
+                logger << "from Mode " << mode_names[active_mode] << " were added to the search.\n";
+            }
+            logger << "Run (s)how, (d)etails, (a)dd_data, (t)ags or (f)ilter for more.\n" << endl;
         }
         else if (command == "find") {
             find_notes(logger, iss, paths, filter_selection, file_map, tag_map, mode_tags);
-            logger << "Found " << filter_selection.size() << " matching notes.\nRun (s)how, (d)etails, (a)dd_data, (t)ags or (f)ilter." << endl;
+            logger << "Found " << filter_selection.size() << " matching notes.\n";
+            if (active_mode != -1) {
+                logger << "Tags ";
+                for (const auto& tag : mode_tags) {
+                    logger << tag << " ";
+                }
+                logger << "from Mode " << mode_names[active_mode] << " were added to the search.\n";
+            }
+            logger << "Run (s)how, (d)etails, (a)dd_data, (t)ags or (f)ilter for more.\n" << endl;
         }
         else if (command == "filter") {
             filter_notes(logger, iss, paths, filter_selection, file_map, tag_map, mode_tags);
-            logger << "Found " << filter_selection.size() << " notes matching the filter.\nRun (s)how, (d)etails, (a)dd_data, (t)ags or (f)ilter." << endl;
+            logger << "Found " << filter_selection.size() << " notes matching the filter.\n";
+            if (active_mode != -1) {
+                logger << "Tags ";
+                for (const auto& tag : mode_tags) {
+                    logger << tag << " ";
+                }
+                logger << "from Mode " << mode_names[active_mode] << " were added to the filter.\n";
+            }
+            logger << "Run (s)how, (d)etails, (a)dd_data, (t)ags or (f)ilter for more.\n" << endl;
         }
         else if (command == "s" || command == "show") 
         {
-            show_filtered_notes(logger, iss, open_mode, conf, active_mode, paths, tmp_filename, filter_selection, has_pandoc);
+            show_filtered_notes(logger, iss, conf, active_mode, paths, tmp_filename, filter_selection, has_pandoc);
             
         }
         else if (command == "a" || command == "add_data") {
@@ -308,7 +320,19 @@ int main()
                 }
             }
 
-            logger << "Tags: \n";
+            logger << "Tags";
+            if (active_mode != -1) {
+                logger << " (Mode Tags:";
+                string tag_copy;
+                for (const auto& tag : mode_tags) {
+                    tag_copy = trim(tag);
+                    boost::to_lower(tag_copy);
+                    logger << " " << tag_copy;
+                }
+                logger << ")";
+            }
+            logger << "\n";
+
             tag_count = get_tag_count(tag_map, filter_selection);
             for (const auto& [tag, count] : tag_count)
             {
@@ -322,31 +346,31 @@ int main()
         }
         else if (command == "c" || command == "create" || command == "create_mode")
         {
-            create_mode(logger, iss, conf, paths, num_modes, mode_names, mode_tags, active_mode, file_watchers, open_mode, file_ending, update_files);
+            create_mode(logger, iss, conf, paths, num_modes, mode_names, mode_tags, active_mode, file_watchers, file_ending, update_files);
         }
         else if (command == "del" || command == "delete" || command == "delete_mode")
         {
-            delete_mode(logger, iss, conf, num_modes, mode_names, mode_tags, active_mode, file_watchers, open_mode);
+            delete_mode(logger, iss, conf, num_modes, mode_names, mode_tags, active_mode, file_watchers);
         }
         else if (command == "act" || command == "activate" || command == "activate_mode")
         {
-            activate_mode_command(logger, iss, conf, paths, mode_names, active_mode, mode_tags, file_watchers, open_mode, file_ending, update_files);
+            activate_mode_command(logger, iss, conf, paths, mode_names, active_mode, mode_tags, file_watchers, file_ending, update_files);
         }
         else if (command == "deac" || command == "deactivate" || command == "deactivate_mode")
         {
-            deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, open_mode);
+            deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers);
         }
         else if (command == "modes" ||  command == "show_modes")
         {
-            show_modes(logger, iss, conf, mode_names, active_mode, open_mode);
+            show_modes(logger, iss, conf, mode_names, active_mode);
         }
         else if (command == "edit_mode" || command == "edit")
         {
-            edit_mode(logger, iss, conf, paths, mode_names, mode_tags, active_mode, file_watchers, open_mode, file_ending, update_files);
+            edit_mode(logger, iss, conf, paths, mode_names, mode_tags, active_mode, file_watchers, file_ending, update_files);
         }
         else if (command == "u" || command == "update")
         {
-            update_tags(logger, paths, file_map, tag_map, tag_count, filter_selection);
+            update_tags(logger, paths, file_map, tag_map, tag_count, filter_selection, false);
         }
         else if (command == "o" || command == "open")
         {
@@ -402,7 +426,7 @@ int main()
                     logger << "(q)uit:\nEnds the programm.";
                 }
                 else if (argument == "c" || argument == "create" || argument == "create_mode") {
-                    logger << "(c)reate_mode: mode_name tag1 tag2 ... [-(o)pen_as format] [-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] [-(s)how_(d)ata] ";
+                    logger << "(c)reate_mode: mode_name tag1 tag2 ... [-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] [-(s)how_(d)ata] ";
                     logger << "[-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_(docx)] ";
                     logger << "[-(s)how_open_as_(pdf)] [-(s)how_open_as_la(tex)] [-(d)etail_(t)ags] [-(d)etail_(p)ath] [-(d)etail_(l)ong_(p)ath] ";
                     logger << "[-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent] [-(w)atch_(f)older path_to_folder1 tag1 tag2 ...] [-(w)atch_(f)older path_to_folder2 tag1 tag2 ...]\n\n";
@@ -437,7 +461,7 @@ int main()
                     logger << "Gives an overview over all existing modes and shows mode name, mode tags, default open format, mode options.\n\n";
                 }
                 else if (argument == "edit" || argument == "edit_mode") {
-                    logger << "(edit)_mode: mode_name [-(add_opt)ion opt1 opt2 ...] [-(remove_opt)ion opt1 opt2 ...] [-change_format open_as_format] [-(add_t)ags tag1 tag2 ...] [-(remove_t)ags tag1 tag2] [-change_name new_mode_name]\n";
+                    logger << "(edit)_mode: mode_name [-(add_opt)ion opt1 opt2 ...] [-(remove_opt)ion opt1 opt2 ...] [-(add_t)ags tag1 tag2 ...] [-(remove_t)ags tag1 tag2] [-change_name new_mode_name]\n";
                     logger << "Where opt are the options from the (c)reate_mode command. More about modes can be found by running help create_mode\n\n";
                 }
                 else if (argument == "u" || argument == "update") {
@@ -468,7 +492,11 @@ int main()
             logger << "Command " << command << " could not be parsed. Available options are: (n)ew, (f)ind, (f)ilter, (s)how, (a)dd_data, (d)etails, (t)ags, (u)pdate, (e)xport and (o)pen." << 'n';
         }
         logger << endl;
-
+        if (update_files)
+        {
+            update_tags(logger, paths, file_map, tag_map, tag_count, filter_selection, true);
+            update_files = false;
+        }
     }
     
     

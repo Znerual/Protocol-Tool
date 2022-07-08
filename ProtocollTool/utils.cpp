@@ -128,7 +128,7 @@ vector<string> read_tags(Log& logger, const string& path) {
 	return tags;
 }
 
-void update_tags(Log& logger, const PATHS& paths, map<string, time_t>& file_map, map<string, vector<string>>& tag_map, map<string, int>& tag_count, vector<string>& filter_selection)
+void update_tags(Log& logger, const PATHS& paths, map<string, time_t>& file_map, map<string, vector<string>>& tag_map, map<string, int>& tag_count, vector<string>& filter_selection, const bool add_new_to_filter_selection)
 {
 	/*
 	Takes an existing file_map (return of list_all_files) and uses it to only updates the tags of the modified files 
@@ -142,6 +142,8 @@ void update_tags(Log& logger, const PATHS& paths, map<string, time_t>& file_map,
 		if (time > file_map[path]) // file was changed
 		{
 			new_tag_map[path] = read_tags(logger, (paths.base_path / filesystem::path(path)).string());
+			if (add_new_to_filter_selection)
+				new_filter_selection.push_back(path);
 		}
 		else {
 			new_tag_map[path] = tag_map[path];
@@ -378,7 +380,7 @@ int convert_document_to(const std::string& format, const std::string& ending, co
 }
 
 
-void parse_show_args(Log& logger, std::istringstream& iss, OPEN_MODE default_open, Config& conf, int& active_mode, SHOW_OPTIONS& show_options, FORMAT_OPTIONS& format_options)
+void parse_show_args(Log& logger, std::istringstream& iss, Config& conf, int& active_mode, SHOW_OPTIONS& show_options, FORMAT_OPTIONS& format_options)
 {
 	
 
@@ -448,6 +450,9 @@ void parse_show_args(Log& logger, std::istringstream& iss, OPEN_MODE default_ope
 
 	if (!format_options.docx && !format_options.html && !format_options.markdown && !format_options.pdf && !format_options.tex)
 	{
+		int default_open_int;
+		conf.get("DEFAULT_OPEN_MODE", default_open_int);
+		OPEN_MODE default_open = static_cast<OPEN_MODE>(default_open_int);
 		switch (default_open)
 		{
 		case HTML:
@@ -794,16 +799,12 @@ void parse_find_args(Log& logger, istringstream& iss, bool& data_only, vector<ti
 	}
 }
 
-void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, string& mode_name, std::vector<std::string>& mode_tags, unordered_map<string, vector<string>>& folder_watcher_tags, OPEN_MODE& open_mode,
+void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, string& mode_name, std::vector<std::string>& mode_tags, unordered_map<string, vector<string>>& folder_watcher_tags, 
 	MODE_OPTIONS& mode_options)
 {
 	// set default values
 	mode_name = "default";
 	mode_tags = vector<string>();
-	int open_mode_int;
-	conf.get("DEFAULT_OPEN_MODE", open_mode_int);
-	open_mode = static_cast<OPEN_MODE>(open_mode_int);
-
 
 	if (iss)
 	{
@@ -814,21 +815,17 @@ void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, strin
 		return;
 	}
 
-	bool read_open_mode = false;
 	string argument;
 	string current_folder { "" };
 	FOLDER_WATCHER_MODE mode {READ_NONE};
 	while (iss >> argument)
 	{
 		boost::to_lower(argument);
-		if (argument == "-o" || argument == "-open_as") {
-			read_open_mode = true;
-		}
-		else if (argument[0] == '-' || mode == READ_TAGS || mode == READ_FOLDER)
+		if (argument[0] == '-' || mode == READ_TAGS || mode == READ_FOLDER)
 		{
 			if (!parse_mode_option(argument, mode_options) && !parse_folder_watcher(argument,  mode, current_folder, folder_watcher_tags)) {
 				logger << "Did not recognize parameter " << argument << ".\n It should be one of the following options controlling the (s)how command:\n";
-				logger << "[-(o)pen_as format] [-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] ";
+				logger << "[-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] ";
 				logger << "[-(s)how_(d)ata] [-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] ";
 				logger << "[-(s)how_open_as_(pdf)] [-(s)how_open_as_(docx)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_la(tex)]\n";
 				logger << "And one of the following for controlling the (d)etails command:\n";
@@ -840,14 +837,11 @@ void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, strin
 				logger << "With different paths (and tags).\n\n";
 			}
 		}
-		else if (read_open_mode) {
-			FORMAT_OPTIONS fo;
-			parse_format(logger, argument, fo);
-			format2open_mode(conf, fo, open_mode);
-			read_open_mode = false;
-		}
 		else if (argument[0] != '-') {
 			mode_tags.push_back(argument);
+		}
+		else {
+			logger << "Error in parse_create_mode, this condition should not have been reached. Input " << argument << " with current mode: " << mode << endl;
 		}
 		
 	}
@@ -926,12 +920,12 @@ void parse_add_note(Log& logger, std::istringstream& iss, const PATHS& paths, co
 }
 
 
-void show_filtered_notes(Log& logger, std::istringstream& iss, const OPEN_MODE default_open, Config& conf, int& active_mode, const PATHS& paths, const string& tmp_filename, std::vector<std::string>& filter_selection, const bool& has_pandoc)
+void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int& active_mode, const PATHS& paths, const string& tmp_filename, std::vector<std::string>& filter_selection, const bool& has_pandoc)
 {
 	// parse arguments
 	SHOW_OPTIONS show_options;
 	FORMAT_OPTIONS format_options;
-	parse_show_args(logger, iss, default_open, conf, active_mode, show_options, format_options);
+	parse_show_args(logger, iss, conf, active_mode, show_options, format_options);
 
 	// write content of selected files to output file
 	ofstream show_file(paths.base_path / paths.tmp_path / filesystem::path(tmp_filename));
@@ -1168,15 +1162,15 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, const OPEN_MODE d
 
 }
 
-void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, OPEN_MODE& open_mode, const string& file_ending, bool& update_files)
+void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, const string& file_ending, bool& update_files)
 {
-	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, open_mode);
+	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers);
 
 	string mode_name;
 	mode_tags = vector<string>();
 	unordered_map<string, vector<string>> folder_watcher_tags;
 	MODE_OPTIONS mode_options;
-	parse_create_mode(logger, iss,conf, mode_name, mode_tags, folder_watcher_tags, open_mode, mode_options);
+	parse_create_mode(logger, iss,conf, mode_name, mode_tags, folder_watcher_tags, mode_options);
 
 	boost::algorithm::to_lower(mode_name);
 
@@ -1195,7 +1189,6 @@ void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS
 	num_modes += 1;
 	conf.set("NUM_MODES", num_modes);
 	conf.set("MODE_" + to_string(active_mode) + "_NAME", mode_name);
-	conf.set("MODE_" + to_string(active_mode) + "_OPEN_AS", static_cast<int>(open_mode));
 	conf.set("MODE_" + to_string(active_mode) + "_NUM_TAGS", static_cast<int>(mode_tags.size()));
 
 	set_mode_options(conf, mode_options, active_mode);
@@ -1221,14 +1214,14 @@ void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS
 	}
 	
 
-	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, open_mode, file_ending, update_files);
+	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files);
 
 }
 
-void delete_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, OPEN_MODE& open_mode)
+void delete_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers)
 {
 	string mode_name;
-	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, open_mode);
+	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers);
 
 	if (!iss)
 	{
@@ -1263,6 +1256,7 @@ void delete_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_mo
 
 	int num_tags;
 	conf.get("MODE_" + to_string(mode_id) + "_NUM_TAGS", num_tags);
+	conf.remove("MODE_" + to_string(mode_id) + "_NUM_TAGS");
 	for (auto i = 0; i < num_tags; i++)
 	{
 		conf.remove("MODE_" + to_string(mode_id) + "_TAG_" + to_string(i));
@@ -1270,6 +1264,20 @@ void delete_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_mo
 
 	conf.remove("MODE_" + to_string(mode_id) + "_NAME");
 
+	int num_watch_folder, num_folder_tags;
+	conf.get("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS", num_watch_folder);
+	conf.remove("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS");
+	for (auto i = 0; i < num_watch_folder; i++) {
+		conf.get("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_NUM_TAGS", num_folder_tags);
+		conf.remove("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_NUM_TAGS");
+		conf.remove("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_PATH");
+
+		for (auto j = 0; j < num_folder_tags; j++)
+		{
+			conf.remove("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_TAG_" + to_string(j));
+
+		}
+	}
 }
 
 void get_mode_tags(Config& conf, const int& mode_id, vector<string>& mode_tags) {
@@ -1297,9 +1305,9 @@ void set_mode_tags(Config& conf, const int& mode_id, vector<string>& mode_tags) 
 
 }
 
-void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, OPEN_MODE& open_mode, const string& file_ending, bool& update_files)
+void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, const string& file_ending, bool& update_files)
 {
-	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, open_mode);
+	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers);
 
 	string mode_name;
 	if (!iss)
@@ -1334,7 +1342,7 @@ void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& 
 	unordered_map<string, vector<string>> folder_watcher_tags;
 	get_folder_watcher(conf, mode_id, folder_watcher_tags);
 
-	enum EDIT_MODE {NONE, ADD_OPTIONS, REMOVE_OPTIONS, CHANGE_FORMAT, ADD_TAGS, REMOVE_TAGS, CHANGE_MODE_NAME, ADD_FOLDER_WATCHER, REMOVE_FOLDER_WATCHER};
+	enum EDIT_MODE {NONE, ADD_OPTIONS, REMOVE_OPTIONS, ADD_TAGS, REMOVE_TAGS, CHANGE_MODE_NAME, ADD_FOLDER_WATCHER, REMOVE_FOLDER_WATCHER};
 	EDIT_MODE mode = NONE;
 	FOLDER_WATCHER_MODE folder_mode = READ_NONE;
 	MODE_OPTIONS add_opt, remove_opt;
@@ -1351,9 +1359,6 @@ void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& 
 		else if (argument == "-remove_opt" || argument == "-remove_option" || argument == "-remove_options")
 		{
 			mode = REMOVE_OPTIONS;
-		}
-		else if (argument == "-change_format") {
-			mode = CHANGE_FORMAT;
 		}
 		else if (argument == "-add_t" || argument == "-add_tags" || argument == "-add_tag") {
 			mode = ADD_TAGS;
@@ -1378,7 +1383,7 @@ void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& 
 		else if (mode == ADD_OPTIONS) {
 			if (!parse_mode_option(argument, add_opt)) {
 				logger << "Did not recognize parameter " << argument << ".\n It should be one of the following options controlling the (s)how command:\n";
-				logger << "[-(o)pen_as format] [-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] ";
+				logger << "[-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] ";
 				logger << "[-(s)how_(d)ata] [-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] ";
 				logger << "[-(s)how_open_as_(pdf)] [-(s)how_open_as_(docx)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_la(tex)]\n";
 				logger << "And one of the following for controlling the (d)etails command:\n";
@@ -1389,16 +1394,12 @@ void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& 
 		else if (mode == REMOVE_OPTIONS) {
 			if (!parse_mode_option(argument, remove_opt)) {
 				logger << "Did not recognize parameter " << argument << ".\n It should be one of the following options controlling the (s)how command:\n";
-				logger << "[-(o)pen_as format] [-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] ";
+				logger << "[-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] ";
 				logger << "[-(s)how_(d)ata] [-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] ";
 				logger << "[-(s)how_open_as_(pdf)] [-(s)how_open_as_(docx)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_la(tex)]\n";
 				logger << "And one of the following for controlling the (d)etails command:\n";
 				logger << "[-(d)etail_tags] [-(d)etail_(p)ath] [-(d)etail_(l)ong_(p)ath] [-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent]\n\n";
 			}
-		}
-		else if (mode == CHANGE_FORMAT) {
-			parse_format(logger, argument, mode_options.format_options);
-			format2open_mode(conf, mode_options.format_options, open_mode);
 		}
 		else if (mode == ADD_TAGS) {
 			argument = trim(argument);
@@ -1491,22 +1492,22 @@ void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& 
 		folder_counter++;
 	}
 
-	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, open_mode, file_ending, update_files);
+	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files);
 }
 
-void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unordered_map<int, std::string>& mode_names, int& active_mode, OPEN_MODE& open_mode)
+void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unordered_map<int, std::string>& mode_names, int& active_mode)
 {
 	int con_col = get_console_columns();
-	string mode_name{ "Mode name:" }, mode_tags{ "Mode tags: ..." }, mode_format{ "Open: " }, mode_options{ "Options: ..." }, watch_folder{ "Watch folders: ..." }, folder_tags{ " with tags: ..." }, filler{};
+	string mode_name{ "Mode name:" }, mode_tags{ "Mode tags: ..." }, mode_options{ "Options: ..." }, watch_folder{ "Watch folders: ..." }, folder_tags{ " with tags: ..." }, filler{};
 	pad(mode_name, 26, ' ');
-	pad(mode_tags, con_col - 34, ' '); //46
-	pad(mode_format, 8, ' ');
+	pad(mode_tags, con_col - 26, ' '); //46
+
 	pad(mode_options, con_col, ' ');
 	pad(watch_folder, 30, ' ');
 	pad(folder_tags, con_col - 30, ' ');
 	pad(filler, con_col, '-');
 	logger << filler << '\n';
-	logger << mode_name << mode_tags << mode_format << '\n' << mode_options << '\n' << watch_folder << folder_tags << '\n';
+	logger << mode_name << mode_tags << '\n' << mode_options << '\n' << watch_folder << folder_tags << '\n';
 	logger << filler << "\n";
 	for (const auto& [id, name] : mode_names)
 	{
@@ -1521,7 +1522,7 @@ void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unorder
 		ostringstream tags;
 		int tag_width = 0;
 		if (num_tags > 0) {
-			tag_width = ((con_col - 34 - 1) / num_tags) - 1;
+			tag_width = ((con_col - 26 - 1) / num_tags) - 1;
 		}
 		
 			
@@ -1529,45 +1530,38 @@ void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unorder
 			tag_width = 7;
 		}
 
+		int extra_tag_width = 0;
 		string tag;
 		for (auto i = 0; i < num_tags; i++) {
 			conf.get("MODE_" + to_string(id) + "_TAG_" + to_string(i), tag);
-			pad(tag, tag_width, ' ');
+
+			if (tag.size() < tag_width) {
+				extra_tag_width += tag_width - tag.size();
+			}
+			else if (extra_tag_width > 0) {
+				int dif = tag.size() - tag_width;
+				if (dif >= extra_tag_width) {
+					pad(tag, tag_width + extra_tag_width, ' ');
+					extra_tag_width = 0;
+				}
+				else {
+					pad(tag, tag_width + dif, ' ');
+					extra_tag_width -= dif;
+				}
+			}
+			else {
+				pad(tag, tag_width, ' ');
+			}
+
+			
 			tags << tag << ' ';
 		}
 		string tags_str = tags.str();
 		if (tags_str.size() > 0)
 			tags_str.erase(tags_str.end() - 1);
-		pad(tags_str, (con_col - 34 - 1), ' ');
+		pad(tags_str, (con_col - 26 - 1), ' ');
 		logger << tags_str << " ";
 
-		// show open format
-		int open_as_int;
-		conf.get("MODE_" + to_string(id) + "_OPEN_AS", open_as_int);
-		string open_as;
-		switch (static_cast<OPEN_MODE>(open_as_int))
-		{
-		case HTML:
-			open_as = "html";
-			break;
-		case PDF:
-			open_as = "pdf";
-			break;
-		case DOCX:
-			open_as = "docx";
-			break;
-		case LATEX:
-			open_as = "tex";
-			break;
-		case MARKDOWN:
-			open_as = "md";
-			break;
-		default:
-			open_as = "unknown";
-			break;
-		}
-		pad(open_as, 8, ' ');
-		logger << open_as << '\n';
 
 		// show options
 		MODE_OPTIONS mode_options;
@@ -1617,34 +1611,55 @@ void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unorder
 		// show watched folders and tags
 		int num_folders;
 		string folder_path_str;
-		conf.get("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS", num_folders);
+		conf.get("MODE_" + to_string(id) + "_NUM_WATCH_FOLDERS", num_folders);
 		for (auto i = 0; i < num_folders; i++)
 		{
 			int num_folder_tags;
-			int tag_width = 0;
+			int folder_tag_width = 0;
 			if (num_tags > 0) {
-				tag_width = ((con_col - 34 - 1) / num_tags) - 1;
+				folder_tag_width = ((con_col - 28 - 1) / num_tags) - 1;
 			}
-			if (tag_width < 8) {
-				tag_width = 7;
+			if (folder_tag_width < 8) {
+				folder_tag_width = 7;
 			}
 
 			string folder_tags_str;
 			ostringstream folder_tags;
-			conf.get("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_NUM_TAGS", num_folder_tags);
-			conf.get("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_PATH", folder_path_str);
+			conf.get("MODE_" + to_string(id) + "_WATCH_FOLDERS_" + to_string(i) + "_NUM_TAGS", num_folder_tags);
+			conf.get("MODE_" + to_string(id) + "_WATCH_FOLDERS_" + to_string(i) + "_PATH", folder_path_str);
 
+			string folder_tag;
+			int extra_folder_tag_width = 0;
 			for (auto j = 0; j < num_folder_tags; j++)
 			{
-				conf.get("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_TAG_" + to_string(j), tag);
-				pad(tag, tag_width, ' ');
-				folder_tags << tag;
+				conf.get("MODE_" + to_string(id) + "_WATCH_FOLDERS_" + to_string(i) + "_TAG_" + to_string(j), folder_tag);
+				// left bound padding of tags
+				if (folder_tag.size() < folder_tag_width) {
+					extra_folder_tag_width += folder_tag_width - folder_tag.size();
+				}
+				else if (extra_folder_tag_width > 0) {
+					int dif = folder_tag.size() - folder_tag_width;
+					if (dif >= extra_folder_tag_width) {
+						pad(folder_tag, folder_tag_width + extra_folder_tag_width, ' ');
+						extra_folder_tag_width = 0;
+					}
+					else {
+						pad(folder_tag, folder_tag_width + dif, ' ');
+						extra_folder_tag_width -= dif;
+					}
+				}
+				else {
+					pad(folder_tag, folder_tag_width, ' ');
+				}
+				
+				folder_tags << folder_tag << " ";
 
 			}
 			folder_tags_str = folder_tags.str();
-			pad(folder_path_str, 28, ' ', false);
+			folder_tags_str.erase(folder_tags_str.end() - 1);
+			pad(folder_path_str, 29, ' ', false);
 			pad(folder_tags_str, con_col - 30, ' ');
-			logger << folder_path_str << ": " << folder_tags_str << '\n';
+			logger << folder_path_str << " " << folder_tags_str << '\n';
 		}
 
 		logger << filler << '\n';
@@ -1949,13 +1964,9 @@ void open_selection(Log& logger, const PATHS& paths, std::vector<std::string> fi
 	}
 }
 
-void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, OPEN_MODE& open_mode, const string& file_ending, bool& update_files)
+void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, const string& file_ending, bool& update_files)
 {
-	// read in open mode
-	int open_mode_int;
-	conf.get("MODE_" + to_string(active_mode) + "_OPEN_AS", open_mode_int);
-	open_mode = static_cast<OPEN_MODE>(open_mode_int);
-
+	
 	// read in mode tags
 	int num_tags;
 	conf.get("MODE_" + to_string(active_mode) + "_NUM_TAGS", num_tags);
@@ -1986,12 +1997,9 @@ void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mo
 	}
 }
 
-void deactivate_mode(Log& logger, Config& conf, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, OPEN_MODE& open_mode) {
+void deactivate_mode(Log& logger, Config& conf, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers) {
 	active_mode = -1;
 	mode_tags = vector<string>();
-	int open_mode_int;
-	conf.get("DEFAULT_OPEN_MODE", open_mode_int);
-	open_mode = static_cast<OPEN_MODE>(open_mode_int);
 
 	for (jthread& watcher : file_watchers) {
 		watcher.request_stop();
@@ -2020,7 +2028,7 @@ void get_folder_watcher(Config& conf, int& active_mode, unordered_map<string, ve
 	}
 }
 
-void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, std::unordered_map<int, std::string>& mode_names, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, OPEN_MODE& open_mode, const string& file_ending, bool& update_files)
+void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, std::unordered_map<int, std::string>& mode_names, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, const string& file_ending, bool& update_files)
 {
 	mode_tags = vector<string>();
 	active_mode = -1;
@@ -2043,7 +2051,7 @@ void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, c
 
 	if (active_mode != -1)
 	{
-		activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, open_mode, file_ending, update_files);
+		activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files);
 	}
 	else {
 		logger << "Mode " << mode_name << " not found." << endl;
@@ -2067,28 +2075,6 @@ map<string, int> get_tag_count(map<string, vector<string>>& tag_map, vector<stri
 	return tag_count;
 }
 
-void format2open_mode(Config& conf, FORMAT_OPTIONS& format_options, OPEN_MODE& open_mode) {
-	if (format_options.html) {
-		open_mode = HTML;
-	}
-	else if (format_options.docx) {
-		open_mode = DOCX;
-	}
-	else if (format_options.pdf) {
-		open_mode = PDF;
-	}
-	else if (format_options.tex) {
-		open_mode = LATEX;
-	}
-	else if (format_options.markdown) {
-		open_mode = MARKDOWN;
-	}
-	else {
-		int open_mode_int;
-		conf.get("DEFAULT_OPEN_MODE", open_mode_int);
-		open_mode = static_cast<OPEN_MODE>(open_mode_int);
-	}
-}
 
 void file_change_watcher(Log& logger, const filesystem::path watch_path, const PATHS paths, const std::string file_ending, vector<string> watch_path_tags, bool& update_files)
 {
