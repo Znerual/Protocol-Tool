@@ -4,7 +4,7 @@
 #include <string>
 
 enum CONV_ERROR { CONV_SUCCESS, CONV_OVERFLOW, CONV_UNDERFLOW, CONV_INCONVERTIBLE };
-CONV_ERROR str2int(int& i, char const* s, int base = 0);
+CONV_ERROR str2int(int& i, char const* s, int base = 10);
 CONV_ERROR str2float(float& f, char const* s);
 CONV_ERROR str2date(time_t& t, const std::string& s);
 CONV_ERROR str2date_short(time_t& t, const std::string& s);

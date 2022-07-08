@@ -18,7 +18,7 @@ CONV_ERROR str2int(int& i, char const* s, int base)
     if ((errno == ERANGE && l == LONG_MIN) || l < INT_MIN) {
         return CONV_UNDERFLOW;
     }
-    if (*s == '\0' || *end != '\0') {
+    if (*end != '\0') {
         return CONV_INCONVERTIBLE;
     }
     i = l;
@@ -64,16 +64,10 @@ CONV_ERROR str2date(time_t& t, const std::string& s)
     }
     else {
         std::vector<size_t> positions = std::vector<size_t>();
-        size_t cur_pos = 0;
-        while (cur_pos = s.find(".", cur_pos + 1) != std::string::npos) {
-            if (cur_pos != std::string::npos) {
-                if (positions.size() > 0) {
-                    cur_pos += positions.back();
-                }
-                
-                positions.push_back(cur_pos + 1);
-                cur_pos += 2;
-            }
+        size_t pos = s.find(".", 0);
+        while (pos != std::string::npos) {
+            positions.push_back(pos);
+            pos = s.find(".", pos + 1);
         }
 
         boost::gregorian::date set_date;
