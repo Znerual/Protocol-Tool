@@ -3,6 +3,8 @@
 #include "../ProtocollTool/conversions.cpp"
 #include "../ProtocollTool/utils.h"
 #include "../ProtocollTool/utils.cpp"
+#include "../ProtocollTool/log.h"
+#include "../ProtocollTool/Config.cpp"
 #include <string>
 
 TEST(TestCaseName, TestName) {
@@ -13,15 +15,19 @@ TEST(TestCaseName, TestName) {
 TEST(Conversions, str2int) {
 	std::string s1 = { "Hallo Welt!" };
 	std::string s2 = { "132" };
-	int i1, i2;
-	CONV_ERROR ret1, ret2;
+	std::string s3 = { "0132" };
+	int i1, i2, i3;
+	CONV_ERROR ret1, ret2, ret3;
 
 	ret1 = str2int(i1, s1.c_str());
 	ret2 = str2int(i2, s2.c_str());
+	ret3 = str2int(i3, s3.c_str());
 
 	EXPECT_EQ(ret1, CONV_INCONVERTIBLE);
 	EXPECT_EQ(ret2, CONV_SUCCESS);
+	EXPECT_EQ(ret3, CONV_SUCCESS);
 	EXPECT_EQ(i2, 132);
+	EXPECT_EQ(i3, 132);
 }
 
 TEST(Conversions, str2float) {
@@ -156,8 +162,22 @@ TEST(Conversions, date2str_short)
 	EXPECT_EQ(i4, "24012021");
 }
 
+TEST(Conversions, str2dateANDstr2date_short) {
+	string s1{ "06.06.2021" }, s1b{ "06.6.2021" }, s1c{"6.06.2021"}, s2{"06062021a"};
+	time_t d1, d1b, d1c, d2;
+	str2date(d1, s1);
+	str2date(d1b, s1b);
+	str2date(d1c, s1c);
+	str2date_short(d2, s2);
+
+	EXPECT_EQ(d1, d2);
+	EXPECT_EQ(d1b, d2);
+	EXPECT_EQ(d1c, d2);
+}
 TEST(utils, parse_find_args) 
 {
+	Log logger("", false);
+
 	string command1 = { "-d 12.1-28.6" };
 	string command2 = { "-date 12.1 - 28.6 -rt Dann" };
 	string command3 = { "-date 12.1-28.6 -do -ct test" };
@@ -197,16 +217,21 @@ TEST(utils, parse_find_args)
 	string re2;
 	string re3;
 	string re4;
+	
+	string rec1;
+	string rec2;
+	string rec3;
+	string rec4;
 
 	vector<char> va1;
 	vector<char> va2;
 	vector<char> va3;
 	vector<char> va4;
 
-	parse_find_args(iss1, do1, da1, ct1, cat1, nt1, re1, va1);
-	parse_find_args(iss2, do2, da2, ct2, cat2, nt2, re2, va2);
-	parse_find_args(iss3, do3, da3, ct3, cat3, nt3, re3, va3);
-	parse_find_args(iss4, do4, da4, ct4, cat4, nt4, re4, va4);
+	parse_find_args(logger, iss1, do1, da1, ct1, cat1, nt1, re1, rec1, va1);
+	parse_find_args(logger, iss2, do2, da2, ct2, cat2, nt2, re2, rec2, va2);
+	parse_find_args(logger, iss3, do3, da3, ct3, cat3, nt3, re3, rec3, va3);
+	parse_find_args(logger, iss4, do4, da4, ct4, cat4, nt4, re4, rec4, va4);
 
 	EXPECT_FALSE(do1);
 	EXPECT_FALSE(do2);
