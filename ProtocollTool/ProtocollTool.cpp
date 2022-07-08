@@ -10,6 +10,7 @@
 #include <boost/algorithm/string.hpp>
 #include <streambuf>
 #include <shlwapi.h>
+#include <ShlObj.h>
 //#include <cstdlib>
 //#include <array>
 #include "utils.h"
@@ -79,7 +80,20 @@ int main()
         conf.get("DATA_PATH", data_path_str);
         conf.get("TMP_PATH", tmp_path_str);
         conf.get("LOG_PATH", log_path_str);
-        paths.base_path = filesystem::path(base_path_str);
+
+        if (base_path_str.empty()) {
+            WCHAR* fp_return;
+            if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &fp_return))) {
+                filesystem::path app_data(fp_return);
+                paths.base_path = app_data / filesystem::path("Notes");
+                conf.set("BASE_PATH", paths.base_path.string());
+            }
+            else {
+                paths.base_path = filesystem::path(base_path_str);
+                cout << "SHGetKnownFolderPath() failed." << endl;
+            }
+        }
+
         paths.file_path = filesystem::path(file_path_str);
         paths.data_path = filesystem::path(data_path_str);
         paths.tmp_path = filesystem::path(tmp_path_str);
@@ -102,6 +116,8 @@ int main()
     
     if (!filesystem::exists(paths.base_path))
     {
+        
+        
         bool found_base_path = false;
         while (!found_base_path)
         {

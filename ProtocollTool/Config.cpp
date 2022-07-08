@@ -70,21 +70,24 @@ Config::Config(const string& filepath)
         {
 
             // separate name and value of the parameter
-            istringstream iss(line);
             string name, value;
-            if (!(iss >> name)) {
+            
+            auto pos = line.find(" ");
+            if (pos == string::npos) {
                 cout << "Error in reading line " << line_counter << ": " << line << '\n' << "Skipp to next line...";
                 line_counter += 1;
                 continue;
             }
+            name = line.substr(0, pos);
+            value = line.substr(pos + 1);
 
             // empty entry
-            if (!(iss >> value)) {
+            if (value.empty()) {
                 this->para_string[name] = "";
                 line_counter += 1;
                 continue;
             }
-
+           
             // check conversion to int
             if (str2int(res_int, value.c_str()) == CONV_SUCCESS) {
                 this->para_int[name] = res_int;

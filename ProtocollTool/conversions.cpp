@@ -6,6 +6,8 @@
 #include <iostream>
 #include <boost/date_time/gregorian/gregorian.hpp>
 
+
+
 CONV_ERROR str2int(int& i, char const* s, int base)
 {
     char* end;

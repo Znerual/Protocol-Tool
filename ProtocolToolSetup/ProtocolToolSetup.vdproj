@@ -88,6 +88,14 @@
             "PrerequisitesLocation" = "2:1"
             "Url" = "8:"
             "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    }
+                }
             }
         }
     }
@@ -147,39 +155,16 @@
                 {
                 }
             }
-            "{1525181F-901A-416C-8A58-119130FE478E}:_99CF2CD560684CEBBD361E75AAC4E4C2"
+            "{1525181F-901A-416C-8A58-119130FE478E}:_49850AC881C7415A8C4557DB3705EB6D"
             {
-            "Name" = "8:#1919"
-            "AlwaysCreate" = "11:FALSE"
-            "Condition" = "8:CHECKBOXPROGRAMMENU=1"
-            "Transitive" = "11:TRUE"
-            "Property" = "8:ProgramMenuFolder"
-                "Folders"
-                {
-                }
-            }
-            "{1525181F-901A-416C-8A58-119130FE478E}:_C7A0D1B0348F4CFA85215AAD74F2CF15"
-            {
-            "Name" = "8:#1928"
-            "AlwaysCreate" = "11:FALSE"
-            "Condition" = "8:CHECKBOXAUTOSTART=1"
-            "Transitive" = "11:TRUE"
-            "Property" = "8:StartupFolder"
-                "Folders"
-                {
-                }
-            }
-            "{3C67513D-01DD-4637-8A68-80971EB9504F}:_EB9D267FA11845BC8D3FBBF2012EA344"
-            {
-            "DefaultLocation" = "8:[ProgramFiles64Folder][Manufacturer]\\[ProductName]"
-            "Name" = "8:#1925"
-            "AlwaysCreate" = "11:FALSE"
+            "Name" = "8:#1915"
+            "AlwaysCreate" = "11:TRUE"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
-            "Property" = "8:TARGETDIR"
+            "Property" = "8:AppDataFolder"
                 "Folders"
                 {
-                    "{9EF0B969-E518-4E46-987F-47570745A589}:_796CAA8082E44108B3EEAB77563CA1A4"
+                    "{9EF0B969-E518-4E46-987F-47570745A589}:_1ECFABC4696E4EBE898DF07C0DA8138A"
                     {
                     "Name" = "8:Notes"
                     "AlwaysCreate" = "11:TRUE"
@@ -225,6 +210,40 @@
                     }
                 }
             }
+            "{1525181F-901A-416C-8A58-119130FE478E}:_99CF2CD560684CEBBD361E75AAC4E4C2"
+            {
+            "Name" = "8:#1919"
+            "AlwaysCreate" = "11:FALSE"
+            "Condition" = "8:CHECKBOXPROGRAMMENU=1"
+            "Transitive" = "11:TRUE"
+            "Property" = "8:ProgramMenuFolder"
+                "Folders"
+                {
+                }
+            }
+            "{1525181F-901A-416C-8A58-119130FE478E}:_C7A0D1B0348F4CFA85215AAD74F2CF15"
+            {
+            "Name" = "8:#1928"
+            "AlwaysCreate" = "11:FALSE"
+            "Condition" = "8:CHECKBOXAUTOSTART=1"
+            "Transitive" = "11:TRUE"
+            "Property" = "8:StartupFolder"
+                "Folders"
+                {
+                }
+            }
+            "{3C67513D-01DD-4637-8A68-80971EB9504F}:_EB9D267FA11845BC8D3FBBF2012EA344"
+            {
+            "DefaultLocation" = "8:[ProgramFiles64Folder][Manufacturer]\\[ProductName]"
+            "Name" = "8:#1925"
+            "AlwaysCreate" = "11:FALSE"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Property" = "8:TARGETDIR"
+                "Folders"
+                {
+                }
+            }
         }
         "LaunchCondition"
         {
@@ -242,7 +261,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Protocol Tool"
         "ProductCode" = "8:{C302B7C5-0B36-4A74-8969-3E6957337BC3}"
-        "PackageCode" = "8:{B6ADC10B-7A73-42C0-9A40-5EA01514C006}"
+        "PackageCode" = "8:{5F0E6B6F-D981-4BE5-AF5A-553861CFF9D5}"
         "UpgradeCode" = "8:{359EC3DE-51AF-455D-A03E-3A90A964E64F}"
         "AspNetVersion" = "8:2.0.50727.0"
         "RestartWWWService" = "11:FALSE"
@@ -250,7 +269,7 @@
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
         "ProductVersion" = "8:1.0.0"
-        "Manufacturer" = "8:Laurenz Ruzicka"
+        "Manufacturer" = "8:Znerual"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
         "Title" = "8:Protocol Tool"
@@ -1115,9 +1134,37 @@
                 {
                 }
             }
+            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_1D05D0AF63F348E6B728567569E086DC"
+            {
+            "SourcePath" = "8:"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_EB9D267FA11845BC8D3FBBF2012EA344"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:LocalizedResourceDlls"
+            "OutputProjectGuid" = "8:{CC8D2A24-83FF-4C27-86B5-D90C0D129909}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_8C98D7DFDBA44F91BD9C08233577648F"
             {
-            "SourcePath" = "8:..\\x64\\Debug\\ProtocollTool.exe"
+            "SourcePath" = "8:..\\x64\\Release\\ProtocollTool.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_EB9D267FA11845BC8D3FBBF2012EA344"
@@ -1145,7 +1192,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_DA0E44F3E44445D9A883C0D8A725E566"
             {
-            "SourcePath" = "8:..\\x64\\Debug\\ProtocollTool.exe"
+            "SourcePath" = "8:..\\x64\\Release\\ProtocollTool.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_EB9D267FA11845BC8D3FBBF2012EA344"
