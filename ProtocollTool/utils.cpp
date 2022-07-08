@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <tchar.h>
 #include <set>
+#include <regex>
 #include "utils.h"
 #include "conversions.h"
 #include "Config.h"
@@ -611,7 +612,7 @@ bool parse_format(Log& logger, string& argument, FORMAT_OPTIONS& format_options)
 	}
 }
 
-void parse_find_args(Log& logger, istringstream& iss, bool& data_only, vector<time_t>& date_args, vector<string>& ctags_args, vector<string>& catags_args, vector<string>& ntags_args, string& regex, vector<char>& version_args) {
+void parse_find_args(Log& logger, istringstream& iss, bool& data_only, vector<time_t>& date_args, vector<string>& ctags_args, vector<string>& catags_args, vector<string>& ntags_args, string& regex, string& regex_content, vector<char>& version_args) {
 	
 	data_only = false;
 	vector<string> _date_args;
@@ -642,6 +643,10 @@ void parse_find_args(Log& logger, istringstream& iss, bool& data_only, vector<ti
 		{
 			mode = REG_TEXT;
 		}
+		else if (argument == "-rtc" || argument == "-reg_text_content")
+		{
+			mode = REG_TEXT_CONTENT;
+		}
 		else if (argument == "-do" || argument == "-data_only")
 		{
 			data_only = true;
@@ -654,24 +659,25 @@ void parse_find_args(Log& logger, istringstream& iss, bool& data_only, vector<ti
 		{
 			if (argument.size() > 1 && argument[0] == '-') {
 				logger << "The argument " << argument << " was not recognized. It should be one of the following options: \n";
-				logger << "-d, -date: finds nodes between start and end date. \n";
-				logger << "-ct, -contains_tags: selects nodes containing at least one of the specified tags.\n";
-				logger << "-cat, -contains_all_tags: selectes nodes containing all of the specified tags.\n";
-				logger << "-nt, -no_tags: selects nodes that do not contain the specified tags.\n";
-				logger << "-rt, -reg_text: uses regular expressions on the node content to select nodes that match the given pattern.\n";
-				logger << "-do, -data_only: only select nodes that have data associated with them." << endl;
+				logger << "-d, -date: finds notes between start and end date. \n";
+				logger << "-ct, -contains_tags: selects notes containing at least one of the specified tags.\n";
+				logger << "-cat, -contains_all_tags: selectes notes containing all of the specified tags.\n";
+				logger << "-nt, -no_tags: selects notes that do not contain the specified tags.\n";
+				logger << "-rt, -reg_text: uses regular expressions on the note tags to select notes that match the given pattern.\n";
+				logger << "-rtc, -reg_text_content: uses regular expressions on the note content to select notes that match the given pattern.\n";
+				logger << "-do, -data_only: only select notes that have data associated with them." << endl;
 				return;
 			}
 			switch (mode)
 			{
 			case NONE:
 				logger << "Could not parse the find command " << argument << ". It should be one of the following: \n";
-				logger << "-d, -date: finds nodes between start and end date. \n";
-				logger << "-ct, -contains_tags: selects nodes containing at least one of the specified tags.\n";
-				logger << "-cat, -contains_all_tags: selectes nodes containing all of the specified tags.\n";
-				logger << "-nt, -no_tags: selects nodes that do not contain the specified tags.\n";
-				logger << "-rt, -reg_text: uses regular expressions on the node content to select nodes that match the given pattern.\n";
-				logger << "-do, -data_only: only select nodes that have data associated with them." << endl;
+				logger << "-d, -date: finds notes between start and end date. \n";
+				logger << "-ct, -contains_tags: selects notes containing at least one of the specified tags.\n";
+				logger << "-cat, -contains_all_tags: selectes notes containing all of the specified tags.\n";
+				logger << "-nt, -no_tags: selects notes that do not contain the specified tags.\n";
+				logger << "-rt, -reg_text: uses regular expressions on the note content to select notes that match the given pattern.\n";
+				logger << "-do, -data_only: only select notes that have data associated with them." << endl;
 				return;
 			case ARGUMENT_MODE::ARG_DATE:
 				_date_args.push_back(argument);
@@ -690,6 +696,9 @@ void parse_find_args(Log& logger, istringstream& iss, bool& data_only, vector<ti
 				break;
 			case REG_TEXT:
 				regex = argument;
+				break;
+			case REG_TEXT_CONTENT:
+				regex_content = argument;
 				break;
 			default:
 				logger << "Something went wrong. Unexpected mode in find with argument " << argument << endl;
@@ -950,7 +959,7 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, const OPEN_MODE d
 				return;
 			}
 
-			show_file << i++ << ". [Node from " << date_str << " Version " << filesystem::path(path).stem().string()[8] << "](#" << filesystem::path(path).stem().string() << ")\n";
+			show_file << i++ << ". [note from " << date_str << " Version " << filesystem::path(path).stem().string()[8] << "](#" << filesystem::path(path).stem().string() << ")\n";
 			ifstream file(paths.base_path / filesystem::path(path));
 			int line_count = 0;
 			while (getline(file, line))
@@ -1653,9 +1662,9 @@ void filter_notes(Log& logger, istringstream& iss, const PATHS& paths, vector<st
 	vector<string> catags_args;
 	vector<string> ntags_args;
 	vector<char> vers_args;
-	string regex{};
+	string regex_pattern{}, regex_content_pattern{};
 
-	parse_find_args(logger, iss, data_only, date_args, ctags_args, catags_args, ntags_args, regex, vers_args);
+	parse_find_args(logger, iss, data_only, date_args, ctags_args, catags_args, ntags_args, regex_pattern, regex_content_pattern, vers_args);
 	catags_args.insert(catags_args.begin(), mode_tags.begin(), mode_tags.end());
 
 	for (const auto& path : filter_selection)
@@ -1663,9 +1672,9 @@ void filter_notes(Log& logger, istringstream& iss, const PATHS& paths, vector<st
 		// filter for date
 		if (date_args.size() > 0) 
 		{
-			time_t node_date;
-			str2date_short(node_date, filesystem::path(path).stem().string());
-			if (node_date < date_args.at(0) || node_date > date_args.at(1)) {
+			time_t note_date;
+			str2date_short(note_date, filesystem::path(path).stem().string());
+			if (note_date < date_args.at(0) || note_date > date_args.at(1)) {
 				continue;
 			}
 		}
@@ -1673,8 +1682,8 @@ void filter_notes(Log& logger, istringstream& iss, const PATHS& paths, vector<st
 		// filter for version
 		if (vers_args.size() > 0)
 		{
-			char node_version = filesystem::path(path).stem().string()[8];
-			if (find(vers_args.begin(), vers_args.end(), node_version) == vers_args.end())
+			char note_version = filesystem::path(path).stem().string()[8];
+			if (find(vers_args.begin(), vers_args.end(), note_version) == vers_args.end())
 			{
 				continue;
 			}
@@ -1731,16 +1740,16 @@ void filter_notes(Log& logger, istringstream& iss, const PATHS& paths, vector<st
 
 		}
 
-		// filter for tags that can not be in the tag list of the node
+		// filter for tags that can not be in the tag list of the note
 		if (ntags_args.size() > 0)
 		{
 			bool has_tag = false;
-			vector<string> tags = tag_map[path];
-			for (auto& tag : ntags_args)
+			string tag_copy;
+			for (const auto& tag : ntags_args)
 			{
-				tag = trim(tag);
-				boost::algorithm::to_lower(tag);
-				if (find(tags.begin(), tags.end(), tag) != tags.end()) {
+				tag_copy = trim(tag);
+				boost::algorithm::to_lower(tag_copy);
+				if (find(tag_map[path].begin(), tag_map[path].end(), tag_copy) != tag_map[path].end()) {
 					has_tag = true;
 					break;
 				}
@@ -1752,10 +1761,39 @@ void filter_notes(Log& logger, istringstream& iss, const PATHS& paths, vector<st
 			}
 		}
 
-		// filtering for regex in the node text
-		if (!regex.empty())
+		// filtering for regex in the tags
+		if (!regex_pattern.empty())
 		{
-			logger << "Regex in find needs to be implemented" << endl;
+			regex pat(regex_pattern);
+			bool found_match = false;
+			string tag_copy;
+			for (const auto& tag : tag_map[path])
+			{
+				// found match
+				tag_copy = trim(tag);
+				boost::to_lower(tag_copy);
+				if (regex_match(tag_copy, pat)) {
+					found_match = true;
+					break;
+				}
+			}
+
+			if (!found_match) {
+				continue;
+			}
+		}
+
+		// filtering for regex in the file content
+		if (!regex_content_pattern.empty())
+		{
+			regex pat(regex_content_pattern);
+			ifstream file(paths.base_path / filesystem::path(path));
+			const string content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+			file.close();
+
+			if (!regex_match(content, pat)) {
+				continue;
+			}
 		}
 		
 
@@ -1837,13 +1875,13 @@ void show_details(Log& logger, std::istringstream& iss, const PATHS& paths, Conf
 	DETAIL_OPTIONS detail_options;
 	parse_details_args(logger, iss, conf, active_mode, detail_options);
 
-	time_t node_date;
+	time_t note_date;
 	string date_str, modified_date_str;
 	for (const string& path : filter_selection)
 	{
 		string filename = filesystem::path(path).stem().string();
-		str2date_short(node_date, filename.substr(0, 8));
-		date2str(date_str, node_date);
+		str2date_short(note_date, filename.substr(0, 8));
+		date2str(date_str, note_date);
 		logger << date_str;
 		if (filename[8] != 'a')
 		{
@@ -1876,7 +1914,7 @@ void show_details(Log& logger, std::istringstream& iss, const PATHS& paths, Conf
 			string str((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
 			file.close();
 
-			logger << " with node text:\n" << str;
+			logger << " with note text:\n" << str;
 		}
 		logger << endl;
 	}

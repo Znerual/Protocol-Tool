@@ -125,23 +125,31 @@ int main()
             }
             else { // use existing folder
                 cout << "Found the folder " << base_path_str << endl;
-                bool invalid_files = false;
-                for (const auto& entry : filesystem::directory_iterator(filesystem::path(base_path_str) / paths.file_path))
-                {
-                    if (entry.path().extension() != ".md" || entry.path().stem().string().size() != 9)
+
+                // check for existing files
+                if (filesystem::exists(filesystem::path(base_path_str) / paths.file_path)) {
+                    bool invalid_files = false;
+                    for (const auto& entry : filesystem::directory_iterator(filesystem::path(base_path_str) / paths.file_path))
                     {
-                        cout << "It seems as if invalid files are in the existing file folder!\nFound the file " << entry.path().filename() << " in the folder, which is not an appropiate note markdown file" << endl;
-                        invalid_files = true;
-                        break;
+                        if (entry.path().extension() != ".md" || entry.path().stem().string().size() != 9)
+                        {
+                            cout << "It seems as if invalid files are in the existing file folder!\nFound the file " << entry.path().filename() << " in the folder, which is not an appropiate note markdown file" << endl;
+                            invalid_files = true;
+                            break;
+                        }
+                    }
+                    if (!invalid_files)
+                    {
+                        found_base_path = true;
+                    }
+                    else {
+                        continue;
                     }
                 }
-                if (!invalid_files)
-                {
+                else { // no file folder in selected base_path, can be used as new base_path
                     found_base_path = true;
                 }
-                else {
-                    continue;
-                }
+                
             }
 
             conf.set("BASE_PATH", base_path_str);
@@ -149,26 +157,26 @@ int main()
         }
         
     }
-    Log logger(paths.base_path / log_path, write_log);
-
-    logger << "The base path for all files is: " << paths.base_path.string() << ".\nThe path to the notes is " << paths.file_path.string() << " and to the data is " << paths.data_path.string() << '\n' << endl;
+    
     
     if (!filesystem::exists(paths.base_path / paths.file_path))
     {
-        logger << "No folder found at the file path " << paths.base_path / paths.file_path << ".\nCreating a new folder..." << endl;
+        cout << "No folder found at the file path " << paths.base_path / paths.file_path << ".\nCreating a new folder..." << endl;
         filesystem::create_directories(paths.base_path / paths.file_path);
     }
     if (!filesystem::exists(paths.base_path / paths.data_path))
     {
-        logger << "No folder found at the data path " << paths.base_path / paths.data_path << ".\nCreating a new folder..." << endl;
+        cout << "No folder found at the data path " << paths.base_path / paths.data_path << ".\nCreating a new folder..." << endl;
         filesystem::create_directories(paths.base_path / paths.data_path);
     }
     if (!filesystem::exists(paths.base_path / paths.tmp_path))
     {
-        logger << "No folder found at the tmp path " << paths.base_path / paths.tmp_path << ".\nCreating a new folder..." << endl;
+        cout << "No folder found at the tmp path " << paths.base_path / paths.tmp_path << ".\nCreating a new folder..." << endl;
         filesystem::create_directories(paths.base_path / paths.tmp_path);
     }
-    
+
+    Log logger(paths.base_path / log_path, write_log);
+    logger << "The base path for all files is: " << paths.base_path.string() << ".\nThe path to the notes is " << paths.file_path.string() << " and to the data is " << paths.data_path.string() << '\n' << endl;
 
     // check if pandoc is installed
     FILE* pipe = _popen("pandoc -v", "r");
@@ -292,6 +300,14 @@ int main()
         }
         else if (command == "t" || command == "tags") 
         {
+            if (filter_selection.size() == 0) {
+                filter_selection.reserve(tag_map.size());
+                for (const auto& [path, tag] : tag_map)
+                {
+                    filter_selection.push_back(path);
+                }
+            }
+
             logger << "Tags: \n";
             tag_count = get_tag_count(tag_map, filter_selection);
             for (const auto& [tag, count] : tag_count)
@@ -339,10 +355,6 @@ int main()
         }
         else if (command == "h" || command == "-h" || command == "help")
         {
-            logger << "This programm can be used by typing one of the following commands, where (...) indicates that the expression ";
-            logger << "inside the parenthesis can be used as an abbreviation of the command or parameter.\n";
-            logger << "(n)ew, (f)ind, (f)ilter, (s)how, (a)dd_data, (d)etails, (t)ags, (q)uit, (c)reate_mode, (del)ete_mode, (act)ivate_mode, (deac)tivate_mode, (modes), (edit)_mode, (u)pdate and (o)pen.\n";
-            logger << "Detailed information about a command can be found by running: help command.\n\n";
             string argument;
             if (iss) 
             {
@@ -386,29 +398,29 @@ int main()
                 else if (argument == "t" || argument == "tags") {
                     logger << "(t)ags:\nShows the statictics of tags of the current selection. If no selection was made, it shows the statistic of all tags of all notes.\n\n";
                 }
-                else if (argument == "q" || argument == "quit") {
+                else if (argument == "q" || argument == "quit" || argument == "exit") {
                     logger << "(q)uit:\nEnds the programm.";
                 }
-                else if (argument == "c" || argument == "create_mode") {
+                else if (argument == "c" || argument == "create" || argument == "create_mode") {
                     logger << "(c)reate_mode: mode_name tag1 tag2 ... [-(o)pen_as format] [-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] [-(s)how_(d)ata] ";
                     logger << "[-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_(docx)] ";
                     logger << "[-(s)how_open_as_(pdf)] [-(s)how_open_as_la(tex)] [-(d)etail_(t)ags] [-(d)etail_(p)ath] [-(d)etail_(l)ong_(p)ath] ";
-                    logger << "[-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent] [-(w)atch_(f)older path_to_folder1 tag1 tag2 ...] [-(w)atch_(f)older path_to_folder2 tag1 tag2 ...]\n";
+                    logger << "[-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent] [-(w)atch_(f)older path_to_folder1 tag1 tag2 ...] [-(w)atch_(f)older path_to_folder2 tag1 tag2 ...]\n\n";
                     logger << "A mode allows you to set the standard behavior of the (s)how and (d)etail command, as well as influence the (n)ew, (f)ind and (f)ilter commands. ";
                     logger << "Options starting with show in the name control the (s)how command and options starting with detail control the (d)etails command. All set ";
                     logger << "options will always be added to the commands when the mode is active. The mode tags will be added to the tags that are manually specified in the (n)ew command ";
-                    logger << "and are also added to the (f)ind and (f)ilter command in the -(c)ontails_(a)ll_(t)ags parameter, meaning only notes contraining all mode tags are selected.\n";
+                    logger << "and are also added to the (f)ind and (f)ilter command in the -(c)ontails_(a)ll_(t)ags parameter, meaning only notes contraining all mode tags are selected.\n\n";
                     logger << "In addition to setting default (s)how and (d)etail parameter, a path to a folder that should be observed can be added. This means that when a file inside the specified ";
                     logger << " folder is created, the newly created file is automatically added to the ";
-                    logger << "data folder and a new note is created. Additionally, tags that will be added when this occures can be entered by the following structure of the command: \n";
-                    logger << "[-(w)atch_(f)older path_to_folder tag1 tag2 ...]\n";
+                    logger << "data folder and a new note is created. Additionally, tags that will be added when this occures can be entered by the following structure of the command: ";
+                    logger << "[-(w)atch_(f)older path_to_folder tag1 tag2 ...]\n\n";
                     logger << "Note that multiple folders can be specified by repeating the [-(w)atch_(f)older path_to_folder tag1 tag2 ...] command ";
                     logger << "With different paths (and tags).\n";
                     logger << "Modes can be activated by the (act)ivate commandand and deactivated by the ";
                     logger << "(deac)tivate command. Additionally, an existing mode can be edited by the (edit)_mode command and deleted by the (delete)_mode command. ";
-                    logger << "An overview over all modes is given by the (modes) command, which lists the name, open format, tags, all options and all observed folders with their tags of all modes.\n\n";
+                    logger << "An overview over all modes is given by the (modes) command, which lists the name, open format, tags, all options and all observed folders with their tags of all modes.\n\n\n";
                 }
-                else if (argument == "del" || argument == "delete_mode") {
+                else if (argument == "del" || argument == "delete" || argument == "delete_mode") {
                     logger << "(del)ete_mode: mode_name\n";
                     logger << "Deletes the specified mode. More about modes can be found by running help create_mode.\n\n";
                 }
@@ -441,6 +453,12 @@ int main()
                     logger << "(n)ew, (f)ind, (f)ilter, (s)how, (a)dd_data, (d)etails, (t)ags, (q)uit, (c)reate_mode, (del)ete_mode, (act)ivate_mode, (deac)tivate_mode, (modes), (edit)_mode, (u)pdate and (o)pen.\n";
                     logger << "Detailed information about a command can be found by running: help command.\n\n";
                 }
+            }
+            else {
+                logger << "This programm can be used by typing one of the following commands, where (...) indicates that the expression ";
+                logger << "inside the parenthesis can be used as an abbreviation of the command or parameter.\n";
+                logger << "(n)ew, (f)ind, (f)ilter, (s)how, (a)dd_data, (d)etails, (t)ags, (q)uit, (c)reate_mode, (del)ete_mode, (act)ivate_mode, (deac)tivate_mode, (modes), (edit)_mode, (u)pdate and (o)pen.\n";
+                logger << "Detailed information about a command can be found by running: help command.\n\n";
             }
         
         
