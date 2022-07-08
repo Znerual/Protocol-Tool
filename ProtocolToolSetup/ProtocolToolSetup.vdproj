@@ -49,6 +49,22 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    }
+                }
+            }
         }
         "Release"
         {
@@ -65,6 +81,14 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+            }
         }
     }
     "Deployable"
@@ -217,15 +241,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Protocol Tool"
-        "ProductCode" = "8:{6B9A6A99-C29C-4023-ADAB-D619C2817DCB}"
-        "PackageCode" = "8:{7BD44AFA-0F4B-40DE-955F-8205E78C5A2E}"
+        "ProductCode" = "8:{C302B7C5-0B36-4A74-8969-3E6957337BC3}"
+        "PackageCode" = "8:{B6ADC10B-7A73-42C0-9A40-5EA01514C006}"
         "UpgradeCode" = "8:{359EC3DE-51AF-455D-A03E-3A90A964E64F}"
         "AspNetVersion" = "8:2.0.50727.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:FALSE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:0.1.0"
+        "ProductVersion" = "8:1.0.0"
         "Manufacturer" = "8:Laurenz Ruzicka"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
@@ -1093,7 +1117,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_8C98D7DFDBA44F91BD9C08233577648F"
             {
-            "SourcePath" = "8:..\\x64\\Release\\ProtocollTool.exe"
+            "SourcePath" = "8:..\\x64\\Debug\\ProtocollTool.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_EB9D267FA11845BC8D3FBBF2012EA344"
@@ -1121,7 +1145,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_DA0E44F3E44445D9A883C0D8A725E566"
             {
-            "SourcePath" = "8:..\\x64\\Release\\ProtocollTool.exe"
+            "SourcePath" = "8:..\\x64\\Debug\\ProtocollTool.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_EB9D267FA11845BC8D3FBBF2012EA344"
