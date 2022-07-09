@@ -16,12 +16,27 @@
 using namespace std;
 
 template<typename T>
-void pad(basic_string<T>& s, typename basic_string<T>::size_type n, T c, const bool right) {
+void pad(basic_string<T>& s, typename basic_string<T>::size_type n, T c, const bool cap_right, const ALIGN align) {
 	if (n > s.length()) {
-		s.append(n - s.length(), c);
+		switch (align)
+		{
+		case LEFT:
+			s.append(n - s.length(), c);
+			break;
+		case RIGHT:
+			s.insert(0, n - s.length(), c);
+			break;
+		case MIDDLE:
+			s.insert(0, (n - s.length()) / 2, c);
+			s.append((n - s.length()) - (n - s.length()) / 2, c);
+			break;
+		default:
+			break;
+		}
+		
 	}
 	else {
-		if (right) {
+		if (cap_right) {
 			s = s.substr(0, n - 2) + "..";
 		}
 		else {
@@ -29,6 +44,42 @@ void pad(basic_string<T>& s, typename basic_string<T>::size_type n, T c, const b
 		}
 	}
 }
+
+std::string wrap(const std::string s, const int margin, const ALIGN align) {
+	string res = s;
+	int width, height;
+	get_console_size(height, width);
+	if (s.size() + 2 * margin > width) {
+		// wrap
+		istringstream iss(s);
+		ostringstream oss;
+		string word, margin_str(margin, ' ');
+		int pos = margin;
+		oss << margin_str;
+		while (iss >> word) {
+			if (pos + word.size() < width - margin)
+			{
+				oss << word << " ";
+				pos += word.size() + 1;
+			}
+			else {
+				oss << '\n' << margin_str << word << " ";
+				pos = margin + word.size() + 1;
+			}
+		}
+		res = oss.str();
+	}
+	else {
+		// pad
+		
+		res.insert(0, margin, ' ');
+		pad(res, width - 2 * margin, ' ', true, align);
+		res.append(margin, ' ');
+	}
+
+	return res;
+}
+
 
 std::string ltrim(const std::string& s)
 {
@@ -46,16 +97,14 @@ std::string trim(const std::string& s) {
 	return rtrim(ltrim(s));
 }
 
-int get_console_columns()
+void get_console_size(int& rows, int& columns)
 {
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
-	int columns, rows;
 
 	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
 	columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
 	rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
 
-	return columns;
 }
 
 map<string, time_t> list_all_files(const PATHS& paths)
@@ -916,7 +965,7 @@ void parse_add_note(Log& logger, std::istringstream& iss, const PATHS& paths, co
 }
 
 
-void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int& active_mode, const PATHS& paths, const string& tmp_filename, std::vector<std::string>& filter_selection, const bool& has_pandoc)
+void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int& active_mode, const PATHS& paths, const string& tmp_filename, std::vector<std::string>& filter_selection, const bool& has_pandoc, std::vector<std::jthread>& open_files, HANDLE& hExit)
 {
 	// parse arguments
 	SHOW_OPTIONS show_options;
@@ -1078,8 +1127,9 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 	{
 		for (const string& path : filter_selection)
 		{
-			const wstring datapath = (paths.base_path / paths.data_path / filesystem::path(path).stem()).wstring();
-			ShellExecute(NULL, L"open", datapath.c_str(), NULL, NULL, SW_SHOWNORMAL);
+			//const wstring datapath = (paths.base_path / paths.data_path / filesystem::path(path).stem()).wstring();
+			//ShellExecute(NULL, L"open", datapath.c_str(), NULL, NULL, SW_SHOWNORMAL);
+			open_file(logger, paths, paths.base_path / paths.data_path / filesystem::path(path).stem(), open_files, hExit);
 			if (show_options.open_image_data)
 			{
 				// search for image data in the folder
@@ -1088,7 +1138,8 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 					const string ext = entry.path().extension().string();
 					if (ext == "jpg" || ext == "png" || ext == "jpeg" || ext == "gif")
 					{
-						ShellExecute(NULL, L"open", entry.path().wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+						open_file(logger, paths, entry.path(), open_files, hExit);
+						//ShellExecute(NULL, L"open", entry.path().wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
 					}
 				}
 			}
@@ -1106,15 +1157,16 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 				logger << "Error " << returnCode << " while converting markdown to html using pandoc" << endl;
 			}
 			else {
-				ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.html")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+				open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.html"), open_files, hExit);
+				//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.html")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
 			}
 		}
 
 		if (format_options.markdown)
 		{
 
-			ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.md")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-
+			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.md")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+			open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.md"), open_files, hExit);
 		}
 
 		if (format_options.docx)
@@ -1123,7 +1175,8 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 				logger << "Error " << returnCode << " while converting markdown to docx using pandoc" << endl;
 			}
 			else {
-				ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.docx")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+				//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.docx")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+				open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.docx"), open_files, hExit);
 			}
 		}
 
@@ -1133,7 +1186,8 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 				logger << "Error " << returnCode << " while converting markdown to latex (tex) using pandoc" << endl;
 			}
 			else {
-				ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.tex")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+				//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.tex")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+				open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.tex"), open_files, hExit);
 			}
 		}
 
@@ -1143,13 +1197,15 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 				logger << "Error " << returnCode << " while converting markdown to pdf using pandoc" << endl;
 			}
 			else {
-				ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.pdf")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+				//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.pdf")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+				open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.pdf"), open_files, hExit);
 			}
 		}
 
 	}
 	else {
-		ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path(tmp_filename)).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+		//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path(tmp_filename)).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+		open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path(tmp_filename), open_files, hExit);
 	}
 
 
@@ -1158,7 +1214,7 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 
 }
 
-void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent)
+void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit)
 {
 	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, hStopEvent);
 
@@ -1210,7 +1266,7 @@ void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS
 	}
 	
 
-	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files, hStopEvent);
+	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files, hStopEvent, open_files, hExit);
 
 }
 
@@ -1301,7 +1357,7 @@ void set_mode_tags(Config& conf, const int& mode_id, vector<string>& mode_tags) 
 
 }
 
-void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent)
+void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit)
 {
 	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, hStopEvent);
 
@@ -1488,12 +1544,15 @@ void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& 
 		folder_counter++;
 	}
 
-	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files, hStopEvent);
+	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files, hStopEvent, open_files, hExit);
 }
 
 void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unordered_map<int, std::string>& mode_names, int& active_mode)
 {
-	int con_col = get_console_columns();
+
+	int con_col, con_row;  
+	get_console_size(con_row, con_col);
+
 	string mode_name{ "Mode name:" }, mode_tags{ "Mode tags: ..." }, mode_options{ "Options: ..." }, watch_folder{ "Watch folders: ..." }, folder_tags{ " with tags: ..." }, filler{};
 	pad(mode_name, 26, ' ');
 	pad(mode_tags, con_col - 26, ' '); //46
@@ -1826,7 +1885,7 @@ void find_notes(Log& logger, istringstream& iss, const PATHS& paths, vector<stri
 	filter_notes(logger, iss, paths, filter_selection, file_map, tag_map, mode_tags);
 }
 
-void add_note(Log& logger, std::istringstream& iss, const PATHS& paths, const std::string& file_ending, std::map<std::string, time_t>& file_map, std::map<std::string, std::vector<std::string>>& tag_map, vector<string>& mode_tags, vector<string>& filter_selection)
+void add_note(Log& logger, std::istringstream& iss, const PATHS& paths, const std::string& file_ending, std::map<std::string, time_t>& file_map, std::map<std::string, std::vector<std::string>>& tag_map, vector<string>& mode_tags, vector<string>& filter_selection, vector<jthread>& open_files, HANDLE& hExit)
 {
 	string filename;
 	vector<string> tags;
@@ -1839,9 +1898,12 @@ void add_note(Log& logger, std::istringstream& iss, const PATHS& paths, const st
 	
 
 	// open new file
+	open_file(logger, paths, (paths.base_path / paths.file_path / filesystem::path(filename)), open_files, hExit);
+	//open_md_editor(logger, (paths.base_path / paths.file_path / filesystem::path(filename)));
+	/*
 	const wstring exec_filename = (paths.base_path / paths.file_path / filesystem::path(filename)).wstring();
 	ShellExecute(0, L"open", exec_filename.c_str(), 0, 0, SW_SHOW);
-
+	*/
 	// update file_map, tag_map, tag_count and filter selection
 	string path = (paths.file_path / filesystem::path(filename)).string();
 	file_map[path] = time_t(NULL);
@@ -1931,12 +1993,13 @@ void show_details(Log& logger, std::istringstream& iss, const PATHS& paths, Conf
 	}
 }
 
-void open_selection(Log& logger, const PATHS& paths, std::vector<std::string> filter_selection)
+void open_selection(Log& logger, const PATHS& paths, std::vector<std::string> filter_selection, std::vector<std::jthread>& open_files, HANDLE& hExit)
 {
 	if (filter_selection.size() == 1)
 	{
-		const wstring exec_filename = (paths.base_path / filesystem::path(filter_selection.at(0))).wstring();
-		ShellExecute(0, L"open", exec_filename.c_str(), 0, 0, SW_SHOW);
+		//const wstring exec_filename = (paths.base_path / filesystem::path(filter_selection.at(0))).wstring();
+		//ShellExecute(0, L"open", exec_filename.c_str(), 0, 0, SW_SHOW);
+		open_file(logger, paths, paths.base_path / filesystem::path(filter_selection.at(0)), open_files, hExit);
 	}
 	else if (filter_selection.size() > 1)
 	{
@@ -1950,8 +2013,9 @@ void open_selection(Log& logger, const PATHS& paths, std::vector<std::string> fi
 
 			for (const string& path : filter_selection)
 			{
-				const wstring exec_filename = (paths.base_path / filesystem::path(path)).wstring();
-				ShellExecute(0, L"open", exec_filename.c_str(), 0, 0, SW_SHOW);
+				//const wstring exec_filename = (paths.base_path / filesystem::path(path)).wstring();
+				//ShellExecute(0, L"open", exec_filename.c_str(), 0, 0, SW_SHOW);
+				open_file(logger, paths, paths.base_path / filesystem::path(path), open_files, hExit);
 			}
 		}
 	}
@@ -1960,7 +2024,7 @@ void open_selection(Log& logger, const PATHS& paths, std::vector<std::string> fi
 	}
 }
 
-void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent)
+void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit)
 {
 	
 	// read in mode tags
@@ -1989,7 +2053,7 @@ void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mo
 			folder_tags.push_back(tag);
 			
 		}
-		file_watchers.push_back(jthread(file_change_watcher, ref(logger), filesystem::path(folder_path_str), paths, file_ending, folder_tags, ref(update_files), ref(hStopEvent)));
+		file_watchers.push_back(jthread(file_change_watcher, ref(logger), filesystem::path(folder_path_str), paths, file_ending, folder_tags, ref(update_files), ref(hStopEvent), ref(open_files), ref(hExit)));
 	}
 }
 
@@ -2025,7 +2089,7 @@ void get_folder_watcher(Config& conf, int& active_mode, unordered_map<string, ve
 	}
 }
 
-void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, std::unordered_map<int, std::string>& mode_names, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent)
+void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, std::unordered_map<int, std::string>& mode_names, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit)
 {
 	mode_tags = vector<string>();
 	active_mode = -1;
@@ -2048,7 +2112,7 @@ void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, c
 
 	if (active_mode != -1)
 	{
-		activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files, hStopEvent);
+		activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files, hStopEvent, open_files, hExit);
 	}
 	else {
 		logger << "Mode " << mode_name << " not found." << endl;
@@ -2073,7 +2137,7 @@ map<string, int> get_tag_count(map<string, vector<string>>& tag_map, vector<stri
 }
 
 
-void file_change_watcher(Log& logger, const filesystem::path watch_path, const PATHS paths, const std::string file_ending, vector<string> watch_path_tags, bool& update_files, HANDLE& hStopEvent)
+void file_change_watcher(Log& logger, const filesystem::path watch_path, const PATHS paths, const std::string file_ending, vector<string> watch_path_tags, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit)
 {
 	DWORD dwWaitStatus;
 	HANDLE dwChangeHandles[3];
@@ -2152,7 +2216,8 @@ void file_change_watcher(Log& logger, const filesystem::path watch_path, const P
 
 					// add note and copy found file to the corresponding data folder
 					write_file(logger, paths, filename, date, watch_path_tags, file_ending, true);
-					ShellExecute(0, L"open", (paths.base_path / paths.file_path / filesystem::path(filename)).wstring().c_str(), 0, 0, SW_SHOW);
+					//ShellExecute(0, L"open", (paths.base_path / paths.file_path / filesystem::path(filename)).wstring().c_str(), 0, 0, SW_SHOW);
+					open_file(logger, paths, paths.base_path / paths.file_path / filesystem::path(filename), open_files, hExit);
 					filesystem::copy_file(entry.path(), paths.base_path / paths.data_path / filesystem::path(filename).stem() / entry.path().filename());
 					
 					files[entry.path().string()] = entry.last_write_time();
@@ -2304,3 +2369,129 @@ void note_change_watcher(Log& logger, const PATHS paths, bool& update_files, HAN
 		}
 	}
 }
+
+void open_file(Log& logger, const PATHS paths, const filesystem::path file, vector<jthread>& open_files, HANDLE& hExit) {
+
+	if (file.extension().string() == ".md") {
+		open_files.push_back(jthread(RunExternalProgram, ref(logger), paths.md_exe, file, ref(hExit)));
+	}
+	else if (file.extension().string() == ".pdf") {
+		open_files.push_back(jthread(RunExternalProgram, ref(logger), paths.pdf_exe, file, ref(hExit)));
+	}
+	else if (file.extension().string() == ".tex") {
+		open_files.push_back(jthread(RunExternalProgram, ref(logger), paths.tex_exe, file, ref(hExit)));
+	}
+	else if (file.extension().string() == ".html") {
+		open_files.push_back(jthread(RunExternalProgram, ref(logger), paths.html_exe, file, ref(hExit)));
+	}
+	else if (file.extension().string() == ".docx") {
+		open_files.push_back(jthread(RunExternalProgram, ref(logger), paths.docx_exe, file, ref(hExit)));
+	}
+	else {
+		logger << "Can't open file because the extension is not known." << endl;
+	}
+	
+}
+
+
+
+void RunExternalProgram(Log& logger, std::filesystem::path executeable, std::filesystem::path file, HANDLE& hExit)
+{
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+	SECURITY_ATTRIBUTES saAttr;
+
+	HANDLE m_hChildStd_OUT_Wr = NULL;
+	HANDLE m_hChildStd_OUT_Rd = NULL;
+	HANDLE dwChangeHandle[2];
+
+	ZeroMemory(&saAttr, sizeof(saAttr));
+	saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+	saAttr.bInheritHandle = TRUE;
+	saAttr.lpSecurityDescriptor = NULL;
+
+	// Create a pipe for the child process's STDOUT. 
+	if (!CreatePipe(&m_hChildStd_OUT_Rd, &m_hChildStd_OUT_Wr, &saAttr, 0))
+	{
+		// log error
+		logger << to_string(GetLastError()) << endl;
+		return;
+	}
+
+	// Ensure the read handle to the pipe for STDOUT is not inherited.
+
+	if (!SetHandleInformation(m_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0))
+	{
+		// log error
+		logger << to_string(GetLastError()) << endl;
+		return;
+	}
+
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	si.hStdError = m_hChildStd_OUT_Wr;
+	si.hStdOutput = m_hChildStd_OUT_Wr;
+	si.dwFlags |= STARTF_USESTDHANDLES;
+
+	ZeroMemory(&pi, sizeof(pi));
+
+	wstring wexec{ executeable.wstring() }, wfile{ file.wstring() };
+	vector<wchar_t> exec(wexec.begin(), wexec.end());
+	exec.push_back(L'\0');
+
+	vector<wchar_t> command_line(wfile.begin(), wfile.end());
+	command_line.push_back(L'\0');
+
+	// Start the child process. 
+	if (!CreateProcess(
+		&exec[0],           // No module name (use command line)
+		&command_line[0],    // Command line
+		NULL,                           // Process handle not inheritable
+		NULL,                           // Thread handle not inheritable
+		TRUE,                           // Set handle inheritance
+		0,                              // No creation flags
+		NULL,                           // Use parent's environment block
+		NULL,                           // Use parent's starting directory 
+		&si,                            // Pointer to STARTUPINFO structure
+		&pi)                            // Pointer to PROCESS_INFORMATION structure
+		)
+	{
+		logger << to_string(GetLastError()) << endl;
+		return;
+	}
+	else
+	{
+		// could read data with, for this purpose, ignore childs cout
+		//m_hreadDataFromExtProgram = CreateThread(0, 0, readDataFromExtProgram, NULL, 0, NULL);
+	}
+
+	dwChangeHandle[0] = pi.hProcess;
+	dwChangeHandle[1] = hExit;
+
+	WaitForMultipleObjects(2, dwChangeHandle, FALSE, INFINITE);
+
+	CloseHandle(m_hChildStd_OUT_Rd);
+	CloseHandle(m_hChildStd_OUT_Wr);
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
+
+}
+/*
+DWORD __stdcall readDataFromExtProgram(void* argh)
+{
+	DWORD dwRead;
+	CHAR chBuf[1024];
+	BOOL bSuccess = FALSE;
+
+	for (;;)
+	{
+		bSuccess = ReadFile(m_hChildStd_OUT_Rd, chBuf, 1024, &dwRead, NULL);
+		if (!bSuccess || dwRead == 0) continue;
+
+		// Log chBuf
+
+		if (!bSuccess) break;
+	}
+	return 0;
+}
+*/

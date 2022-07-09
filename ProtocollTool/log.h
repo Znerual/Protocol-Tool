@@ -5,10 +5,38 @@
 #include <filesystem>
 #include <string>
 #include "conversions.h"
+
+
+
+void activateVirtualTerminal();
+
+
+enum COLORS {
+	NC = -1,
+	BLACK,
+	RED,
+	GREEN,
+	YELLOW,
+	BLUE,
+	MAGENTA,
+	CYAN,
+	WHITE,
+};
+
+/**
+* Colorize terminal colors ANSI escape sequences.
+*
+* @param font font color (-1 to 7), see COLORS enum
+* @param back background color (-1 to 7), see COLORS enum
+* @param style font style (1==bold, 4==underline)
+**/
+const char* colorize(int font, int back = -1, int style = -1);
+
+
 class Log
 {
 public:
-	Log(std::filesystem::path path, bool log_to_file = true) : my_fstream(path, std::fstream::in | std::fstream::out | std::fstream::app), write_to_file(log_to_file)
+	Log(std::filesystem::path path, bool log_to_file = true) : my_fstream(path, std::fstream::in | std::fstream::out | std::fstream::app), write_to_file(log_to_file), color(colorize(BLACK, WHITE))
 	{
 		if (!my_fstream) {
 			std::cerr << "Error opening the log file " << path.string() << std::endl;
@@ -24,7 +52,7 @@ public:
 	~Log() { my_fstream.close(); }
 	template<typename T> Log& operator<<(const T& something)
 	{
-		std::cout << something;
+		std::cout << color << something;
 		if (this->write_to_file)
 			my_fstream << something;
 		return *this;
@@ -45,7 +73,19 @@ public:
 			func(my_fstream);
 		return *this;
 	}
+	/**
+	* Colorize terminal colors ANSI escape sequences.
+	*
+	* @param font font color (-1 to 7), see COLORS enum
+	* @param back background color (-1 to 7), see COLORS enum
+	* @param style font style (1==bold, 4==underline)
+	**/
+	void setColor(int font, int back = -1, int style = -1) {
+		this->color = colorize(font, back, style);
+	}
 private:
 	std::ofstream my_fstream;
 	bool write_to_file;
+	const char* color;
 };
+
