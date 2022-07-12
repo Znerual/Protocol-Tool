@@ -32,7 +32,12 @@ enum COLORS {
 **/
 const char* colorize(int font, int back = -1, int style = -1);
 
-
+/**
+* Create a logger that outputs to cout and saves the output to a file
+*
+* @param path path to the logfile (filesystem::path)
+* @param log_to_file activate the logging to a file 
+**/
 class Log
 {
 public:

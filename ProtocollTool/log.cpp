@@ -13,6 +13,7 @@ void activateVirtualTerminal() {
 	SetConsoleMode(handleOut, consoleMode);
 }
 
+
 const char* colorize(int font, int back, int style) {
 	static char code[20];
 

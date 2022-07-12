@@ -21,20 +21,21 @@ void TrieTree::insert(const std::string key)
 {
 	struct TrieNode* pCrawl = this->root;
 
-	/*
+	
 	// remove trailing spaces and convert to lower case
 	std::string input = key;
 	input = trim(input);
 	boost::to_lower(input);
 
+	/*
 	// check if input string is valid
 	std::regex alpha_num{ "[a-z0-9]+" };
 	if (!std::regex_match(input, alpha_num)) {
 		throw IOException();
 	}
 	*/
-	for (int level = 0; level < key.length(); level++) {
-		int index = char_to_index(key[level]);
+	for (int level = 0; level < input.length(); level++) {
+		int index = char_to_index(input[level]);
 		if (!pCrawl->children[index])
 			pCrawl->children[index] = getNode();
 
@@ -57,11 +58,11 @@ const void TrieTree::suggestionsRec(TrieNode* node, std::string currPrefix, int 
 {
 	// found a string in Trie with the given prefix and it was not in the first layer of recursion
 	if (node->isWordEnd && depth > 0) {
-		suggestion = currPrefix;
+		//suggestion = currPrefix;
 		return;
 	}
 	
-	suggestion = currPrefix;
+	//suggestion = currPrefix;
 
 	int child = -1;
 	for (int i = 0; i < ALPHABET_SIZE; i++)
@@ -75,23 +76,28 @@ const void TrieTree::suggestionsRec(TrieNode* node, std::string currPrefix, int 
 	}
 
 	if (child != -1) {
-		suggestionsRec(node->children[child],currPrefix + static_cast<char>('a' + child), ++depth, suggestion);
+		suggestion.push_back(index_to_char(child));
+		suggestionsRec(node->children[child],currPrefix + index_to_char(child), ++depth, suggestion);
 	}
 	
 }
-/*
+
 int TrieTree::char_to_index(const char& c)
 {
-	if (c >= '0' && c <= '9') {
-		return (int)c - (int)'0';
+	if (c >= 'A') {
+		return (int)c - 26;
 	}
-	else if (c >= 'a' && c <= 'z') {
-		return (int)c - (int)'a' + 10;
-	}
-	return -1;
+	return (int)c;
 }
-*/
-const int TrieTree::findAutoSuggestions(const std::string query, std::string& suggestion)
+char TrieTree::index_to_char(const int& i)
+{
+	if (i >= 'A') {
+		return (char)(i + 26);
+	}
+	return (char)i;
+}
+
+const int TrieTree::findAutoSuggestion(const std::string query, std::string& suggestion)
 {
 	struct TrieNode* pCrawl = this->root;
 	for (const char& c : query) {
@@ -115,6 +121,7 @@ const int TrieTree::findAutoSuggestions(const std::string query, std::string& su
 		return -1;
 	}
 
+	suggestion = "";
 	suggestionsRec(pCrawl, query, 0, suggestion);
 	return 1;
 }

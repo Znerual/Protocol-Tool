@@ -82,6 +82,7 @@ public:
 	TrieTree mode_names;
 
 	AUTOCOMPLETE(const CMD_NAMES& cmd_names, const std::list<std::string>& tags, const std::list<std::string>& mode_names);
+	AUTOCOMPLETE(const CMD_NAMES& cmd_names, const std::map<std::string, int>& tag_count, const std::unordered_map<int, std::string>& mode_names);
 };
 
 const std::string WHITESPACE = " ,\n\r\t\f\v";
@@ -96,6 +97,7 @@ std::string wrap(const std::string s, const int margin = 2, const ALIGN align = 
 void read_cmd_structure(const std::filesystem::path filepath, CMD_STRUCTURE& cmds);
 void read_cmd_names(std::filesystem::path filepath, CMD_NAMES& cmd_names);
 void parse_cmd(const std::string& input, const CMD_STRUCTURE& cmd_structure, const CMD_NAMES& cmd_names, AUTOCOMPLETE& auto_comp, std::string& auto_sug);
+void read_mode_names(const Config& conf, std::list<std::string>& mode_names);
 
 void RunExternalProgram(Log& logger, std::filesystem::path executeable, std::filesystem::path file, HANDLE& hExit);
 void get_console_size(int& rows, int& columns);
@@ -117,6 +119,11 @@ void get_console_size(int& rows, int& columns);
  void get_mode_tags(Config& conf, const int& mode_id, std::vector<std::string>& mode_tags);
  void set_mode_tags(Config& conf, const int& mode_id, std::vector<std::string>& mode_tags);
 
+ /**
+ * Similar to getline(stream, string, delimiter), but waits until a tag OR newline event occures
+ * and returns the WinUser.h keycode for it (VK_TAB 9, VK_RETURN 13)
+ * @param c string of awaited user input
+ **/
  int getinput(std::string& c);
 
 

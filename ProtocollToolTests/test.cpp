@@ -289,21 +289,21 @@ TEST(triertree, tree_structure) {
 	trt1.insert("test");
 
 	string s1;
-	trt1.findAutoSuggestions("t", s1);
+	trt1.findAutoSuggestion("t", s1);
 	EXPECT_EQ(s1, "test");
 
 	string s2;
 	trt1.insert("testen");
-	trt1.findAutoSuggestions("t", s2);
+	trt1.findAutoSuggestion("t", s2);
 	EXPECT_EQ(s2, "test");
 
 	string s3;
 	trt1.insert("ganz");
-	trt1.findAutoSuggestions("ges", s3);
+	trt1.findAutoSuggestion("ges", s3);
 	EXPECT_EQ(s3, "");
 
 	string s4;
-	int ret = trt1.findAutoSuggestions("test", s4);
+	int ret = trt1.findAutoSuggestion("test", s4);
 	EXPECT_EQ(s4, "testen");
 }
 
@@ -349,7 +349,7 @@ TEST(utils, read_command_structure_oaoa)
 TEST(utils, parse_cmd) {
 	CMD_NAMES cmd_names;
 	CMD_STRUCTURE cmd_structure;
-	list<string> tags{"Tag1", "TestTag2"};
+	list<string> tags{"Tag1", "TaestTag2"};
 	list<string> mode_names{"mode1", "mode2", "fancy_mode"};
 	read_cmd_names(filesystem::path("D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\cmd_names.dat"), cmd_names);
 	read_cmd_structure(filesystem::path("D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\cmd.dat"), cmd_structure);
@@ -358,6 +358,25 @@ TEST(utils, parse_cmd) {
 	string i1{ "fin" };
 	string s1;
 	parse_cmd(i1, cmd_structure, cmd_names, auto_comp, s1);
+	EXPECT_EQ(s1, "d");
 
-	EXPECT_EQ(s1, "find");
+	string i2{ "find -d" };
+	string s2;
+	parse_cmd(i2, cmd_structure, cmd_names, auto_comp, s2);
+	EXPECT_EQ(s2, "at");
+
+	string i3{ "new t " };
+	string s3;
+	parse_cmd(i3, cmd_structure, cmd_names, auto_comp, s3);
+	EXPECT_EQ(s3, "ta");
+
+	string i4{ "new t -" };
+	string s4;
+	parse_cmd(i4, cmd_structure, cmd_names, auto_comp, s4);
+	EXPECT_EQ(s4, "data");
+
+	string i5{ "edit_mode m" };
+	string s5;
+	parse_cmd(i5, cmd_structure, cmd_names, auto_comp, s5);
+	EXPECT_EQ(s5, "ode");
 }

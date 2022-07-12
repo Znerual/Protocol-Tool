@@ -920,7 +920,7 @@ int getinput(string& c)
 		ExitProcess(0);
 	}
 	*/	
-	list<char> input;
+	
 
 	HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
 	while (true)
@@ -937,19 +937,32 @@ int getinput(string& c)
 		// Dispatch the events to the appropriate handler.
 		for (i = 0; i < cNumRead; i++)
 		{
-			if (irInBuf[i].EventType == KEY_EVENT)
-				if (irInBuf[i].Event.KeyEvent.bKeyDown)
+			if (irInBuf[i].EventType == KEY_EVENT) {
+				if (irInBuf[i].Event.KeyEvent.bKeyDown) {
 					if (irInBuf[i].Event.KeyEvent.wVirtualKeyCode == VK_TAB) {
-						c = string(input.begin(), input.end());
 						return VK_TAB;
 					}
 					else if (irInBuf[i].Event.KeyEvent.wVirtualKeyCode == VK_RETURN) {
-						c = string(input.begin(), input.end());
 						return VK_RETURN;
 					}
 					else {
-						input.push_back(irInBuf[i].Event.KeyEvent.uChar.UnicodeChar);
+						cout << irInBuf[i].Event.KeyEvent.uChar.AsciiChar;
+						if (irInBuf[i].Event.KeyEvent.uChar.AsciiChar == '\b') { // delete last character
+							c.pop_back();
+							cout << ' ' << '\b';
+						}
+						else {
+							c += irInBuf[i].Event.KeyEvent.uChar.AsciiChar; // input new character
+						}
+						
 					}
+				}
+				
+			}
+			//else if (irInBuf[i].EventType == MENU_EVENT) {
+			//	cout << irInBuf[i].Event.MenuEvent.dwCommandId;
+			//}
+				
 			/*
 			case MOUSE_EVENT: // mouse input
 				#ifndef MOUSE_HWHEELED
@@ -1124,7 +1137,7 @@ void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CM
 	
 		if (!cmd_names.cmd_names.left.count(input_words.front()) == 1) { // command not completely typed
 			// find command suggestions
-			auto_comp.cmd_names.findAutoSuggestions(input_words.front(), auto_sug);
+			auto_comp.cmd_names.findAutoSuggestion(input_words.front(), auto_sug);
 			return;
 		}
 
@@ -1144,37 +1157,45 @@ void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CM
 		// suggest first pa if first pa is tags or mode name (not if date)
 		if (input_words.size() == 0) {
 			if (pa_args.front() == PA::TAGS) {
-				auto_comp.tags.findAutoSuggestions("", auto_sug);
+				auto_comp.tags.findAutoSuggestion("", auto_sug);
 				return;
 			}
 			else if (pa_args.front() == PA::MODE_NAME) {
-				auto_comp.mode_names.findAutoSuggestions("", auto_sug);
+				auto_comp.mode_names.findAutoSuggestion("", auto_sug);
 				return;
 			}
 			return;
 			
 		}
 		else {
-
+			bool skip_pa = false;
 			int count = 0;
 			for (const auto& pa_arg : pa_args) {
-				if (pa_arg == PA::TAGS && (input_words.size()-1) > count) { // if previous pa where set (1 arg per word), tags can be suggested
+				if (count - 1 > (int)input_words.size()) { // -1 because tags as pa can be empty
+					return; // to little input words
+				}
+				if (input_words.back().starts_with('-')) { //is a oa, skip pa
+					skip_pa = true;
+					break;
+				}
+				if (pa_arg == PA::TAGS && (input_words.size()) >= count) { // if previous pa where set (1 arg per word), tags can be suggested
 					if (input.back() == ' ') {
-						auto_comp.tags.findAutoSuggestions("", auto_sug);
+						auto_comp.tags.findAutoSuggestion("", auto_sug);
 					}
 					else {
-						auto_comp.tags.findAutoSuggestions(input_words.back(), auto_sug);
+						auto_comp.tags.findAutoSuggestion(input_words.back(), auto_sug);
 					}
 					return;
 				}
-				else if (pa_arg == PA::MODE_NAME && (count == input_words.size()-1 || count == input_words.size() - 2) ) { // if pa of current input count (or next) is mode_name than suggest
-					auto_comp.mode_names.findAutoSuggestions(input_words.back(), auto_sug);
+				else if (pa_arg == PA::MODE_NAME && (count == input_words.size() || count == input_words.size() - 1) ) { // if pa of current input count (or next) is mode_name than suggest
+					auto_comp.mode_names.findAutoSuggestion(input_words.back(), auto_sug);
 					return;
 				}
 
 				count += 1;
 			}
-			return; // cant suggest
+			if (!skip_pa)
+				return; // cant suggest
 		}
 		
 	}
@@ -1193,10 +1214,10 @@ void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CM
 		TrieTree oa_trietree = TrieTree(oa_strs);
 
 		// complete last input word
-		oa_trietree.findAutoSuggestions(input_words.back(), auto_sug);
+		oa_trietree.findAutoSuggestion(input_words.back(), auto_sug);
 
 		if (auto_sug.empty()) { // no input word at all, present all optional options
-			oa_trietree.findAutoSuggestions("", auto_sug);
+			oa_trietree.findAutoSuggestion("", auto_sug);
 		}
 		return;
 	}
@@ -1223,20 +1244,20 @@ void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CM
 		if (oa_args[active_oa].size() == 0) { // last complete oa has no follow up parameter, suggest next oa
 			TrieTree oa_trietree = TrieTree(oa_strs);
 			if (input.back() == ' ') {
-				oa_trietree.findAutoSuggestions("", auto_sug);
+				oa_trietree.findAutoSuggestion("", auto_sug);
 			}
 			else {
-				oa_trietree.findAutoSuggestions(input_words.back(), auto_sug);
+				oa_trietree.findAutoSuggestion(input_words.back(), auto_sug);
 			}
 			return;
 		}
 		else if (oa_args[active_oa].size() == 1) { // only suggest one oaoa tag if that one is tags
 			if (oa_args[active_oa].front() == OA::TAGS) {
 				if (input.back() == ' ') {
-					auto_comp.tags.findAutoSuggestions("", auto_sug);
+					auto_comp.tags.findAutoSuggestion("", auto_sug);
 				}
 				else {
-					auto_comp.tags.findAutoSuggestions(input_words.back(), auto_sug);
+					auto_comp.tags.findAutoSuggestion(input_words.back(), auto_sug);
 				}
 				return;
 			}
@@ -1249,16 +1270,28 @@ void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CM
 
 			TrieTree oa_trietree = TrieTree(oaoa_strs);
 			if (input.back() == ' ') {
-				oa_trietree.findAutoSuggestions("", auto_sug);
+				oa_trietree.findAutoSuggestion("", auto_sug);
 			}
 			else {
-				oa_trietree.findAutoSuggestions(input_words.back(), auto_sug);
+				oa_trietree.findAutoSuggestion(input_words.back(), auto_sug);
 			}
 			return;
 		}
 		
 	}
 	
+}
+
+void read_mode_names(Config& conf, std::list<std::string>& mode_names)
+{
+	int num_modes = 0;
+	conf.get("NUM_MODES", num_modes);
+
+	string mode_name;
+	for (auto i = 0; i < num_modes; i++) {
+		conf.get("MODE_" + to_string(i) + "_NAME", mode_name);
+		mode_names.push_back(mode_name);
+	}
 }
 
 
@@ -1269,5 +1302,21 @@ AUTOCOMPLETE::AUTOCOMPLETE(const CMD_NAMES& cmd_names, const std::list<std::stri
 	this->cmd_names = TrieTree();
 	for (const auto& [name, cmd] : cmd_names.cmd_names) {
 		this->cmd_names.insert(name);
+	}
+}
+
+AUTOCOMPLETE::AUTOCOMPLETE(const CMD_NAMES& cmd_names, const std::map<std::string, int>& tag_count, const std::unordered_map<int, std::string>& mode_names)
+{
+	this->mode_names = TrieTree();
+	for (const auto& [_, mode_name] : mode_names) {
+		this->mode_names.insert(mode_name);
+	}
+	this->cmd_names = TrieTree();
+	for (const auto& [name, cmd] : cmd_names.cmd_names) {
+		this->cmd_names.insert(name);
+	}
+	this->tags = TrieTree();
+	for (const auto& [tag, _] : tag_count) {
+		this->tags.insert(tag);
 	}
 }

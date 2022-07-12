@@ -62,7 +62,6 @@ int main()
     cfi.FontFamily = FF_DONTCARE;
     cfi.FontWeight = FW_NORMAL;
    
-    
 
     wcscpy_s(cfi.FaceName, L"Lucida Console"); // Consolas
     SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &cfi);
@@ -361,10 +360,12 @@ int main()
     CMD_STRUCTURE cmd_structure;
     read_cmd_structure(filesystem::path("cmd.dat"), cmd_structure);
     read_cmd_names(filesystem::path("cmd_names.dat"), cmd_names);
-    
+    AUTOCOMPLETE auto_comp(cmd_names, tag_count, mode_names); // update trietrees when tags and/or modes are added/changed
+
     bool running = true;
     while (running)
     {
+        // parse user input
         logger.setColor(BLACK, WHITE);
         logger << " Input";
         logger.setColor(YELLOW, WHITE);
@@ -376,9 +377,32 @@ int main()
         logger << ":";
 
         string input, command;
-        getline(cin, input);
-        logger.input(input);
-        logger << endl;
+        while (true) {
+            int return_key;
+            string output;
+            return_key = getinput(input);
+            //getline(cin, input);
+            logger.input(input);
+
+            if (return_key == VK_TAB) {
+                parse_cmd(input, cmd_structure, cmd_names, auto_comp, output);
+                logger.input('\t');
+                logger << output;
+                input += output; // add prediction to console input
+                continue;
+            }
+            else if (return_key == VK_RETURN) {
+                logger << endl;
+                break;
+            }
+            else {
+                logger << "Error in parse_cmd, invalid return " << return_key << endl;
+            }
+        }
+       
+
+
+
         istringstream iss(input);
         iss >> command;
         boost::algorithm::to_lower(command);
