@@ -9,6 +9,9 @@
 #include "Config.h"
 #include "conversions.h"
 #include "output.h"
+#include "commands.h"
+#include "watcher.h"
+#include "file_manager.h"
 
 #include <Windows.h>
 #include <iostream>
@@ -18,13 +21,14 @@
 #include <time.h>
 #include <stdint.h>
 #include <boost/algorithm/string.hpp>
+#include <boost/bimap/bimap.hpp>
+#include <boost/bimap.hpp>
 #include <streambuf>
 #include <shlwapi.h>
 #include <ShlObj.h>
-//#include <cstdlib>
-//#include <array>
-
 #include <thread>
+
+
 
 using namespace std;
 
@@ -351,6 +355,13 @@ int main()
 
     logger.setColor(BLACK, WHITE);
 
+    
+    
+    CMD_NAMES cmd_names;
+    CMD_STRUCTURE cmd_structure;
+    read_cmd_structure(filesystem::path("cmd.dat"), cmd_structure);
+    read_cmd_names(filesystem::path("cmd_names.dat"), cmd_names);
+    
     bool running = true;
     while (running)
     {

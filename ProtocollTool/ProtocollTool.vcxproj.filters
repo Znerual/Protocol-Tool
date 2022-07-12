@@ -30,6 +30,18 @@
     <ClCompile Include="log.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="trietree.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="commands.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="watcher.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="file_manager.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utils.h">
@@ -50,12 +62,30 @@
     <ClInclude Include="output.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="trietree.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="commands.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="watcher.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="file_manager.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="para.conf">
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Readme.md">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="cmd.dat">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="cmd_names.dat">
       <Filter>Ressourcendateien</Filter>
     </None>
   </ItemGroup>

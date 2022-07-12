@@ -155,21 +155,35 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="commands.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="conversions.cpp" />
+    <ClCompile Include="file_manager.cpp" />
     <ClCompile Include="log.cpp" />
     <ClCompile Include="ProtocollTool.cpp" />
+    <ClCompile Include="trietree.cpp" />
     <ClCompile Include="utils.cpp" />
+    <ClCompile Include="watcher.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="commands.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="conversions.h" />
     <ClInclude Include="exceptions.h" />
+    <ClInclude Include="file_manager.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="output.h" />
+    <ClInclude Include="trietree.h" />
     <ClInclude Include="utils.h" />
+    <ClInclude Include="watcher.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="cmd.dat">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="cmd_names.dat">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="para.conf">
       <DeploymentContent>true</DeploymentContent>
     </None>

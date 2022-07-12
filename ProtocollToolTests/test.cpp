@@ -1,16 +1,23 @@
 #include "pch.h"
 #include "../ProtocollTool/conversions.h"
-#include "../ProtocollTool/conversions.cpp"
 #include "../ProtocollTool/utils.h"
-#include "../ProtocollTool/utils.cpp"
 #include "../ProtocollTool/log.h"
+#include "../ProtocollTool/Config.h"
+#include "../ProtocollTool/trietree.h"
+
+//#include <boost/date_time/gregorian/gregorian.hpp>
+
+#include "../ProtocollTool/conversions.cpp"
+#include "../ProtocollTool/log.cpp"
+#include "../ProtocollTool/file_manager.cpp"
+#include "../ProtocollTool/utils.cpp"
 #include "../ProtocollTool/Config.cpp"
+#include "../ProtocollTool/trietree.cpp"
+
 #include <string>
 
-TEST(TestCaseName, TestName) {
-  EXPECT_EQ(1, 1);
-  EXPECT_TRUE(true);
-}
+
+
 
 TEST(Conversions, str2int) {
 	std::string s1 = { "Hallo Welt!" };
@@ -263,4 +270,94 @@ TEST(utils, parse_find_args)
 	EXPECT_EQ(re4, "");
 
 	// TODO test version args
+}
+TEST(triertree, creation) {
+	TrieTree trt1 = TrieTree();
+	TrieTree trt2({ "test", "testen", "ganz", "anders" });
+}
+
+TEST(triertree, insertion) {
+	TrieTree trt1 = TrieTree();
+	trt1.insert("test");
+	trt1.insert("testen");
+	trt1.insert("ganz");
+	trt1.insert("anders");
+}
+
+TEST(triertree, tree_structure) {
+	TrieTree trt1 = TrieTree();
+	trt1.insert("test");
+
+	string s1;
+	trt1.findAutoSuggestions("t", s1);
+	EXPECT_EQ(s1, "test");
+
+	string s2;
+	trt1.insert("testen");
+	trt1.findAutoSuggestions("t", s2);
+	EXPECT_EQ(s2, "test");
+
+	string s3;
+	trt1.insert("ganz");
+	trt1.findAutoSuggestions("ges", s3);
+	EXPECT_EQ(s3, "");
+
+	string s4;
+	int ret = trt1.findAutoSuggestions("test", s4);
+	EXPECT_EQ(s4, "testen");
+}
+
+TEST(utils, read_cmd_names)
+{
+	CMD_NAMES cmd_names;
+	read_cmd_names(filesystem::path("D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\cmd_names.dat"), cmd_names);
+	EXPECT_EQ(cmd_names.cmd_names.right.at(CMD::NEW), "new");
+	// TODO for all parameter
+}
+
+TEST(utils, read_command_structure_pa)
+{
+	CMD_STRUCTURE cmd_structure;
+	read_cmd_structure(filesystem::path("D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\cmd.dat"), cmd_structure);
+
+	// check pa
+	EXPECT_EQ(cmd_structure[CMD::NEW].first.front(), PA::DATE);
+	EXPECT_EQ(*next(cmd_structure[CMD::NEW].first.begin()), PA::TAGS);
+	// TODO for all parameter
+}
+
+TEST(utils, read_command_structure_oa)
+{
+	CMD_STRUCTURE cmd_structure;
+	read_cmd_structure(filesystem::path("D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\cmd.dat"), cmd_structure);
+
+	// check oa
+	EXPECT_TRUE(cmd_structure[CMD::NEW].second.contains(OA::DATA));
+	// TODO for all parameter
+}
+TEST(utils, read_command_structure_oaoa)
+{
+	CMD_STRUCTURE cmd_structure;
+	read_cmd_structure(filesystem::path("D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\cmd.dat"), cmd_structure);
+
+	// check oa
+	EXPECT_EQ(cmd_structure[CMD::NEW].second.at(OA::DATA).size(), 0);
+	EXPECT_EQ(cmd_structure[CMD::FIND].second.at(OA::VERS_R), list<OA> {OA::VERSIONS});
+
+}
+
+TEST(utils, parse_cmd) {
+	CMD_NAMES cmd_names;
+	CMD_STRUCTURE cmd_structure;
+	list<string> tags{"Tag1", "TestTag2"};
+	list<string> mode_names{"mode1", "mode2", "fancy_mode"};
+	read_cmd_names(filesystem::path("D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\cmd_names.dat"), cmd_names);
+	read_cmd_structure(filesystem::path("D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\cmd.dat"), cmd_structure);
+	AUTOCOMPLETE auto_comp(cmd_names, tags, mode_names);
+
+	string i1{ "fin" };
+	string s1;
+	parse_cmd(i1, cmd_structure, cmd_names, auto_comp, s1);
+
+	EXPECT_EQ(s1, "find");
 }
