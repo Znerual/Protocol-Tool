@@ -54,7 +54,7 @@ const bool TrieTree::isLastNode(TrieNode* node)
 	return true;
 }
 
-const void TrieTree::suggestionsRec(TrieNode* node, std::string currPrefix, int depth, std::string& suggestion)
+const void TrieTree::suggestionRec(TrieNode* node, std::string currPrefix, int depth, std::string& suggestion)
 {
 	// found a string in Trie with the given prefix and it was not in the first layer of recursion
 	if (node->isWordEnd && depth > 0) {
@@ -77,9 +77,26 @@ const void TrieTree::suggestionsRec(TrieNode* node, std::string currPrefix, int 
 
 	if (child != -1) {
 		suggestion.push_back(index_to_char(child));
-		suggestionsRec(node->children[child],currPrefix + index_to_char(child), ++depth, suggestion);
+		suggestionRec(node->children[child],currPrefix + index_to_char(child), ++depth, suggestion);
 	}
 	
+}
+
+const void TrieTree::suggestionsRec(TrieNode* node, std::string startPrefix, std::string currPrefix, std::list<std::string>& suggestions)
+{
+	// found a string in Trie with the given prefix and it was not in the first layer of recursion
+	if (node->isWordEnd) {
+		suggestions.push_back(currPrefix);
+		//return;
+	}
+	
+	for (int i = 0; i < ALPHABET_SIZE; i++)
+	{
+		if (node->children[i]) { 
+			suggestionsRec(node->children[i], startPrefix, currPrefix + index_to_char(i), suggestions);
+		}
+	}
+
 }
 
 int TrieTree::char_to_index(const char& c)
@@ -122,7 +139,35 @@ const int TrieTree::findAutoSuggestion(const std::string query, std::string& sug
 	}
 
 	suggestion = "";
-	suggestionsRec(pCrawl, query, 0, suggestion);
+	suggestionRec(pCrawl, query, 0, suggestion);
+	return 1;
+}
+
+const int TrieTree::findAutoSuggestions(const std::string query, std::list<std::string>& suggestions)
+{
+	struct TrieNode* pCrawl = this->root;
+	for (const char& c : query) {
+		int ind = char_to_index(c);
+
+		// no string in the Trie has this prefix
+		if (!pCrawl->children[ind])
+		{
+			return 0;
+		}
+
+
+		pCrawl = pCrawl->children[ind];
+	}
+	// If prefix is present as a word, but
+	// there is no subtree below the last
+	// matching node.
+	if (isLastNode(pCrawl)) {
+		// suggestions.push_back(query);
+		return -1;
+	}
+
+	
+	suggestionsRec(pCrawl, query, "", suggestions);
 	return 1;
 }
 

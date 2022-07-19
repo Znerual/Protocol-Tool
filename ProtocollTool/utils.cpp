@@ -939,16 +939,14 @@ int getinput(string& c)
 		{
 			if (irInBuf[i].EventType == KEY_EVENT) {
 				if (irInBuf[i].Event.KeyEvent.bKeyDown) {
-					if (irInBuf[i].Event.KeyEvent.wVirtualKeyCode == VK_TAB) {
-						return VK_TAB;
-					}
-					else if (irInBuf[i].Event.KeyEvent.wVirtualKeyCode == VK_RETURN) {
-						return VK_RETURN;
+					if (irInBuf[i].Event.KeyEvent.wVirtualKeyCode == VK_TAB || irInBuf[i].Event.KeyEvent.wVirtualKeyCode == VK_RETURN || irInBuf[i].Event.KeyEvent.wVirtualKeyCode == VK_UP || irInBuf[i].Event.KeyEvent.wVirtualKeyCode == VK_DOWN) {
+						return irInBuf[i].Event.KeyEvent.wVirtualKeyCode;
 					}
 					else {
 						cout << irInBuf[i].Event.KeyEvent.uChar.AsciiChar;
 						if (irInBuf[i].Event.KeyEvent.uChar.AsciiChar == '\b') { // delete last character
-							c.pop_back();
+							if (c.size() > 0) 
+								c.pop_back();
 							cout << ' ' << '\b';
 						}
 						else {
@@ -1119,7 +1117,7 @@ void read_cmd_names(filesystem::path filepath, CMD_NAMES& cmd_names) {
 	}
 }
 
-void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CMD_NAMES& cmd_names, AUTOCOMPLETE& auto_comp, string& auto_sug) {
+void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CMD_NAMES& cmd_names, AUTOCOMPLETE& auto_comp, string& auto_sug, list<string>& auto_sugs) {
 	enum class CMD_STATE {CMD, PA, OA, OAOA};
 	CMD_STATE state = CMD_STATE::CMD;
 
@@ -1138,10 +1136,17 @@ void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CM
 		if (!cmd_names.cmd_names.left.count(input_words.front()) == 1) { // command not completely typed
 			// find command suggestions
 			auto_comp.cmd_names.findAutoSuggestion(input_words.front(), auto_sug);
+			auto_comp.cmd_names.findAutoSuggestions(input_words.front(), auto_sugs);
 			return;
 		}
 
+		if (input.back() != ' ')
+			return;
+
 	
+	}
+	else if (input_words.size() == 0) {
+		return;
 	} else { // further states
 		if (cmd_names.cmd_names.left.count(input_words.front()) == 0) { // check whether command has typo
 			return;
@@ -1158,10 +1163,12 @@ void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CM
 		if (input_words.size() == 0) {
 			if (pa_args.front() == PA::TAGS) {
 				auto_comp.tags.findAutoSuggestion("", auto_sug);
+				auto_comp.tags.findAutoSuggestions("", auto_sugs);
 				return;
 			}
 			else if (pa_args.front() == PA::MODE_NAME) {
 				auto_comp.mode_names.findAutoSuggestion("", auto_sug);
+				auto_comp.mode_names.findAutoSuggestions("", auto_sugs);
 				return;
 			}
 			return;
@@ -1171,6 +1178,7 @@ void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CM
 			bool skip_pa = false;
 			int count = 0;
 			for (const auto& pa_arg : pa_args) {
+				// too many positional arguments specified
 				if (count - 1 > (int)input_words.size()) { // -1 because tags as pa can be empty
 					return; // to little input words
 				}
@@ -1181,14 +1189,35 @@ void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CM
 				if (pa_arg == PA::TAGS && (input_words.size()) >= count) { // if previous pa where set (1 arg per word), tags can be suggested
 					if (input.back() == ' ') {
 						auto_comp.tags.findAutoSuggestion("", auto_sug);
+						auto_comp.tags.findAutoSuggestions("", auto_sugs);
 					}
 					else {
 						auto_comp.tags.findAutoSuggestion(input_words.back(), auto_sug);
+						auto_comp.tags.findAutoSuggestions(input_words.back(), auto_sugs);
 					}
 					return;
 				}
 				else if (pa_arg == PA::MODE_NAME && (count == input_words.size() || count == input_words.size() - 1) ) { // if pa of current input count (or next) is mode_name than suggest
 					auto_comp.mode_names.findAutoSuggestion(input_words.back(), auto_sug);
+					auto_comp.mode_names.findAutoSuggestions(input_words.back(), auto_sugs);
+					return;
+				}
+				else if (pa_arg == PA::DATE && count == input_words.size() - 1) { // suggest date
+					time_t now = time(nullptr);
+					date2str_medium(auto_sug, now);
+
+					string dates;
+					for (auto i = 1; i < 33; i++) {
+						now = time(nullptr) +  (60 * 60 * 24) * i ; // add next 32 days to list and then the last 32 days
+						date2str_medium(dates, now);
+						auto_sugs.push_back(dates);
+					}
+					for (auto i = -32; i < 0; i++) {
+						now = time(nullptr) + (60 * 60 * 24) * i; // add next 32 days to list and then the last 32 days
+						date2str_medium(dates, now);
+						auto_sugs.push_back(dates);
+					
+					}
 					return;
 				}
 
@@ -1203,9 +1232,22 @@ void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CM
 	unordered_map<OA, list<OA>> oa_args = cmd_structure.at(command).second;
 	list<string> oa_strs;
 	for (const auto& [oa_arg, _] : oa_args) {
-		oa_strs.push_back(cmd_names.oa_names.right.at(oa_arg));
+		if (oa_arg == OA::CMD) {
+			for (const auto& [name, id] : cmd_names.cmd_names) {
+				oa_strs.push_back(name);
+			}
+		}
+		else {
+			oa_strs.push_back(cmd_names.oa_names.right.at(oa_arg));
+		}
 	}
 
+	if (input_words.empty()) {
+		TrieTree oa_trietree = TrieTree(oa_strs);
+		oa_trietree.findAutoSuggestion("", auto_sug);
+		oa_trietree.findAutoSuggestions("", auto_sugs);
+		return;
+	}
 	// find end of positional arguments by searching for first optional argument
 	auto oa_start_pos = find_first_of(input_words.begin(), input_words.end(), oa_strs.begin(), oa_strs.end());
 
@@ -1215,10 +1257,7 @@ void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CM
 
 		// complete last input word
 		oa_trietree.findAutoSuggestion(input_words.back(), auto_sug);
-
-		if (auto_sug.empty()) { // no input word at all, present all optional options
-			oa_trietree.findAutoSuggestion("", auto_sug);
-		}
+		oa_trietree.findAutoSuggestions(input_words.back(), auto_sugs);
 		return;
 	}
 	else {
@@ -1245,9 +1284,11 @@ void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CM
 			TrieTree oa_trietree = TrieTree(oa_strs);
 			if (input.back() == ' ') {
 				oa_trietree.findAutoSuggestion("", auto_sug);
+				oa_trietree.findAutoSuggestions("", auto_sugs);
 			}
 			else {
 				oa_trietree.findAutoSuggestion(input_words.back(), auto_sug);
+				oa_trietree.findAutoSuggestions(input_words.back(), auto_sugs);
 			}
 			return;
 		}
@@ -1255,9 +1296,11 @@ void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CM
 			if (oa_args[active_oa].front() == OA::TAGS) {
 				if (input.back() == ' ') {
 					auto_comp.tags.findAutoSuggestion("", auto_sug);
+					auto_comp.tags.findAutoSuggestions("", auto_sugs);
 				}
 				else {
 					auto_comp.tags.findAutoSuggestion(input_words.back(), auto_sug);
+					auto_comp.tags.findAutoSuggestions(input_words.back(), auto_sugs);
 				}
 				return;
 			}
@@ -1271,9 +1314,11 @@ void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CM
 			TrieTree oa_trietree = TrieTree(oaoa_strs);
 			if (input.back() == ' ') {
 				oa_trietree.findAutoSuggestion("", auto_sug);
+				oa_trietree.findAutoSuggestions("", auto_sugs);
 			}
 			else {
 				oa_trietree.findAutoSuggestion(input_words.back(), auto_sug);
+				oa_trietree.findAutoSuggestions(input_words.back(), auto_sugs);
 			}
 			return;
 		}

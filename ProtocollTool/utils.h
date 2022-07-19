@@ -96,7 +96,7 @@ std::string wrap(const std::string s, const int margin = 2, const ALIGN align = 
 
 void read_cmd_structure(const std::filesystem::path filepath, CMD_STRUCTURE& cmds);
 void read_cmd_names(std::filesystem::path filepath, CMD_NAMES& cmd_names);
-void parse_cmd(const std::string& input, const CMD_STRUCTURE& cmd_structure, const CMD_NAMES& cmd_names, AUTOCOMPLETE& auto_comp, std::string& auto_sug);
+void parse_cmd(const std::string& input, const CMD_STRUCTURE& cmd_structure, const CMD_NAMES& cmd_names, AUTOCOMPLETE& auto_comp, std::string& auto_sug, std::list<std::string>& auto_sugs);
 void read_mode_names(const Config& conf, std::list<std::string>& mode_names);
 
 void RunExternalProgram(Log& logger, std::filesystem::path executeable, std::filesystem::path file, HANDLE& hExit);

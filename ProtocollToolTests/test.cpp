@@ -290,12 +290,12 @@ TEST(triertree, tree_structure) {
 
 	string s1;
 	trt1.findAutoSuggestion("t", s1);
-	EXPECT_EQ(s1, "test");
+	EXPECT_EQ(s1, "est");
 
 	string s2;
 	trt1.insert("testen");
 	trt1.findAutoSuggestion("t", s2);
-	EXPECT_EQ(s2, "test");
+	EXPECT_EQ(s2, "est");
 
 	string s3;
 	trt1.insert("ganz");
@@ -304,7 +304,33 @@ TEST(triertree, tree_structure) {
 
 	string s4;
 	int ret = trt1.findAutoSuggestion("test", s4);
-	EXPECT_EQ(s4, "testen");
+	EXPECT_EQ(s4, "en");
+}
+
+TEST(triertree, tree_structure2) {
+	TrieTree trt1 = TrieTree();
+	trt1.insert("test");
+
+	list<string> s1;
+	list<string> e1 {"est"};
+	trt1.findAutoSuggestions("t", s1);
+	EXPECT_EQ(s1, e1);
+
+	list<string> s2;
+	list<string> e2{ "est", "esten" };
+	trt1.insert("testen");
+	trt1.findAutoSuggestions("t", s2);
+	EXPECT_EQ(s2, e2);
+
+	list<string> s3;
+	trt1.insert("ganz");
+	trt1.findAutoSuggestions("ges", s3);
+	EXPECT_EQ(s3, list<string>());
+
+	list<string> s4;
+	list<string> e4{ "", "en" };
+	int ret = trt1.findAutoSuggestions("test", s4);
+	EXPECT_EQ(s4, e4);
 }
 
 TEST(utils, read_cmd_names)
@@ -356,27 +382,28 @@ TEST(utils, parse_cmd) {
 	AUTOCOMPLETE auto_comp(cmd_names, tags, mode_names);
 
 	string i1{ "fin" };
+	list<string> auto_sugs;
 	string s1;
-	parse_cmd(i1, cmd_structure, cmd_names, auto_comp, s1);
+	parse_cmd(i1, cmd_structure, cmd_names, auto_comp, s1, auto_sugs);
 	EXPECT_EQ(s1, "d");
 
 	string i2{ "find -d" };
 	string s2;
-	parse_cmd(i2, cmd_structure, cmd_names, auto_comp, s2);
+	parse_cmd(i2, cmd_structure, cmd_names, auto_comp, s2, auto_sugs);
 	EXPECT_EQ(s2, "at");
 
 	string i3{ "new t " };
 	string s3;
-	parse_cmd(i3, cmd_structure, cmd_names, auto_comp, s3);
+	parse_cmd(i3, cmd_structure, cmd_names, auto_comp, s3, auto_sugs);
 	EXPECT_EQ(s3, "ta");
 
 	string i4{ "new t -" };
 	string s4;
-	parse_cmd(i4, cmd_structure, cmd_names, auto_comp, s4);
+	parse_cmd(i4, cmd_structure, cmd_names, auto_comp, s4, auto_sugs);
 	EXPECT_EQ(s4, "data");
 
 	string i5{ "edit_mode m" };
 	string s5;
-	parse_cmd(i5, cmd_structure, cmd_names, auto_comp, s5);
+	parse_cmd(i5, cmd_structure, cmd_names, auto_comp, s5, auto_sugs);
 	EXPECT_EQ(s5, "ode");
 }

@@ -20,10 +20,12 @@ public:
 	void insert(const std::string key);
 	const bool isLastNode(struct TrieNode* node);
 	const int findAutoSuggestion(const std::string query, std::string& suggestion);
+	const int findAutoSuggestions(const std::string query, std::list<std::string>& suggestions);
 private:
 	static struct TrieNode* getNode(void);
 	void deleteFollowing(struct TrieNode* node);
-	const void suggestionsRec(struct TrieNode* node, std::string currPrefix, int depth, std::string& suggestion);
+	const void suggestionRec(struct TrieNode* node, std::string currPrefix, int depth, std::string& suggestion);
+	const void suggestionsRec(struct TrieNode* node, std::string startPrefix, std::string currPrefix, std::list<std::string>& suggestions);
 	struct TrieNode* root;
 	int char_to_index(const char& c);
 	char index_to_char(const int& i);

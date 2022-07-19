@@ -189,6 +189,16 @@ CONV_ERROR date2str(std::string& s, const time_t& t)
     return CONV_SUCCESS;
 }
 
+CONV_ERROR date2str_medium(std::string& s, const time_t& t)
+{
+    tm ptm;
+    localtime_s(&ptm, &t);
+    char buffer[11];
+    strftime(buffer, 11, "%d.%m.%Y", &ptm);
+    s = std::string(buffer);
+    return CONV_SUCCESS;
+}
+
 
 CONV_ERROR date2str_short(std::string& s, const time_t& t)
 {
