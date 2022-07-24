@@ -107,6 +107,7 @@ vector<string> read_tags(Log& logger, const string& path) {
 			while (ss >> tag) // split at delimiter
 			{
 				tag = trim(tag);
+				tag.erase(0, 1); // delete hashtag
 				boost::algorithm::to_lower(tag);
 				tags.push_back(tag);
 			}
@@ -204,10 +205,10 @@ void write_file(Log& logger, const PATHS& paths, const string& filename, time_t 
 
 	for (int i = 1; i <= tags.size(); i++) {
 		if (i % 4 == 0 || i == tags.size()) { // new line for every 4th and last tag
-			file << tags.at(i - 1) << '\n' << "! ";
+			file << '#' << tags.at(i - 1) << '\n' << "! ";
 		}
 		else {
-			file << tags.at(i - 1) << ", ";
+			file << '#' << tags.at(i - 1) << ", ";
 		}
 	}
 	file << "TAGS END" << endl;
