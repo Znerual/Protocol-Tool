@@ -1,0 +1,80 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Headdateien">
+      <UniqueIdentifier>{6774eb0e-9c62-4e96-9bfe-22f503ab5e62}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quelldateien">
+      <UniqueIdentifier>{0abdc3e0-8218-4052-806f-7dafd639b1e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Ressourcendateien">
+      <UniqueIdentifier>{03088de0-57f8-4788-a82b-3e6994c380e2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\ProtocollTool\conversions.h">
+      <Filter>Headdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ProtocollTool\trietree.h">
+      <Filter>Headdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ProtocollTool\utils.h">
+      <Filter>Headdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ProtocollTool\log.h">
+      <Filter>Headdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ProtocollTool\output.h">
+      <Filter>Headdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ProtocollTool\Config.h">
+      <Filter>Headdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ProtocollTool\exceptions.h">
+      <Filter>Headdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="commands_linux.h">
+      <Filter>Headdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="file_manager_linux.h">
+      <Filter>Headdateien</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\ProtocollTool\utils.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ProtocollTool\conversions.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ProtocollTool\trietree.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ProtocollTool\log.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ProtocollTool\Config.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="ProtocollTool_linux.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="commands_linux.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="file_manager_linux.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\ProtocollTool\cmd.dat">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="..\ProtocollTool\cmd_names.dat">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="..\ProtocollTool\para.conf">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+  </ItemGroup>
+</Project>
