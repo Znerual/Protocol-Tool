@@ -7,10 +7,14 @@
 #include <list>
 #include <thread>
 #include <boost/bimap.hpp>
-#include <Windows.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#ifdef _WIN32
 #include <tchar.h>
+#include <Windows.h>
+#endif
+
 #include "Config.h"
 #include "log.h"
 #include "trietree.h"
@@ -99,8 +103,16 @@ void read_cmd_names(std::filesystem::path filepath, CMD_NAMES& cmd_names);
 void parse_cmd(const std::string& input, const CMD_STRUCTURE& cmd_structure, const CMD_NAMES& cmd_names, AUTOCOMPLETE& auto_comp, std::string& auto_sug, std::list<std::string>& auto_sugs);
 void read_mode_names(const Config& conf, std::list<std::string>& mode_names);
 
-void RunExternalProgram(Log& logger, std::filesystem::path executeable, std::filesystem::path file, HANDLE& hExit);
 void get_console_size(int& rows, int& columns);
+#ifdef _WIN32
+void RunExternalProgram(Log& logger, std::filesystem::path executeable, std::filesystem::path file, HANDLE& hExit);
+int getinput(std::string& c);
+bool parse_folder_watcher(std::string& argument, FOLDER_WATCHER_MODE& mode, std::string& current_folder, std::unordered_map<std::string, std::vector<std::string>>& folder_watcher_tags);
+void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, std::string& mode_name, std::vector<std::string>& mode_tags, std::unordered_map<std::string, std::vector<std::string>>& folder_watcher_tags, MODE_OPTIONS& mode_options);
+#else
+void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, std::string& mode_name, std::vector<std::string>& mode_tags,	MODE_OPTIONS& mode_options);
+#endif
+
  
 
  void add(FORMAT_OPTIONS& to, FORMAT_OPTIONS& from);
@@ -124,7 +136,6 @@ void get_console_size(int& rows, int& columns);
  * and returns the WinUser.h keycode for it (VK_TAB 9, VK_RETURN 13)
  * @param c string of awaited user input
  **/
- int getinput(std::string& c);
 
 
  void parse_find_args(Log& logger, std::istringstream& iss, bool& data_only, std::vector<time_t>& date_args, std::vector<std::string>& ctags_args, std::vector<std::string>& catags_args, std::vector<std::string>& ntags_args, std::string& regex, std::string& regex_content, std::vector<char>& version_args);
@@ -132,9 +143,6 @@ void get_console_size(int& rows, int& columns);
  void parse_show_args(Log& logger, std::istringstream& iss, Config& conf, int& active_mode, SHOW_OPTIONS& show_options, FORMAT_OPTIONS& format_options);
  void parse_add_note(Log& logger, std::istringstream& iss, const PATHS& paths, const std::string& file_ending, std::string& filename, time_t& date_t, std::vector<std::string>& tags, bool& add_data);
  bool parse_mode_option(std::string& argument, MODE_OPTIONS& mode_options);
- bool parse_folder_watcher(std::string& argument, FOLDER_WATCHER_MODE& mode, std::string& current_folder, std::unordered_map<std::string, std::vector<std::string>>& folder_watcher_tags);
  bool parse_format(Log& logger, std::string& argument, FORMAT_OPTIONS& format_options);
- void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, std::string& mode_name, std::vector<std::string>& mode_tags, std::unordered_map<std::string, std::vector<std::string>>& folder_watcher_tags,
-	 MODE_OPTIONS& mode_options);
 
  

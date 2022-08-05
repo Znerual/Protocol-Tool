@@ -3,18 +3,26 @@
 #include <ctime>
 #include <fstream>
 #include <sstream>
-#include <shlwapi.h>
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <array>
 #include <set>
 #include <regex>
+
+#ifdef _WIN32
+#include <shlwapi.h>
 #include <WinUser.h>
+#include "file_manager.h"
+#else
+#include "../ProtocollToolLinux/file_manager_linux.h"
+#include <sys/ioctl.h>
+#include <stdio.h>
+#include <unistd.h>
+#endif
 
 #include "utils.h"
 #include "conversions.h"
 #include "Config.h"
-#include "file_manager.h"
 #include "trietree.h"
 
 using namespace std;
@@ -101,6 +109,7 @@ std::string trim(const std::string& s) {
 	return rtrim(ltrim(s));
 }
 
+#ifdef _WIN32
 void get_console_size(int& rows, int& columns)
 {
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -110,7 +119,17 @@ void get_console_size(int& rows, int& columns)
 	rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
 
 }
+#else
 
+
+void get_console_size(int& rows, int& columns)
+{
+	struct winsize w;
+	ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+	rows = w.ws_row;
+	columns = w.ws_col;
+}
+#endif
 
 void add(FORMAT_OPTIONS& to, FORMAT_OPTIONS& from) {
 	if (from.docx)
@@ -678,7 +697,7 @@ void parse_find_args(Log& logger, istringstream& iss, bool& data_only, vector<ti
 		return;
 	}
 }
-
+#ifdef _WIN32
 void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, string& mode_name, std::vector<std::string>& mode_tags, unordered_map<string, vector<string>>& folder_watcher_tags, 
 	MODE_OPTIONS& mode_options)
 {
@@ -721,12 +740,56 @@ void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, strin
 			mode_tags.push_back(argument);
 		}
 		else {
-			logger << "Error in parse_create_mode, this condition should not have been reached. Input " << argument << " with current mode: " << mode << endl;
+			logger << "Error in parse_create_mode, this condition should not have been reached. Input " << argument << " with current mode: " << mode_name << endl;
 		}
 		
 	}
 }
 
+#else
+void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, string& mode_name, std::vector<std::string>& mode_tags, MODE_OPTIONS& mode_options)
+{
+	// set default values
+	mode_name = "default";
+	mode_tags = vector<string>();
+
+	if (iss)
+	{
+		iss >> mode_name;
+		mode_name = trim(mode_name);
+	}
+	else {
+		return;
+	}
+
+	string argument;
+	string current_folder{ "" };
+	while (iss >> argument)
+	{
+		boost::to_lower(argument);
+		if (argument[0] == '-')
+		{
+			if (!parse_mode_option(argument, mode_options)) {
+				logger << "Did not recognize parameter " << argument << ".\n It should be one of the following options controlling the (s)how command:\n";
+				logger << "[-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] ";
+				logger << "[-(s)how_(d)ata] [-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] ";
+				logger << "[-(s)how_open_as_(pdf)] [-(s)how_open_as_(docx)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_la(tex)]\n";
+				logger << "And one of the following for controlling the (d)etails command:\n";
+				logger << "[-(d)etail_tags] [-(d)etail_(p)ath] [-(d)etail_(l)ong_(p)ath] [-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent]\n";
+				logger << "Or a path to a folder that should be observed such that when a file is created, the newly created file is added to the ";
+				logger << "data folder and a new note is created. Additionally, tags that will be added when this occures can be entered: \n\n";
+			}
+		}
+		else if (argument[0] != '-') {
+			mode_tags.push_back(argument);
+		}
+		else {
+			logger << "Error in parse_create_mode, this condition should not have been reached. Input " << argument << " with current mode: " << mode_name << endl;
+		}
+
+	}
+}
+#endif
 void parse_details_args(Log& logger, istringstream& iss, Config& conf, int& active_mode, DETAIL_OPTIONS& detail_options)
 {
 
@@ -797,6 +860,7 @@ void parse_add_note(Log& logger, std::istringstream& iss, const PATHS& paths, co
 	filename = get_filename(paths, date_t, file_ending);
 }
 
+#ifdef _WIN32
 void RunExternalProgram(Log& logger, std::filesystem::path executeable, std::filesystem::path file, HANDLE& hExit)
 {
 	STARTUPINFO si;
@@ -878,6 +942,8 @@ void RunExternalProgram(Log& logger, std::filesystem::path executeable, std::fil
 	CloseHandle(pi.hThread);
 
 }
+
+#endif
 /*
 DWORD __stdcall readDataFromExtProgram(void* argh)
 {
@@ -898,6 +964,7 @@ DWORD __stdcall readDataFromExtProgram(void* argh)
 }
 */
 
+#ifdef WIN32_
 int getinput(string& c)
 {
 
@@ -1026,7 +1093,7 @@ int getinput(string& c)
 }
 
 
-
+#endif
 
 void read_cmd_structure(const filesystem::path filepath, CMD_STRUCTURE& cmds)
 {

@@ -3,17 +3,18 @@
 
 //TODO https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
 // Manipulate conosole screen buffer to remove printout from started editor with ShellExecute
+
 #pragma comment(lib, "Shlwapi.lib")
+
 #include "log.h"
 #include "utils.h"
 #include "Config.h"
 #include "conversions.h"
 #include "output.h"
 #include "commands.h"
-#include "watcher.h"
+#include "watcher_windows.h"
 #include "file_manager.h"
 
-#include <Windows.h>
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -24,11 +25,14 @@
 #include <boost/bimap/bimap.hpp>
 #include <boost/bimap.hpp>
 #include <streambuf>
-#include <shlwapi.h>
-#include <ShlObj.h>
 #include <thread>
 
 
+#ifdef _WIN32
+#include <ShlObj.h>
+#include <shlwapi.h>
+#include <Windows.h>
+#endif
 
 using namespace std;
 
