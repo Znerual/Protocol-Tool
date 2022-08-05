@@ -1,4 +1,6 @@
 #include "log.h"
+
+#ifdef _WIN32
 #include <windows.h>
 
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
@@ -12,7 +14,9 @@ void activateVirtualTerminal() {
 	consoleMode |= DISABLE_NEWLINE_AUTO_RETURN;
 	SetConsoleMode(handleOut, consoleMode);
 }
-
+#else
+	#define sprintf_s(dest,fmt,...) sprintf(dest,fmt,__VA_ARGS__) 
+#endif
 
 const char* colorize(int font, int back, int style) {
 	static char code[20];
