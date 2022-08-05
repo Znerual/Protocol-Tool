@@ -1,6 +1,6 @@
 #include "commands.h"
 #include "file_manager.h"
-#include "watcher.h"
+#include "watcher_windows.h"
 
 #include <sstream>
 #include <fstream>
