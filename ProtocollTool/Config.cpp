@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 
 #include "Config.h"
 #include "conversions.h"
@@ -68,7 +69,7 @@ Config::Config(const string& filepath)
         int line_counter = 0;
         while (getline(file, line))
         {
-
+            line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
             // separate name and value of the parameter
             string name, value;
             
@@ -103,6 +104,13 @@ Config::Config(const string& filepath)
             }
 
             // if nothing worked, add as string
+            // convert paths to make system invariant
+            #ifdef _WIN32
+            std::replace(value.begin(), value.end(), '/', '\\');
+            #else
+            std::replace(value.begin(), value.end(), '\\', '/');
+            #endif
+
             this->para_string[name] = value;
             line_counter += 1;
 
@@ -211,6 +219,7 @@ CONFIG_ERROR Config::remove(const std::string& name)
     bool found = false;
     while (getline(ifile, line))
     {
+        line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
         istringstream conf_pair(line);
         conf_pair >> _name >> _value;
         if (_name == name) // found value to edit
