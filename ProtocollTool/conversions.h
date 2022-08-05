@@ -5,6 +5,7 @@
 
 enum CONV_ERROR { CONV_SUCCESS, CONV_OVERFLOW, CONV_UNDERFLOW, CONV_INCONVERTIBLE };
 
+tm get_localtime(const time_t& tt);
 
 CONV_ERROR str2int(int& i, char const* s, int base = 10);
 CONV_ERROR str2float(float& f, char const* s);

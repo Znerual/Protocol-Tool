@@ -6,7 +6,16 @@
 #include <iostream>
 #include <boost/date_time/gregorian/gregorian.hpp>
 
-
+tm get_localtime(const time_t& tt) {
+#ifdef _WIN32
+    tm tdm;
+    localtime_s(&tdm, &tt);
+    return tdm;
+#else
+    tm* tdm_ptr = localtime(&tt);
+    return *tdm_ptr;
+#endif
+}
 
 CONV_ERROR str2int(int& i, char const* s, int base)
 {
@@ -47,8 +56,8 @@ CONV_ERROR str2date(time_t& t, const std::string& s)
 {
     // get current date
     time_t tt = std::time(NULL);
-    tm tdm;
-    localtime_s(&tdm, &tt);
+    tm tdm = get_localtime(tt);
+
     boost::gregorian::date today = boost::gregorian::date_from_tm(tdm);
 
     if (s == "now" || s == "today" || s == "t")
@@ -91,7 +100,7 @@ CONV_ERROR str2date(time_t& t, const std::string& s)
             }
             
 
-            set_date = boost::gregorian::date(today.year(), today.month(), day);
+            set_date = boost::gregorian::date(today.year(), today.month(), static_cast<short unsigned int>(day));
             tdm = boost::gregorian::to_tm(set_date);
             t = mktime(&tdm);
            
@@ -116,7 +125,7 @@ CONV_ERROR str2date(time_t& t, const std::string& s)
             }
             
 
-            set_date = boost::gregorian::date(today.year(), month, day);
+            set_date = boost::gregorian::date(today.year(), static_cast<short unsigned int>(month), static_cast<short unsigned int>(day));
             tdm = boost::gregorian::to_tm(set_date);
             t = mktime(&tdm);
             
@@ -142,7 +151,7 @@ CONV_ERROR str2date(time_t& t, const std::string& s)
                 return CONV_INCONVERTIBLE;
             }
 
-            set_date = boost::gregorian::date(year, month, day);
+            set_date = boost::gregorian::date(static_cast<short unsigned int>(year), static_cast<short unsigned int>(month), static_cast<short unsigned int>(day));
             tdm = boost::gregorian::to_tm(set_date);
             t = mktime(&tdm);
             
@@ -172,7 +181,7 @@ CONV_ERROR str2date_short(time_t& t, const std::string& s)
         return CONV_INCONVERTIBLE;
     }
 
-    boost::gregorian::date set_date(year, month, day);
+    boost::gregorian::date set_date(static_cast<short unsigned int>(year), static_cast<short unsigned int>(month), static_cast<short unsigned int>(day));
     tm tdm = boost::gregorian::to_tm(set_date);
     t = mktime(&tdm);
 
@@ -181,8 +190,7 @@ CONV_ERROR str2date_short(time_t& t, const std::string& s)
 
 CONV_ERROR date2str(std::string& s, const time_t& t)
 {
-    tm ptm;
-    localtime_s(&ptm, &t);
+    tm ptm = get_localtime(t);
     char buffer[16];
     strftime(buffer, 16, "%a, %d.%m.%Y", &ptm);
     s = std::string(buffer);
@@ -191,8 +199,7 @@ CONV_ERROR date2str(std::string& s, const time_t& t)
 
 CONV_ERROR date2str_medium(std::string& s, const time_t& t)
 {
-    tm ptm;
-    localtime_s(&ptm, &t);
+    tm ptm = get_localtime(t);
     char buffer[11];
     strftime(buffer, 11, "%d.%m.%Y", &ptm);
     s = std::string(buffer);
@@ -202,8 +209,7 @@ CONV_ERROR date2str_medium(std::string& s, const time_t& t)
 
 CONV_ERROR date2str_short(std::string& s, const time_t& t)
 {
-    tm ptm;
-    localtime_s(&ptm, &t);
+    tm ptm = get_localtime(t);;
     char buffer[9];
     strftime(buffer, 9, "%d%m%Y", &ptm);
     s = std::string(buffer);
@@ -212,8 +218,7 @@ CONV_ERROR date2str_short(std::string& s, const time_t& t)
 
 CONV_ERROR date2str_long(std::string& s, const time_t& t)
 {
-    tm ptm;
-    localtime_s(&ptm, &t);
+    tm ptm = get_localtime(t);;
     char buffer[32];
     strftime(buffer, 32, "%a, %d.%m.%Y %H:%M:%S", &ptm);
     s = std::string(buffer);
