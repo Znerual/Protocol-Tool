@@ -964,7 +964,7 @@ DWORD __stdcall readDataFromExtProgram(void* argh)
 }
 */
 
-#ifdef WIN32_
+#ifdef _WIN32
 int getinput(string& c)
 {
 
@@ -1012,9 +1012,10 @@ int getinput(string& c)
 					else {
 						cout << irInBuf[i].Event.KeyEvent.uChar.AsciiChar;
 						if (irInBuf[i].Event.KeyEvent.uChar.AsciiChar == '\b') { // delete last character
-							if (c.size() > 0) 
+							if (c.size() > 0) {
 								c.pop_back();
-							cout << ' ' << '\b';
+								cout << ' ' << '\b';
+							}
 						}
 						else {
 							c += irInBuf[i].Event.KeyEvent.uChar.AsciiChar; // input new character
