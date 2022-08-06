@@ -94,20 +94,19 @@ vector<string> read_tags(Log& logger, const string& path) {
 	string line, tag;
 	while (getline(file, line))
 	{
-		if (line == "! TAGS START") {
+		if (line == "tags:") {
 			reading_tags = true;
 		}
-		else if (line == "! TAGS END") {
+		else if (reading_tags && !line.starts_with("\t- #")) {
 			reading_tags = false;
 			break;
 		}
 		else if (reading_tags) {
-			line.erase(0, 2); // removed the leading # part
+			line.erase(0, 4); // removed the leading # part
 			istringstream ss(line);
 			while (ss >> tag) // split at delimiter
 			{
 				tag = trim(tag);
-				tag.erase(0, 1); // delete hashtag
 				boost::algorithm::to_lower(tag);
 				tags.push_back(tag);
 			}
@@ -197,21 +196,17 @@ void write_file(Log& logger, const PATHS& paths, const string& filename, time_t 
 	string date_str;
 	date2str(date_str, date);
 	logger << "Created file " << filename << " at the path " << paths.file_path.string() << " and its corresponding data folder at " << (paths.data_path / filesystem::path(filename).stem()).string() << ".\n";
-	file << "! FILENAME " << (paths.file_path / filesystem::path(filename)).string() << '\n';
+	file << "---\n";
+	file << "filename: " << (paths.file_path / filesystem::path(filename)).string() << '\n';
 	if (create_data)
-		file << "! DATAFOLDER " << (paths.data_path / filesystem::path(filename).stem()).string() << '\n';
-	file << "! DATE " << date_str << '\n';
-	file << "! TAGS START" << '\n' << "! ";
+		file << "datafolder: " << (paths.data_path / filesystem::path(filename).stem()).string() << '\n';
+	file << "date: " << date_str << '\n';
+	file << "tags:" << '\n';
 
-	for (int i = 1; i <= tags.size(); i++) {
-		if (i % 4 == 0 || i == tags.size()) { // new line for every 4th and last tag
-			file << '#' << tags.at(i - 1) << '\n' << "! ";
-		}
-		else {
-			file << '#' << tags.at(i - 1) << ", ";
-		}
+	for (int i = 0; i < tags.size(); i++) {
+		file << "\t- #" << tags.at(i) << '\n';
 	}
-	file << "TAGS END" << endl;
+	file << "---" << endl;
 
 
 	file.close();
