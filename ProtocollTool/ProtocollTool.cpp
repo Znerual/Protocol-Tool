@@ -385,38 +385,54 @@ int main()
         list<string> auto_sugs;
         list<string>::iterator auto_sugs_pos = auto_sugs.begin();
         string auto_sug;
-        string input, command;
+        string input, last_input, command;
+        size_t length_last_suggestion = 0;
         while (true) {
             int return_key;
-         
             return_key = getinput(input);
             logger.input(input);
 
             if (return_key == VK_TAB) {
                 parse_cmd(input, cmd_structure, cmd_names, auto_comp, auto_sug, auto_sugs);
                 logger.input('\t');
-                logger << auto_sug;
-                input += auto_sug; // add prediction to console input
-                auto_sugs_pos = auto_sugs.begin();
+                
+                // check if only one prediction exists. 
+                if (!auto_sug.empty()) {
+
+                    // add prediction to console input
+                    logger << auto_sug;
+                    input += auto_sug; 
+                    length_last_suggestion = auto_sug.size();
+
+                    // parse for new output (iput + suggestion)
+                    parse_cmd(input, cmd_structure, cmd_names, auto_comp, auto_sug, auto_sugs);
+                }
+                last_input = input;
+                auto_sugs_pos = auto_sugs.begin(); // reset position for cycling through with arrow keys
                 continue;
             }
             else if (return_key == VK_UP) {
                 // run the tab command
-                if (auto_sugs.empty()) {
-                    parse_cmd(input, cmd_structure, cmd_names, auto_comp, auto_sug, auto_sugs);
-                    auto_sugs_pos = auto_sugs.begin();
-                }
                 logger.input("<UP>");
 
-                size_t prev_length = (auto_sug).length();
-                // no suggestion available
+                // check if no suggestion is available or if the user changed the input
+                if (auto_sugs.empty() || last_input != input) {
+                    auto_sugs = list<string>();
+                    parse_cmd(input, cmd_structure, cmd_names, auto_comp, auto_sug, auto_sugs);
+                    auto_sugs_pos = auto_sugs.begin();
+                    length_last_suggestion = 0;
+                    last_input = input;
+                }
+
+                // no alternate suggestions available
                 if (auto_sugs.size() == 1) {
                     input += auto_sug;
                     logger << auto_sug;
                     auto_sug = "";
                     auto_sugs = list<string>();
                     auto_sugs_pos = auto_sugs.begin();
-
+                    last_input = input;
+                    length_last_suggestion = auto_sug.size();
                     continue;
                 }
                 else if (auto_sugs.empty()) {
@@ -433,56 +449,57 @@ int main()
 
                 size_t next_length = (*(auto_sugs_pos)).length();
                
+                // delete previous suggestion from input
+                input.erase(input.end() - length_last_suggestion, input.end());
 
-                
-
-
-                // delete previous suggestion
-                input.erase(input.end() - prev_length, input.end());
-
-                auto_sug = *auto_sugs_pos;
-                input += auto_sug;
-
-                // set cursor position back
-                for (auto i = 0; i < prev_length; i++) {
+                // delte prev sug from console - set cursor position back
+                for (auto i = 0; i < length_last_suggestion; i++) {
                     logger << '\b';
                 }
 
+                auto_sug = *auto_sugs_pos;
+                input += auto_sug;
+                last_input = input;
                 // overwrite output with new suggestion
                 logger << auto_sug;
 
-                // overwrite old data 
-                if (prev_length > next_length) {
-                    for (auto i = 0; i < prev_length - next_length; i++) {
+                // overwrite old data that was longer than the previous data
+                if (length_last_suggestion > next_length) {
+                    for (auto i = 0; i < length_last_suggestion - next_length; i++) {
                         logger << ' ';
                     }
-                    for (auto i = 0; i < prev_length - next_length; i++) {
+                    for (auto i = 0; i < length_last_suggestion - next_length; i++) {
                         logger << '\b';
                     }
                 }
+
+                length_last_suggestion = auto_sug.size();
             }
             else if (return_key == VK_DOWN) {
-                if (auto_sugs.empty()) {
+                logger.input("<DOWN>");
+
+                if (auto_sugs.empty() || last_input != input) {
+                    auto_sugs = list<string>();
                     parse_cmd(input, cmd_structure, cmd_names, auto_comp, auto_sug, auto_sugs);
                     auto_sugs_pos = auto_sugs.begin();
+                    length_last_suggestion = 0;
+                    last_input = input;
                 }
-                logger.input("<DOWN>");
                 
-
-                // no suggestion available
+                // no alternate suggestion available
                 if (auto_sugs.size() == 1) {
                     logger << auto_sug;
                     input += auto_sug; // add prediction to console input
                     auto_sugs_pos = auto_sugs.begin();
+                    length_last_suggestion = auto_sug.size();
+                    last_input = input;
                     continue;
                 }
                 else if (auto_sugs.empty()) {
                     continue;
                 }
 
-                // delete previous suggestion
-                size_t prev_length = auto_sug.length();
-
+                // move to next suggestion
                 if (auto_sugs_pos == auto_sugs.begin()) {
                     auto_sugs_pos = --auto_sugs.end();
                 }
@@ -492,13 +509,14 @@ int main()
             
 
                 // delete previous suggestion
-                input.erase(input.end() - prev_length);
+                input.erase(input.end() - length_last_suggestion, input.end());// Note one too little deleted
 
                 size_t next_length = (*(auto_sugs_pos)).length();
                 auto_sug = *auto_sugs_pos;
                 input += auto_sug;
+                last_input = input;
                 // set cursor position back
-                for (auto i = 0; i < prev_length; i++) {
+                for (auto i = 0; i < length_last_suggestion; i++) {
                     logger << '\b';
                 }
 
@@ -506,20 +524,24 @@ int main()
                 logger << auto_sug;
 
                 // overwrite old data 
-                if (prev_length > next_length) {
-                    for (auto i = 0; i < prev_length - next_length; i++) {
+                if (length_last_suggestion > next_length) {
+                    for (auto i = 0; i < length_last_suggestion - next_length; i++) {
                         logger << ' ';
                     }
-                    for (auto i = 0; i < prev_length - next_length; i++) {
+                    for (auto i = 0; i < length_last_suggestion - next_length; i++) {
                         logger << '\b';
                     }
                 }
+                length_last_suggestion = auto_sug.size();
+
             }
             else if (return_key == VK_RETURN) {
                 logger << endl;
                 auto_sug = "";
                 auto_sugs = list<string>();
                 auto_sugs_pos = auto_sugs.begin();
+                length_last_suggestion = 0;
+                last_input = "";
                 break;
             }
             else {
