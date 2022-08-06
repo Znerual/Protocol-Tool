@@ -1010,14 +1010,14 @@ int getinput(string& c)
 						return irInBuf[i].Event.KeyEvent.wVirtualKeyCode;
 					}
 					else {
-						cout << irInBuf[i].Event.KeyEvent.uChar.AsciiChar;
 						if (irInBuf[i].Event.KeyEvent.uChar.AsciiChar == '\b') { // delete last character
 							if (c.size() > 0) {
 								c.pop_back();
-								cout << ' ' << '\b';
+								cout << '\b' << ' ' << '\b';
 							}
 						}
 						else {
+							cout << irInBuf[i].Event.KeyEvent.uChar.AsciiChar;
 							c += irInBuf[i].Event.KeyEvent.uChar.AsciiChar; // input new character
 						}
 						
