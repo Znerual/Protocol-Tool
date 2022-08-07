@@ -213,6 +213,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>D:\Programme\Boost\boost_1_79_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -263,6 +264,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>D:\Programme\Boost\boost_1_79_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -278,6 +280,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>D:\Programme\Boost\boost_1_79_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -355,7 +358,23 @@
       <AdditionalLibraryDirectories>Shlwapi.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test|ARM'">
+    <ClCompile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">
+    <ClCompile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'">
+    <ClCompile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="autocomplete.cpp" />
     <ClCompile Include="commands.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="conversions.cpp" />
@@ -367,6 +386,7 @@
     <ClCompile Include="watcher_windows.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="autocomplete.h" />
     <ClInclude Include="commands.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="conversions.h" />

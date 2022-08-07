@@ -109,6 +109,116 @@ std::string trim(const std::string& s) {
 	return rtrim(ltrim(s));
 }
 
+
+void load_config(const std::string init_path, Config& conf)
+{
+	try {
+		//conf = Config("D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\para.conf");
+		conf = Config(init_path);
+		cout << colorize(YELLOW, WHITE) << "  Loaded the configuration file\n";
+	}
+	catch (IOException& e) {
+		string config_path;
+		cout << colorize(RED, WHITE) << "  Error " << e.what() << " while loading the configuration file from " << "D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\para.conf" << '\n';
+		cout << colorize(BLACK, WHITE) << "  Please specify the path where the configuration file (para.conf) can be found:" << endl;
+		cout << colorize(BLACK, WHITE) << "  Path to para.conf: ";
+
+		bool found_config = false;
+		while (!found_config)
+		{
+			cin >> config_path;
+			cin.ignore(10000, '\n');
+			cin.clear();
+			try {
+				conf = Config(config_path);
+				found_config = true;
+				break;
+			}
+			catch (IOException& e2) {
+				cout << colorize(RED, WHITE) << "  Error " << e2.what() << " while loading the configuration file " << "para.conf" << '\n';
+				cout << colorize(BLACK, WHITE) << "  Please specify the path where the configuration file (para.conf) can be found. \n  In order to avoid this error, place the conf.para file ";
+				cout << colorize(BLACK, WHITE) << "  in the same directory as the .exe file.\nPath to conf.para:";
+			}
+		}
+
+	}
+
+}
+void check_base_path(Config& conf, PATHS& paths)
+{
+	if (!filesystem::exists(paths.base_path))
+	{
+		bool found_base_path = false;
+		while (!found_base_path)
+		{
+			string base_path_str;
+			cout << colorize(RED, WHITE) << "  No path for the note files was set. Set to an existing directory to include those notes or chose a new, empty directory" << endl;
+			cout << colorize(BLACK, WHITE) << "  Base Path: ";
+			cin >> base_path_str;
+			cin.clear();
+			cin.ignore(10000, '\n');
+
+
+			if (filesystem::create_directories(base_path_str)) // created new folder
+			{
+				cout << colorize(BLACK, WHITE) << "  Created a new folder at " << base_path_str << endl;
+				found_base_path = true;
+			}
+			else 
+			{ // use existing folder
+				cout << colorize(BLACK, WHITE) << "  Found the folder " << base_path_str << endl;
+
+				// check for existing files
+				if (filesystem::exists(filesystem::path(base_path_str) / paths.file_path)) {
+					bool invalid_files = false;
+					for (const auto& entry : filesystem::directory_iterator(filesystem::path(base_path_str) / paths.file_path))
+					{
+						if (entry.path().extension() != ".md" || entry.path().stem().string().size() != 9)
+						{
+							cout << colorize(RED, WHITE) << "  It seems as if invalid files are in the existing file folder!\nFound the file " << entry.path().filename() << " in the folder, which is not an appropiate note markdown file" << endl;
+							invalid_files = true;
+							break;
+						}
+					}
+					if (!invalid_files)
+					{
+						found_base_path = true;
+					}
+					else {
+						continue;
+					}
+				}
+				else { // no file folder in selected base_path, can be used as new base_path
+					found_base_path = true;
+				}
+
+			}
+
+			conf.set("BASE_PATH", base_path_str);
+			paths.base_path = filesystem::path(base_path_str);
+		}
+
+	}
+}
+void check_standard_paths(PATHS& paths)
+{
+	if (!filesystem::exists(paths.base_path / paths.file_path))
+	{
+		cout << colorize(YELLOW, WHITE) << "  No folder found at the file path " << paths.base_path / paths.file_path << ".\n  Creating a new folder..." << endl;
+		filesystem::create_directories(paths.base_path / paths.file_path);
+	}
+	if (!filesystem::exists(paths.base_path / paths.data_path))
+	{
+		cout << colorize(YELLOW, WHITE) << "  No folder found at the data path " << paths.base_path / paths.data_path << ".\n  Creating a new folder..." << endl;
+		filesystem::create_directories(paths.base_path / paths.data_path);
+	}
+	if (!filesystem::exists(paths.base_path / paths.tmp_path))
+	{
+		cout << colorize(YELLOW, WHITE) << "  No folder found at the tmp path " << paths.base_path / paths.tmp_path << ".\n  Creating a new folder..." << endl;
+		filesystem::create_directories(paths.base_path / paths.tmp_path);
+	}
+}
+
 #ifdef _WIN32
 void get_console_size(int& rows, int& columns)
 {
@@ -484,6 +594,117 @@ bool parse_folder_watcher(string& argument, FOLDER_WATCHER_MODE& mode, string& c
 		return true;
 	}
 	return false;
+}
+
+void set_console_background(const int& width, const int& height) {
+	DWORD dwBytesWritten;
+	WORD colors[3]{ BACKGROUND_BLUE, BACKGROUND_GREEN, BACKGROUND_RED };
+	FillConsoleOutputAttribute(GetStdHandle(STD_OUTPUT_HANDLE), BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED, width * height, { 0,0 }, &dwBytesWritten);
+}
+
+void set_console_font() {
+	CONSOLE_FONT_INFOEX cfi;
+	cfi.cbSize = sizeof cfi;
+	cfi.nFont = 0;
+	cfi.dwFontSize.X = 0;
+	cfi.dwFontSize.Y = 18;
+	cfi.FontFamily = FF_DONTCARE;
+	cfi.FontWeight = FW_NORMAL;
+	wcscpy_s(cfi.FaceName, L"Lucida Console"); // Consolas
+	SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &cfi);
+	//SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 240);
+}
+
+void print_greetings(const int& width) {
+	string fillerb{ "|_____________________________|" }, fillerm{ "|                             |" }, fillert{ "_____________________________" }, welcome{ "|Welcome to the Protocol Tool!|" };
+	pad(fillert, width - 1, ' ', true, MIDDLE);
+	pad(fillerm, width - 1, ' ', true, MIDDLE);
+	pad(fillerb, width - 1, ' ', true, MIDDLE);
+	pad(welcome, width - 1, ' ', true, MIDDLE);
+	cout << colorize(BLUE, WHITE) << fillert << '\n';
+	cout << colorize(BLUE, WHITE) << fillerm << '\n';
+	cout << colorize(BLUE, WHITE) << welcome << '\n';
+	cout << colorize(BLUE, WHITE) << fillerb << '\n';
+}
+#ifdef _WIN32
+
+
+void get_default_applications(PATHS& paths) {
+	wstring res_wstr;
+	TCHAR szBuf[1000];
+	DWORD cbBufSize = sizeof(szBuf);
+
+	HRESULT hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
+		L".md", NULL, szBuf, &cbBufSize);
+	//if (FAILED(hr)) { /* handle error */ }
+	res_wstr = wstring(szBuf, cbBufSize);
+
+	paths.md_exe = filesystem::path(res_wstr);
+
+	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
+		L".html", NULL, szBuf, &cbBufSize);
+	res_wstr = wstring(szBuf, cbBufSize);
+
+	paths.html_exe = filesystem::path(res_wstr);
+
+	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
+		L".docx", NULL, szBuf, &cbBufSize);
+	res_wstr = wstring(szBuf, cbBufSize);
+
+	paths.docx_exe = filesystem::path(res_wstr);
+
+	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
+		L".pdf", NULL, szBuf, &cbBufSize);
+	res_wstr = wstring(szBuf, cbBufSize);
+
+	paths.pdf_exe = filesystem::path(res_wstr);
+
+	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
+		L".tex", NULL, szBuf, &cbBufSize);
+	res_wstr = wstring(szBuf, cbBufSize);
+
+	paths.tex_exe = filesystem::path(res_wstr);
+}
+#endif // _WIN32
+
+void get_pandoc_installed(Log& logger, Config& conf, bool& ask_pandoc, bool& has_pandoc)
+{
+	FILE* pipe = _popen("pandoc -v", "r");
+	if (!pipe)
+	{
+		cerr << "Could not start command" << endl;
+	}
+	int returnCode = _pclose(pipe);
+	if (returnCode != 0 && ask_pandoc)
+	{
+		logger.setColor(BLUE, WHITE);
+		logger << "  Could not find pandoc. It is not required but highly recommended for this application, since html, tex and pdf output is only possible with the package.\n";
+		logger << "  Do you want to install it? (y/n) or never ask again (naa)?" << endl;
+		logger << "  The program needs to be restarted after the installation and will close when you decide to install pandoc." << endl;
+		string choice;
+		cin >> choice;
+		cin.clear();
+		cin.ignore(100000, '\n');
+		logger.input(choice);
+
+		if (choice == "y" || choice == "yes")
+		{
+			ShellExecute(NULL, L"open", L"https://pandoc.org/installing.html", NULL, NULL, SW_SHOW);
+			exit(0);
+		}
+		else if (choice == "naa" || choice == "never_ask_again")
+		{
+			conf.set("ASK_PANDOC", false);
+		}
+	}
+	else if (returnCode == 0) {
+		has_pandoc = true;
+		conf.set("HAS_PANDOC", true);
+	}
+	else {
+		has_pandoc = false;
+		conf.set("HAS_PANDOC", false);
+	}
 }
 
 bool parse_format(Log& logger, string& argument, FORMAT_OPTIONS& format_options) {
@@ -1096,304 +1317,9 @@ int getinput(string& c)
 
 #endif
 
-void read_cmd_structure(const filesystem::path filepath, CMD_STRUCTURE& cmds)
-{
-	
-	
-	enum class PARSE_MODE {CMD_LINE, OA_LINE};
-	ifstream file(filepath);
 
-	PARSE_MODE mode = PARSE_MODE::CMD_LINE;
 
-	CMD command;
-	list<PA> poarg;
-	unordered_map<OA, list<OA>> oparg;
 
-	string line, arg;
-	while (getline(file, line))
-	{
-		istringstream iss(line);
-		switch (mode)
-		{
-		case PARSE_MODE::CMD_LINE:
-			iss >> arg;
-			command = static_cast<CMD>(stoi(arg));
-			while (iss >> arg)
-			{
-				poarg.push_back(static_cast<PA>(stoi(arg)));
-			}
-			mode = PARSE_MODE::OA_LINE;
-			break;
-		case PARSE_MODE::OA_LINE:
-			if (line == "END") {
-				cmds[command] = make_pair(poarg, oparg);
-				poarg = list<PA>();
-				oparg = unordered_map<OA, list<OA>>();
-				mode = PARSE_MODE::CMD_LINE;
-			}
-			else {
-				OA oam;
-				list<OA> oal{};
-				iss >> arg;
-				oam = static_cast<OA>(stoi(arg));
-				while (iss >> arg)
-				{
-					oal.push_back(static_cast<OA>(stoi(arg)));
-				}
-				oparg[oam] = oal;
-			}
-
-			break;
-		default:
-			break;
-		}
-	}
-
-	file.close();
-
-}
-
-void read_cmd_names(filesystem::path filepath, CMD_NAMES& cmd_names) {
-	enum class PARSE_MODE { NONE, CMD_LINE, OA_LINE, PA_LINE };
-	ifstream file(filepath);
-
-	PARSE_MODE mode = PARSE_MODE::CMD_LINE;
-	string line, arg1, arg2;
-	while (getline(file, line)) {
-		istringstream iss(line);
-		if (line == "CMD") {
-			mode = PARSE_MODE::CMD_LINE;
-		}
-		else if (line == "OA") {
-			mode = PARSE_MODE::OA_LINE;
-		}
-		else if (line == "PA") {
-			mode = PARSE_MODE::PA_LINE;
-		}
-		else if (mode == PARSE_MODE::CMD_LINE) {
-			iss >> arg1 >> arg2;
-			cmd_names.cmd_names.insert(cmd_map::value_type(arg2, static_cast<CMD>(stoi(arg1))));
-		}
-		else if (mode == PARSE_MODE::PA_LINE) {
-			iss >> arg1 >> arg2;
-			cmd_names.pa_names.insert(pa_map::value_type(arg2, static_cast<PA>(stoi(arg1))));
-		}
-		else if (mode == PARSE_MODE::OA_LINE) {
-			iss >> arg1 >> arg2;
-			cmd_names.oa_names.insert(oa_map::value_type(arg2, static_cast<OA>(stoi(arg1))));
-		}
-	}
-}
-
-void parse_cmd(const string& input, const CMD_STRUCTURE& cmd_structure, const CMD_NAMES& cmd_names, AUTOCOMPLETE& auto_comp, string& auto_sug, list<string>& auto_sugs) {
-	enum class CMD_STATE {CMD, PA, OA, OAOA};
-	CMD_STATE state = CMD_STATE::CMD;
-
-	// read whole input into vector
-	list<string> input_words{};
-	istringstream iss(input);
-	string word;
-	while (iss >> word) {
-		input_words.push_back(word);
-	}
-
-	// split into command parts, CMD state or PA state
-	auto_sug = {};
-	if (input_words.size() == 1) {// command state
-	
-		if (!cmd_names.cmd_names.left.count(input_words.front()) == 1) { // command not completely typed
-			// find command suggestions
-			auto_comp.cmd_names.findAutoSuggestion(input_words.front(), auto_sug);
-			auto_comp.cmd_names.findAutoSuggestions(input_words.front(), auto_sugs);
-			return;
-		}
-
-		if (input.back() != ' ')
-			return;
-
-	
-	}
-	else if (input_words.size() == 0) {
-		return;
-	} else { // further states
-		if (cmd_names.cmd_names.left.count(input_words.front()) == 0) { // check whether command has typo
-			return;
-		}
-	}
-
-	const CMD command = cmd_names.cmd_names.left.at(input_words.front());
-	input_words.pop_front();
-		
-	list<PA> pa_args = cmd_structure.at(command).first;
-	if (pa_args.size() > 0) {
-
-		// suggest first pa if first pa is tags or mode name (not if date)
-		if (input_words.size() == 0) {
-			if (pa_args.front() == PA::TAGS) {
-				auto_comp.tags.findAutoSuggestion("", auto_sug);
-				auto_comp.tags.findAutoSuggestions("", auto_sugs);
-				return;
-			}
-			else if (pa_args.front() == PA::MODE_NAME) {
-				auto_comp.mode_names.findAutoSuggestion("", auto_sug);
-				auto_comp.mode_names.findAutoSuggestions("", auto_sugs);
-				return;
-			}
-			return;
-			
-		}
-		else {
-			bool skip_pa = false;
-			int count = 0;
-			for (const auto& pa_arg : pa_args) {
-				// too many positional arguments specified
-				if (count - 1 > (int)input_words.size()) { // -1 because tags as pa can be empty
-					return; // to little input words
-				}
-				if (input_words.back().starts_with('-')) { //is a oa, skip pa
-					skip_pa = true;
-					break;
-				}
-				if (pa_arg == PA::TAGS && (input_words.size()) >= count) { // if previous pa where set (1 arg per word), tags can be suggested
-					if (input.back() == ' ') {
-						auto_comp.tags.findAutoSuggestion("", auto_sug);
-						auto_comp.tags.findAutoSuggestions("", auto_sugs);
-					}
-					else {
-						auto_comp.tags.findAutoSuggestion(input_words.back(), auto_sug);
-						auto_comp.tags.findAutoSuggestions(input_words.back(), auto_sugs);
-					}
-					return;
-				}
-				else if (pa_arg == PA::MODE_NAME && (count == input_words.size() || count == input_words.size() - 1) ) { // if pa of current input count (or next) is mode_name than suggest
-					auto_comp.mode_names.findAutoSuggestion(input_words.back(), auto_sug);
-					auto_comp.mode_names.findAutoSuggestions(input_words.back(), auto_sugs);
-					return;
-				}
-				else if (pa_arg == PA::DATE && count == input_words.size() - 1) { // suggest date
-					time_t now = time(nullptr);
-					date2str_medium(auto_sug, now);
-
-					string dates;
-					for (auto i = 1; i < 33; i++) {
-						now = time(nullptr) +  (60 * 60 * 24) * i ; // add next 32 days to list and then the last 32 days
-						date2str_medium(dates, now);
-						auto_sugs.push_back(dates);
-					}
-					for (auto i = -32; i < 0; i++) {
-						now = time(nullptr) + (60 * 60 * 24) * i; // add next 32 days to list and then the last 32 days
-						date2str_medium(dates, now);
-						auto_sugs.push_back(dates);
-					
-					}
-					return;
-				}
-
-				count += 1;
-			}
-			if (!skip_pa)
-				return; // cant suggest
-		}
-		
-	}
-	
-	unordered_map<OA, list<OA>> oa_args = cmd_structure.at(command).second;
-	list<string> oa_strs;
-	for (const auto& [oa_arg, _] : oa_args) {
-		if (oa_arg == OA::CMD) {
-			for (const auto& [name, id] : cmd_names.cmd_names) {
-				oa_strs.push_back(name);
-			}
-		}
-		else {
-			oa_strs.push_back(cmd_names.oa_names.right.at(oa_arg));
-		}
-	}
-
-	if (input_words.empty()) {
-		TrieTree oa_trietree = TrieTree(oa_strs);
-		oa_trietree.findAutoSuggestion("", auto_sug);
-		oa_trietree.findAutoSuggestions("", auto_sugs);
-		return;
-	}
-	// find end of positional arguments by searching for first optional argument
-	auto oa_start_pos = find_first_of(input_words.begin(), input_words.end(), oa_strs.begin(), oa_strs.end());
-
-	// did not find a single oa, suggest oa
-	if (oa_start_pos == input_words.end()) {
-		TrieTree oa_trietree = TrieTree(oa_strs);
-
-		// complete last input word
-		oa_trietree.findAutoSuggestion(input_words.back(), auto_sug);
-		oa_trietree.findAutoSuggestions(input_words.back(), auto_sugs);
-		return;
-	}
-	else {
-
-		input_words.erase(input_words.begin(), oa_start_pos); // erase all pa
-
-		// erase set oa and find active oa (last oa, important if that oa expects tags)
-		OA active_oa;
-		list<string>::iterator active_oa_words_pos;
-		for (auto it = input_words.begin(); it != input_words.end(); ++it) {
-			auto oa_found = std::find(oa_strs.begin(), oa_strs.end(), *it);
-			if (oa_found != oa_strs.end()) {
-				active_oa = cmd_names.oa_names.left.at(*it);
-				active_oa_words_pos = it;
-				oa_strs.erase(oa_found); // delete oa name from the list of available names
-				oa_args.erase(active_oa); // delete from the list of oa in the cmd structure
-			}
-		}
-
-		// delete handled with oa
-		input_words.erase(input_words.begin(), active_oa_words_pos);
-		
-		if (oa_args[active_oa].size() == 0) { // last complete oa has no follow up parameter, suggest next oa
-			TrieTree oa_trietree = TrieTree(oa_strs);
-			if (input.back() == ' ') {
-				oa_trietree.findAutoSuggestion("", auto_sug);
-				oa_trietree.findAutoSuggestions("", auto_sugs);
-			}
-			else {
-				oa_trietree.findAutoSuggestion(input_words.back(), auto_sug);
-				oa_trietree.findAutoSuggestions(input_words.back(), auto_sugs);
-			}
-			return;
-		}
-		else if (oa_args[active_oa].size() == 1) { // only suggest one oaoa tag if that one is tags
-			if (oa_args[active_oa].front() == OA::TAGS) {
-				if (input.back() == ' ') {
-					auto_comp.tags.findAutoSuggestion("", auto_sug);
-					auto_comp.tags.findAutoSuggestions("", auto_sugs);
-				}
-				else {
-					auto_comp.tags.findAutoSuggestion(input_words.back(), auto_sug);
-					auto_comp.tags.findAutoSuggestions(input_words.back(), auto_sugs);
-				}
-				return;
-			}
-		}
-		else { // multiple options for oa parameter, show all
-			list<string> oaoa_strs;
-			for (const auto& oa_arg : oa_args[active_oa]) {
-				oaoa_strs.push_back(cmd_names.oa_names.right.at(oa_arg));
-			}
-
-			TrieTree oa_trietree = TrieTree(oaoa_strs);
-			if (input.back() == ' ') {
-				oa_trietree.findAutoSuggestion("", auto_sug);
-				oa_trietree.findAutoSuggestions("", auto_sugs);
-			}
-			else {
-				oa_trietree.findAutoSuggestion(input_words.back(), auto_sug);
-				oa_trietree.findAutoSuggestions(input_words.back(), auto_sugs);
-			}
-			return;
-		}
-		
-	}
-	
-}
 
 void read_mode_names(Config& conf, std::list<std::string>& mode_names)
 {

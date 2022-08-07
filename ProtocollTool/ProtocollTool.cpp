@@ -14,6 +14,7 @@
 #include "commands.h"
 #include "watcher_windows.h"
 #include "file_manager.h"
+#include "autocomplete.h"
 
 #include <iostream>
 #include <filesystem>
@@ -56,72 +57,14 @@ int main()
 
     int width, height;
     get_console_size(height, width);
+    
+    set_console_font();
+    set_console_background(width, height);
+    
+    print_greetings(width);
 
-    
-    CONSOLE_FONT_INFOEX cfi;
-    cfi.cbSize = sizeof cfi;
-    cfi.nFont = 0;
-    cfi.dwFontSize.X = 0;
-    cfi.dwFontSize.Y = 18;
-    cfi.FontFamily = FF_DONTCARE;
-    cfi.FontWeight = FW_NORMAL;
-   
-
-    wcscpy_s(cfi.FaceName, L"Lucida Console"); // Consolas
-    SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &cfi);
-    //SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 240);
-    
-    
-    DWORD dwBytesWritten;
-    WORD colors[3]{ BACKGROUND_BLUE, BACKGROUND_GREEN, BACKGROUND_RED };
-    FillConsoleOutputAttribute(GetStdHandle(STD_OUTPUT_HANDLE), BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED, width * height, { 0,0 }, &dwBytesWritten);
-   
-    //system("color d7");
-    // TODO: Add file system watcher for updating the state when files are changed:
-    // https://docs.microsoft.com/en-us/previous-versions/chzww271(v=vs.140)?redirectedfrom=MSDN
-    {
-        string fillerb{ "|_____________________________|" }, fillerm{ "|                             |" }, fillert{ "_____________________________" }, welcome{ "|Welcome to the Protocol Tool!|" };
-        pad(fillert, width - 1, ' ', true, MIDDLE);
-        pad(fillerm, width - 1, ' ', true, MIDDLE);
-        pad(fillerb, width - 1, ' ', true, MIDDLE);
-        pad(welcome, width - 1, ' ', true, MIDDLE);
-    cout << colorize(BLUE, WHITE) << fillert << '\n';
-    cout << colorize(BLUE, WHITE) << fillerm << '\n';
-    cout << colorize(BLUE, WHITE) << welcome << '\n';
-    cout << colorize(BLUE, WHITE) << fillerb << '\n';
-    }
     Config conf;
-
-    try {
-        //conf = Config("D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\para.conf");
-        conf = Config("para.conf");
-        cout << colorize(YELLOW, WHITE) << "  Loaded the configuration file\n";
-    }
-    catch (IOException& e) {
-        string config_path;
-        cout << colorize(RED, WHITE) << "  Error " << e.what() << " while loading the configuration file from " << "D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\para.conf" << '\n';
-        cout << colorize(BLACK, WHITE) << "  Please specify the path where the configuration file (para.conf) can be found:" << endl;
-        cout << colorize(BLACK, WHITE) << "  Path to para.conf: ";
-        
-        bool found_config = false;
-        while (!found_config)
-        {
-            cin >> config_path;
-            cin.ignore(10000, '\n');
-            cin.clear();
-            try {
-                conf = Config(config_path);
-                found_config = true;
-                break;
-            }
-            catch (IOException& e2) {
-                cout << colorize(RED, WHITE) << "  Error " << e2.what() << " while loading the configuration file " << "para.conf" << '\n';
-                cout << colorize(BLACK, WHITE) << "  Please specify the path where the configuration file (para.conf) can be found. \n  In order to avoid this error, place the conf.para file ";
-                cout << colorize(BLACK, WHITE) << "  in the same directory as the .exe file.\nPath to conf.para:";
-            }
-        }
-        
-    }
+    load_config("para.conf", conf);
     
     // read in config arguments and setup paths
     bool ask_pandoc, has_pandoc, write_log;
@@ -179,156 +122,19 @@ int main()
         }
 
         // find default applications for opening markdown files
-        wstring res_wstr;
-        TCHAR szBuf[1000];
-        DWORD cbBufSize = sizeof(szBuf);
-
-        HRESULT hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
-            L".md", NULL, szBuf, &cbBufSize);
-        //if (FAILED(hr)) { /* handle error */ }
-        res_wstr = wstring(szBuf, cbBufSize);
-        
-        paths.md_exe = filesystem::path(res_wstr);
-
-        hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
-            L".html", NULL, szBuf, &cbBufSize);
-        res_wstr = wstring(szBuf, cbBufSize);
-
-        paths.html_exe = filesystem::path(res_wstr);
-
-        hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
-            L".docx", NULL, szBuf, &cbBufSize);
-        res_wstr = wstring(szBuf, cbBufSize);
-
-        paths.docx_exe = filesystem::path(res_wstr);
-
-        hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
-            L".pdf", NULL, szBuf, &cbBufSize);
-        res_wstr = wstring(szBuf, cbBufSize);
-
-        paths.pdf_exe = filesystem::path(res_wstr);
-
-        hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
-            L".tex", NULL, szBuf, &cbBufSize);
-        res_wstr = wstring(szBuf, cbBufSize);
-
-        paths.tex_exe = filesystem::path(res_wstr);
+        get_default_applications(paths);
     }
+
     // TODO check error if all paths do not exist
+    check_base_path(conf, paths);
+    check_standard_paths(paths);
     
-    if (!filesystem::exists(paths.base_path))
-    {
-        
-        
-        bool found_base_path = false;
-        while (!found_base_path)
-        {
-            string base_path_str;
-            cout << colorize(RED, WHITE) << "  No path for the note files was set. Set to an existing directory to include those notes or chose a new, empty directory" << endl;
-            cout << colorize(BLACK, WHITE) << "  Base Path: ";
-            cin >> base_path_str;
-            cin.clear();
-            cin.ignore(10000, '\n');
-            
-
-            if (filesystem::create_directories(base_path_str)) // created new folder
-            {
-                cout << colorize(BLACK, WHITE) << "  Created a new folder at " << base_path_str << endl;
-                found_base_path = true;
-            }
-            else { // use existing folder
-                cout << colorize(BLACK, WHITE)<< "  Found the folder " << base_path_str << endl;
-
-                // check for existing files
-                if (filesystem::exists(filesystem::path(base_path_str) / paths.file_path)) {
-                    bool invalid_files = false;
-                    for (const auto& entry : filesystem::directory_iterator(filesystem::path(base_path_str) / paths.file_path))
-                    {
-                        if (entry.path().extension() != ".md" || entry.path().stem().string().size() != 9)
-                        {
-                            cout << colorize(RED, WHITE) << "  It seems as if invalid files are in the existing file folder!\nFound the file " << entry.path().filename() << " in the folder, which is not an appropiate note markdown file" << endl;
-                            invalid_files = true;
-                            break;
-                        }
-                    }
-                    if (!invalid_files)
-                    {
-                        found_base_path = true;
-                    }
-                    else {
-                        continue;
-                    }
-                }
-                else { // no file folder in selected base_path, can be used as new base_path
-                    found_base_path = true;
-                }
-                
-            }
-
-            conf.set("BASE_PATH", base_path_str);
-            paths.base_path = filesystem::path(base_path_str);
-        }
-        
-    }
-    
-    
-    if (!filesystem::exists(paths.base_path / paths.file_path))
-    {
-        cout << colorize(YELLOW ,WHITE) << "  No folder found at the file path " << paths.base_path / paths.file_path << ".\n  Creating a new folder..." << endl;
-        filesystem::create_directories(paths.base_path / paths.file_path);
-    }
-    if (!filesystem::exists(paths.base_path / paths.data_path))
-    {
-        cout << colorize(YELLOW, WHITE) << "  No folder found at the data path " << paths.base_path / paths.data_path << ".\n  Creating a new folder..." << endl;
-        filesystem::create_directories(paths.base_path / paths.data_path);
-    }
-    if (!filesystem::exists(paths.base_path / paths.tmp_path))
-    {
-        cout << colorize(YELLOW, WHITE) << "  No folder found at the tmp path " << paths.base_path / paths.tmp_path << ".\n  Creating a new folder..." << endl;
-        filesystem::create_directories(paths.base_path / paths.tmp_path);
-    }
-
     Log logger(paths.base_path / log_path, write_log);
     logger.setColor(YELLOW, WHITE);
     logger << "  The base path for all files is: " << paths.base_path.string() << ".\n  The path to the notes is " << paths.file_path.string() << " and to the data is " << paths.data_path.string() << '\n' << endl;
 
     // check if pandoc is installed
-    FILE* pipe = _popen("pandoc -v", "r");
-    if (!pipe)
-    {
-        cerr << "Could not start command" << endl;
-    }
-    int returnCode = _pclose(pipe);
-    if (returnCode != 0 && ask_pandoc)
-    {
-        logger.setColor(BLUE, WHITE);
-        logger << "  Could not find pandoc. It is not required but highly recommended for this application, since html, tex and pdf output is only possible with the package.\n";
-        logger << "  Do you want to install it? (y/n) or never ask again (naa)?" << endl;
-        logger << "  The program needs to be restarted after the installation and will close when you decide to install pandoc." << endl;
-        string choice;
-        cin >> choice;
-        cin.clear();
-        cin.ignore(100000, '\n');
-        logger.input(choice);
-
-        if (choice == "y" || choice == "yes")
-        {
-            ShellExecute(NULL, L"open", L"https://pandoc.org/installing.html", NULL, NULL, SW_SHOW);
-            exit(0);
-        }
-        else if (choice == "naa" || choice == "never_ask_again")
-        {
-            conf.set("ASK_PANDOC", false);
-        }
-    }
-    else if (returnCode == 0) {
-        has_pandoc = true;
-        conf.set("HAS_PANDOC", true);
-    }
-    else {
-        has_pandoc = false;
-        conf.set("HAS_PANDOC", false);
-    }
+    get_pandoc_installed(logger, conf, ask_pandoc, has_pandoc);
 
     vector<string> filter_selection;
     map<string, time_t> file_map = list_all_files(paths);
@@ -357,14 +163,11 @@ int main()
     jthread monitor_file_changes(note_change_watcher, ref(logger), paths, ref(update_files), ref(hExit));
 
     logger.setColor(BLACK, WHITE);
-
     
-    
-    CMD_NAMES cmd_names;
-    CMD_STRUCTURE cmd_structure;
-    read_cmd_structure(filesystem::path("cmd.dat"), cmd_structure);
-    read_cmd_names(filesystem::path("cmd_names.dat"), cmd_names);
-    AUTOCOMPLETE auto_comp(cmd_names, tag_count, mode_names); // update trietrees when tags and/or modes are added/changed
+    AUTO_INPUT auto_input;
+    read_cmd_structure(filesystem::path("cmd.dat"), auto_input.cmd_structure);
+    read_cmd_names(filesystem::path("cmd_names.dat"), auto_input.cmd_names);
+    AUTOCOMPLETE auto_comp(auto_input.cmd_names, tag_count, mode_names); // update trietrees when tags and/or modes are added/changed
 
     // mainloop for reading commands
     bool running = true;
@@ -382,164 +185,29 @@ int main()
         logger << ":";
 
         // parse user input and allow for autocomplete
-        list<string> auto_sugs;
-        list<string>::iterator auto_sugs_pos = auto_sugs.begin();
-        string auto_sug;
-        string input, last_input, command;
+        AUTO_SUGGESTIONS auto_suggestions;
+        string last_input, command;
         size_t length_last_suggestion = 0;
         while (true) {
             int return_key;
-            return_key = getinput(input);
-            logger.input(input);
+            return_key = getinput(auto_input.input);
+            logger.input(auto_input.input);
 
             if (return_key == VK_TAB) {
-                parse_cmd(input, cmd_structure, cmd_names, auto_comp, auto_sug, auto_sugs);
-                logger.input('\t');
-                
-                // check if only one prediction exists. 
-                if (!auto_sug.empty()) {
-
-                    // add prediction to console input
-                    logger << auto_sug;
-                    input += auto_sug; 
-                    length_last_suggestion = auto_sug.size();
-
-                    // parse for new output (iput + suggestion)
-                    parse_cmd(input, cmd_structure, cmd_names, auto_comp, auto_sug, auto_sugs);
-                }
-                last_input = input;
-                auto_sugs_pos = auto_sugs.begin(); // reset position for cycling through with arrow keys
-                continue;
+                logger.input("<TAB>");
+                get_suggestion(logger, auto_input, auto_comp, auto_suggestions, last_input, length_last_suggestion);
             }
             else if (return_key == VK_UP) {
-                // run the tab command
                 logger.input("<UP>");
-
-                // check if no suggestion is available or if the user changed the input
-                if (auto_sugs.empty() || last_input != input) {
-                    auto_sugs = list<string>();
-                    parse_cmd(input, cmd_structure, cmd_names, auto_comp, auto_sug, auto_sugs);
-                    auto_sugs_pos = auto_sugs.begin();
-                    length_last_suggestion = 0;
-                    last_input = input;
-                }
-
-                // no alternate suggestions available
-                if (auto_sugs.size() == 1) {
-                    input += auto_sug;
-                    logger << auto_sug;
-                    auto_sug = "";
-                    auto_sugs = list<string>();
-                    auto_sugs_pos = auto_sugs.begin();
-                    last_input = input;
-                    length_last_suggestion = auto_sug.size();
-                    continue;
-                }
-                else if (auto_sugs.empty()) {
-                    continue;
-                }
-                else {
-                    if (auto_sugs_pos == prev(auto_sugs.end())) {
-                        auto_sugs_pos = auto_sugs.begin();
-                    }
-                    else {
-                        ++auto_sugs_pos;
-                    }
-                }
-
-                size_t next_length = (*(auto_sugs_pos)).length();
-               
-                // delete previous suggestion from input
-                input.erase(input.end() - length_last_suggestion, input.end());
-
-                // delte prev sug from console - set cursor position back
-                for (auto i = 0; i < length_last_suggestion; i++) {
-                    logger << '\b';
-                }
-
-                auto_sug = *auto_sugs_pos;
-                input += auto_sug;
-                last_input = input;
-                // overwrite output with new suggestion
-                logger << auto_sug;
-
-                // overwrite old data that was longer than the previous data
-                if (length_last_suggestion > next_length) {
-                    for (auto i = 0; i < length_last_suggestion - next_length; i++) {
-                        logger << ' ';
-                    }
-                    for (auto i = 0; i < length_last_suggestion - next_length; i++) {
-                        logger << '\b';
-                    }
-                }
-
-                length_last_suggestion = auto_sug.size();
+                cicle_suggestions(logger, auto_input, auto_comp, auto_suggestions, last_input, length_last_suggestion, true);
             }
             else if (return_key == VK_DOWN) {
                 logger.input("<DOWN>");
-
-                if (auto_sugs.empty() || last_input != input) {
-                    auto_sugs = list<string>();
-                    parse_cmd(input, cmd_structure, cmd_names, auto_comp, auto_sug, auto_sugs);
-                    auto_sugs_pos = auto_sugs.begin();
-                    length_last_suggestion = 0;
-                    last_input = input;
-                }
-                
-                // no alternate suggestion available
-                if (auto_sugs.size() == 1) {
-                    logger << auto_sug;
-                    input += auto_sug; // add prediction to console input
-                    auto_sugs_pos = auto_sugs.begin();
-                    length_last_suggestion = auto_sug.size();
-                    last_input = input;
-                    continue;
-                }
-                else if (auto_sugs.empty()) {
-                    continue;
-                }
-
-                // move to next suggestion
-                if (auto_sugs_pos == auto_sugs.begin()) {
-                    auto_sugs_pos = --auto_sugs.end();
-                }
-                else {
-                    --auto_sugs_pos;
-                }
-            
-
-                // delete previous suggestion
-                input.erase(input.end() - length_last_suggestion, input.end());// Note one too little deleted
-
-                size_t next_length = (*(auto_sugs_pos)).length();
-                auto_sug = *auto_sugs_pos;
-                input += auto_sug;
-                last_input = input;
-                // set cursor position back
-                for (auto i = 0; i < length_last_suggestion; i++) {
-                    logger << '\b';
-                }
-
-                // overwrite output with new suggestion
-                logger << auto_sug;
-
-                // overwrite old data 
-                if (length_last_suggestion > next_length) {
-                    for (auto i = 0; i < length_last_suggestion - next_length; i++) {
-                        logger << ' ';
-                    }
-                    for (auto i = 0; i < length_last_suggestion - next_length; i++) {
-                        logger << '\b';
-                    }
-                }
-                length_last_suggestion = auto_sug.size();
-
+                cicle_suggestions(logger, auto_input, auto_comp, auto_suggestions, last_input, length_last_suggestion, false);
             }
             else if (return_key == VK_RETURN) {
                 logger << endl;
-                auto_sug = "";
-                auto_sugs = list<string>();
-                auto_sugs_pos = auto_sugs.begin();
+                auto_suggestions = AUTO_SUGGESTIONS();
                 length_last_suggestion = 0;
                 last_input = "";
                 break;
@@ -552,7 +220,7 @@ int main()
 
 
 
-        istringstream iss(input);
+        istringstream iss(auto_input.input);
         iss >> command;
         boost::algorithm::to_lower(command);
 
@@ -821,7 +489,7 @@ int main()
             logger << wrap("Available options are : (n)ew, (f)ind, (f)ilter, (s)how, (a)dd_data, (d)etails, (t)ags, (u)pdate, (e)xport and (o)pen.",3) << 'n';
         }
 
-        input = "";
+        auto_input.input = "";
         logger << endl;
 
         if (update_files)
