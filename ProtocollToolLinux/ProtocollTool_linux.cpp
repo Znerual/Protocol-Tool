@@ -9,6 +9,7 @@
 #include "../ProtocollTool/Config.h"
 #include "../ProtocollTool/conversions.h"
 #include "../ProtocollTool/output.h"
+#include "../ProtocollTool/autocomplete.h"
 #include "commands_linux.h"
 #include "file_manager_linux.h"
 
@@ -16,6 +17,8 @@
 #include <filesystem>
 #include <fstream>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <time.h>
 #include <stdint.h>
 #include <boost/algorithm/string.hpp>
@@ -23,11 +26,57 @@
 #include <boost/bimap.hpp>
 #include <streambuf>
 #include <thread>
-
-
-
+#include <readline/readline.h>
+#include <readline/history.h>
 
 using namespace std;
+
+AUTO_INPUT auto_input;
+map<string, int> tag_count;
+unordered_map<int, string> mode_names;
+
+
+
+char* completion_generator(const char* text, int state) {
+    // This function is called with state=0 the first time; subsequent calls are
+    // with a nonzero state. state=0 can be used to perform one-time
+    // initialization for this completion session.
+    static std::vector<std::string> matches;
+    static size_t match_index = 0;
+
+    if (state == 0) {
+        // During initialization, compute the actual matches for 'text' and keep
+        // them in a static vector.
+        matches.clear();
+        match_index = 0;
+        AUTOCOMPLETE auto_comp(auto_input.cmd_names, tag_count, mode_names); // update trietrees when tags and/or modes are added/changed
+        AUTO_SUGGESTIONS auto_suggestions = AUTO_SUGGESTIONS();
+        auto_input.input = rl_line_buffer;
+        // Collect a vector of matches: vocabulary words that begin with text.
+        parse_cmd(auto_input, auto_comp, auto_suggestions);
+        for (const auto& sug : auto_suggestions.auto_sugs) {
+            matches.push_back(text + sug); 
+        }
+        
+    }
+
+    if (match_index >= matches.size()) {
+        // We return nullptr to notify the caller no more matches are available.
+        return nullptr;
+    }
+    else {
+        // Return a malloc'd char* for the match. The caller frees it.
+        return strdup(matches[match_index++].c_str());
+    }
+}
+
+char** completer(const char* text, int start, int end) { 
+    // Don't do filename completion even if our generator finds no matches.
+    rl_attempted_completion_over = 1;
+    // Note: returning nullptr here will make readline use the default filename
+    // completer.
+    return rl_completion_matches(text, completion_generator);
+}
 
 int main()
 {
@@ -49,7 +98,7 @@ SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &sbInfoEx);
     int width, height;
     get_console_size(height, width);
     {
-        string fillerb{ "|_____________________________|" }, fillerm{ "|                             |" }, fillert{ "_____________________________" }, welcome{ "|Welcome to the Protocol Tool!|" };
+        string fillerb = "|_____________________________|", fillerm = "|                             |", fillert = "_____________________________", welcome =  "|Welcome to the Protocol Tool!|";
         pad(fillert, width - 1, ' ', true, MIDDLE);
         pad(fillerm, width - 1, ' ', true, MIDDLE);
         pad(fillerb, width - 1, ' ', true, MIDDLE);
@@ -96,7 +145,6 @@ SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &sbInfoEx);
     // read in config arguments and setup paths
     bool ask_pandoc, has_pandoc, write_log;
     int  num_modes;
-    unordered_map<int, string> mode_names;
     PATHS paths;
     filesystem::path log_path;
     string file_ending, tmp_filename;
@@ -218,44 +266,8 @@ SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &sbInfoEx);
     logger.setColor(YELLOW, WHITE);
     logger << "  The base path for all files is: " << paths.base_path.string() << ".\n  The path to the notes is " << paths.file_path.string() << " and to the data is " << paths.data_path.string() << '\n' << endl;
 
-    // check if pandoc is installed
-    FILE* pipe = popen("pandoc -v", "r");
-    if (!pipe)
-    {
-        cerr << "Could not start command" << endl;
-    }
-    int returnCode = pclose(pipe);
-    if (returnCode != 0 && ask_pandoc)
-    {
-        logger.setColor(BLUE, WHITE);
-        logger << "  Could not find pandoc. It is not required but highly recommended for this application, since html, tex and pdf output is only possible with the package.\n";
-        logger << "  Do you want to install it? (y/n) or never ask again (naa)?" << endl;
-        logger << "  The program needs to be restarted after the installation and will close when you decide to install pandoc." << endl;
-        string choice;
-        cin >> choice;
-        cin.clear();
-        cin.ignore(100000, '\n');
-        logger.input(choice);
-
-        if (choice == "y" || choice == "yes")
-        {
-            system("xdg-open https://pandoc.org/installing.html");
-            exit(0);
-        }
-        else if (choice == "naa" || choice == "never_ask_again")
-        {
-            conf.set("ASK_PANDOC", false);
-        }
-    }
-    else if (returnCode == 0) {
-        has_pandoc = true;
-        conf.set("HAS_PANDOC", true);
-    }
-    else {
-        has_pandoc = false;
-        conf.set("HAS_PANDOC", false);
-    }
-
+    get_pandoc_installed(logger, conf, ask_pandoc, has_pandoc);
+   
     vector<string> filter_selection;
     map<string, time_t> file_map = list_all_files(paths);
     map<string, vector<string>> tag_map = list_all_tags(logger, paths);
@@ -265,37 +277,52 @@ SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &sbInfoEx);
     {
         filter_selection.push_back(path);
     }
-    map<string, int> tag_count = get_tag_count(tag_map, filter_selection);
+    tag_count = get_tag_count(tag_map, filter_selection);
 
     // mode tag variables
     vector<string> mode_tags;
-
+   
+    read_cmd_structure(filesystem::path("cmd.dat"), auto_input.cmd_structure);
+    read_cmd_names(filesystem::path("cmd_names.dat"), auto_input.cmd_names);
     
 
-
-
     logger.setColor(BLACK, WHITE);
+  
 
-
+    rl_attempted_completion_function =  completer;
+    rl_bind_key('\t', rl_complete);
     // mainloop for reading commands
+    //char* buf;
     bool running = true;
+    string command , input;
+    string prompt;
+    //char* input;
     while (running)
     {
-
+       
         logger.setColor(BLACK, WHITE);
-        logger << " Input";
+        prompt = logger.color;
+        //logger << " Input";
+        prompt += " Input";
         logger.setColor(YELLOW, WHITE);
+        prompt += logger.color;
         if (active_mode != -1)
         {
-            logger << " (" << mode_names[active_mode] << ")";
+            prompt += " (" + mode_names[active_mode] + ")";
+            
         }
         logger.setColor(BLACK, WHITE);
-        logger << ":";
+        prompt += logger.color;
+        prompt += ":";
+        //logger << ":";
 
         // parse user input and allow for autocomplete
-      
-        string input, command;
-        getline(cin, input);
+        AUTO_SUGGESTIONS auto_suggestions;
+        input = readline(prompt.c_str());
+        //getline(cin, input);
+        if (input.size() > 0) {
+            add_history(input.c_str());
+        }
 
         istringstream iss(input);
         iss >> command;
@@ -567,7 +594,7 @@ SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &sbInfoEx);
 
         input = "";
         logger << endl;
-
+        //free(input);
   
     }
 

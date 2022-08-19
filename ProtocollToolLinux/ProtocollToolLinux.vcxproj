@@ -51,6 +51,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\ProtocollTool\autocomplete.h" />
     <ClInclude Include="..\ProtocollTool\Config.h" />
     <ClInclude Include="..\ProtocollTool\conversions.h" />
     <ClInclude Include="..\ProtocollTool\exceptions.h" />
@@ -87,6 +88,7 @@
     <ClInclude Include="file_manager_linux.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\ProtocollTool\autocomplete.cpp" />
     <ClCompile Include="..\ProtocollTool\Config.cpp" />
     <ClCompile Include="..\ProtocollTool\conversions.cpp" />
     <ClCompile Include="..\ProtocollTool\log.cpp" />
@@ -122,6 +124,7 @@
       <RemoteCopyToOutputDir Condition="'$(Configuration)|$(Platform)'=='Test|x64'">true</RemoteCopyToOutputDir>
       <RemoteCopyFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</RemoteCopyFile>
       <RemoteCopyToOutputDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</RemoteCopyToOutputDir>
+      <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="..\ProtocollTool\cmd_names.dat">
       <RemoteCopyFile Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</RemoteCopyFile>
@@ -148,6 +151,7 @@
       <RemoteCopyToOutputDir Condition="'$(Configuration)|$(Platform)'=='Test|x64'">true</RemoteCopyToOutputDir>
       <RemoteCopyFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</RemoteCopyFile>
       <RemoteCopyToOutputDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</RemoteCopyToOutputDir>
+      <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="..\ProtocollTool\para.conf">
       <RemoteCopyFile Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</RemoteCopyFile>
@@ -251,7 +255,8 @@
     <EnableIncrementalBuild>WithNinja</EnableIncrementalBuild>
     <RemoteIntRelDir>Build-Linux/$(Platform)/$(Configuration)</RemoteIntRelDir>
     <RemoteOutRelDir>Build-Linux/$(Platform)/$(Configuration)</RemoteOutRelDir>
-    <IncludePath>/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <OutDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</OutDir>
@@ -259,7 +264,8 @@
     <EnableIncrementalBuild>WithNinja</EnableIncrementalBuild>
     <RemoteIntRelDir>$(RemoteProjectRelDir)/Build-Linux/$(Platform)/$(Configuration)/</RemoteIntRelDir>
     <RemoteOutRelDir>$(RemoteProjectRelDir)/Build-Linux/$(Platform)/$(Configuration)/</RemoteOutRelDir>
-    <IncludePath>/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <OutDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</OutDir>
@@ -267,7 +273,8 @@
     <EnableIncrementalBuild>WithNinja</EnableIncrementalBuild>
     <RemoteIntRelDir>Build-Linux/$(Platform)/$(Configuration)</RemoteIntRelDir>
     <RemoteOutRelDir>Build-Linux/$(Platform)/$(Configuration)</RemoteOutRelDir>
-    <IncludePath>/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <OutDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</OutDir>
@@ -275,7 +282,8 @@
     <EnableIncrementalBuild>WithNinja</EnableIncrementalBuild>
     <RemoteIntRelDir>$(RemoteProjectRelDir)/Build-Linux/$(Platform)/$(Configuration)/</RemoteIntRelDir>
     <RemoteOutRelDir>$(RemoteProjectRelDir)/Build-Linux/$(Platform)/$(Configuration)/</RemoteOutRelDir>
-    <IncludePath>/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</OutDir>
@@ -283,7 +291,8 @@
     <EnableIncrementalBuild>WithNinja</EnableIncrementalBuild>
     <RemoteIntRelDir>Build-Linux/$(Platform)/$(Configuration)</RemoteIntRelDir>
     <RemoteOutRelDir>Build-Linux/$(Platform)/$(Configuration)</RemoteOutRelDir>
-    <IncludePath>/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</OutDir>
@@ -291,7 +300,8 @@
     <EnableIncrementalBuild>WithNinja</EnableIncrementalBuild>
     <RemoteIntRelDir>$(RemoteProjectRelDir)/Build-Linux/$(Platform)/$(Configuration)/</RemoteIntRelDir>
     <RemoteOutRelDir>$(RemoteProjectRelDir)/Build-Linux/$(Platform)/$(Configuration)/</RemoteOutRelDir>
-    <IncludePath>/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <OutDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</OutDir>
@@ -299,7 +309,8 @@
     <EnableIncrementalBuild>WithNinja</EnableIncrementalBuild>
     <RemoteIntRelDir>Build-Linux/$(Platform)/$(Configuration)</RemoteIntRelDir>
     <RemoteOutRelDir>Build-Linux/$(Platform)/$(Configuration)</RemoteOutRelDir>
-    <IncludePath>/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <OutDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</OutDir>
@@ -307,19 +318,24 @@
     <EnableIncrementalBuild>WithNinja</EnableIncrementalBuild>
     <RemoteIntRelDir>$(RemoteProjectRelDir)/Build-Linux/$(Platform)/$(Configuration)/</RemoteIntRelDir>
     <RemoteOutRelDir>$(RemoteProjectRelDir)/Build-Linux/$(Platform)/$(Configuration)/</RemoteOutRelDir>
-    <IncludePath>/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|ARM'">
-    <IncludePath>/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|ARM64'">
-    <IncludePath>/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'">
-    <IncludePath>/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|x86'">
-    <IncludePath>/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
+    <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <ClCompile>
@@ -327,6 +343,10 @@
       <CLanguageStandard>gnu11</CLanguageStandard>
       <CppLanguageStandard>c++20</CppLanguageStandard>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LibraryDependencies>readline;tinfo</LibraryDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <ClCompile>
@@ -334,6 +354,10 @@
       <CLanguageStandard>gnu11</CLanguageStandard>
       <CppLanguageStandard>c++20</CppLanguageStandard>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LibraryDependencies>readline;tinfo</LibraryDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -341,6 +365,10 @@
       <CLanguageStandard>gnu11</CLanguageStandard>
       <CppLanguageStandard>c++20</CppLanguageStandard>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LibraryDependencies>readline;tinfo</LibraryDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <ClCompile>
@@ -348,46 +376,82 @@
       <CLanguageStandard>gnu11</CLanguageStandard>
       <CppLanguageStandard>c++20</CppLanguageStandard>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LibraryDependencies>readline;tinfo</LibraryDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <ClCompile>
       <CppLanguageStandard>c++20</CppLanguageStandard>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LibraryDependencies>readline;tinfo</LibraryDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test|ARM'">
     <ClCompile>
       <CppLanguageStandard>c++20</CppLanguageStandard>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LibraryDependencies>readline;tinfo</LibraryDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <ClCompile>
       <CppLanguageStandard>c++20</CppLanguageStandard>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LibraryDependencies>readline;tinfo</LibraryDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test|ARM64'">
     <ClCompile>
       <CppLanguageStandard>c++20</CppLanguageStandard>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LibraryDependencies>readline;tinfo</LibraryDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <CppLanguageStandard>c++20</CppLanguageStandard>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LibraryDependencies>readline;tinfo</LibraryDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'">
     <ClCompile>
       <CppLanguageStandard>c++20</CppLanguageStandard>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LibraryDependencies>readline;tinfo</LibraryDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <ClCompile>
       <CppLanguageStandard>c++20</CppLanguageStandard>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LibraryDependencies>readline;tinfo</LibraryDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test|x86'">
     <ClCompile>
       <CppLanguageStandard>c++20</CppLanguageStandard>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LibraryDependencies>readline;tinfo</LibraryDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

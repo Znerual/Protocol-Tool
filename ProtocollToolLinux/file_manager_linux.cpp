@@ -101,7 +101,7 @@ vector<string> read_tags(Log& logger, const string& path) {
 			while (ss >> tag) // split at delimiter
 			{
 				tag = trim(tag);
-				tag.erase(0, 1); // delete hashtag
+				//tag.erase(0, 1); // delete hashtag
 				boost::algorithm::to_lower(tag);
 				tags.push_back(tag);
 			}

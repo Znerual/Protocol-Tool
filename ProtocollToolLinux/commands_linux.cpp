@@ -640,7 +640,7 @@ void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unorder
 				conf.get("MODE_" + to_string(id) + "_WATCH_FOLDERS_" + to_string(i) + "_TAG_" + to_string(j), folder_tag);
 				// left bound padding of tags
 				if (folder_tag.size() < folder_tag_width) {
-					extra_folder_tag_width += folder_tag_width - folder_tag.size();
+					extra_folder_tag_width += folder_tag_width - static_cast<int>(folder_tag.size());
 				}
 				else if (extra_folder_tag_width > 0) {
 					int dif = folder_tag.size() - folder_tag_width;
