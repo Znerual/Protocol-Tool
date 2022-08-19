@@ -18,6 +18,7 @@
 #include <sys/ioctl.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <stdint.h>
 #endif
 
 #include "utils.h"
@@ -596,6 +597,7 @@ bool parse_folder_watcher(string& argument, FOLDER_WATCHER_MODE& mode, string& c
 	return false;
 }
 
+#ifdef _WIN32
 void set_console_background(const int& width, const int& height) {
 	DWORD dwBytesWritten;
 	WORD colors[3]{ BACKGROUND_BLUE, BACKGROUND_GREEN, BACKGROUND_RED };
@@ -614,7 +616,7 @@ void set_console_font() {
 	SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &cfi);
 	//SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 240);
 }
-
+#endif
 void print_greetings(const int& width) {
 	string fillerb{ "|_____________________________|" }, fillerm{ "|                             |" }, fillert{ "_____________________________" }, welcome{ "|Welcome to the Protocol Tool!|" };
 	pad(fillert, width - 1, ' ', true, MIDDLE);
@@ -665,7 +667,7 @@ void get_default_applications(PATHS& paths) {
 
 	paths.tex_exe = filesystem::path(res_wstr);
 }
-#endif // _WIN32
+
 
 void get_pandoc_installed(Log& logger, Config& conf, bool& ask_pandoc, bool& has_pandoc)
 {
@@ -706,7 +708,47 @@ void get_pandoc_installed(Log& logger, Config& conf, bool& ask_pandoc, bool& has
 		conf.set("HAS_PANDOC", false);
 	}
 }
+#else
+void get_pandoc_installed(Log& logger, Config& conf, bool& ask_pandoc, bool& has_pandoc) {
+	// check if pandoc is installed
+	FILE* pipe = popen("pandoc -v", "r");
+	if (!pipe)
+	{
+		cerr << "Could not start command" << endl;
+	}
+	int returnCode = pclose(pipe);
+	if (returnCode != 0 && ask_pandoc)
+	{
+		logger.setColor(BLUE, WHITE);
+		logger << "  Could not find pandoc. It is not required but highly recommended for this application, since html, tex and pdf output is only possible with the package.\n";
+		logger << "  Do you want to install it? (y/n) or never ask again (naa)?" << endl;
+		logger << "  The program needs to be restarted after the installation and will close when you decide to install pandoc." << endl;
+		string choice;
+		cin >> choice;
+		cin.clear();
+		cin.ignore(100000, '\n');
+		logger.input(choice);
 
+		if (choice == "y" || choice == "yes")
+		{
+			system("xdg-open https://pandoc.org/installing.html");
+			exit(0);
+		}
+		else if (choice == "naa" || choice == "never_ask_again")
+		{
+			conf.set("ASK_PANDOC", false);
+		}
+	}
+	else if (returnCode == 0) {
+		has_pandoc = true;
+		conf.set("HAS_PANDOC", true);
+	}
+	else {
+		has_pandoc = false;
+		conf.set("HAS_PANDOC", false);
+	}
+}
+#endif // _WIN32
 bool parse_format(Log& logger, string& argument, FORMAT_OPTIONS& format_options) {
 	if (argument == "html" || argument == "-html")
 	{

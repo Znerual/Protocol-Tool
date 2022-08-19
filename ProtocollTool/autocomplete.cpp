@@ -70,6 +70,9 @@ void read_cmd_names(filesystem::path filepath, CMD_NAMES& cmd_names) {
 	PARSE_MODE mode = PARSE_MODE::CMD_LINE;
 	string line, arg1, arg2;
 	while (getline(file, line)) {
+#ifndef _WIN32
+		line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+#endif // !_WIN32
 		istringstream iss(line);
 		if (line == "CMD") {
 			mode = PARSE_MODE::CMD_LINE;
@@ -273,7 +276,7 @@ void parse_cmd(const AUTO_INPUT& auto_input, AUTOCOMPLETE& auto_comp, AUTO_SUGGE
 				active_oa = auto_input.cmd_names.oa_names.left.at(*it);
 				active_oa_words_pos = it;
 				oa_strs.erase(oa_found); // delete oa name from the list of available names
-				oa_args.erase(active_oa); // delete from the list of oa in the cmd structure
+				//oa_args.erase(active_oa); // delete from the list of oa in the cmd structure
 			}
 		}
 

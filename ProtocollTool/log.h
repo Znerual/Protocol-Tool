@@ -88,9 +88,10 @@ public:
 	void setColor(int font, int back = -1, int style = -1) {
 		this->color = colorize(font, back, style);
 	}
+	const char* color;
 private:
 	std::ofstream my_fstream;
 	bool write_to_file;
-	const char* color;
+	
 };
 

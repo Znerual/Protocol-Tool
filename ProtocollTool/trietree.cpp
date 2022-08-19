@@ -134,7 +134,7 @@ const int TrieTree::findAutoSuggestion(const std::string query, std::string& sug
 	// there is no subtree below the last
 	// matching node.
 	if (isLastNode(pCrawl)) {
-		suggestion = query;
+		suggestion = "";
 		return -1;
 	}
 
