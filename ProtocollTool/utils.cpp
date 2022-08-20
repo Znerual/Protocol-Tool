@@ -633,38 +633,37 @@ void print_greetings(const int& width) {
 
 void get_default_applications(PATHS& paths) {
 	wstring res_wstr;
-	TCHAR szBuf[1000];
+	TCHAR szBuf[512];
 	DWORD cbBufSize = sizeof(szBuf);
 
 	HRESULT hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
 		L".md", NULL, szBuf, &cbBufSize);
 	//if (FAILED(hr)) { /* handle error */ }
 	res_wstr = wstring(szBuf, cbBufSize);
-
 	paths.md_exe = filesystem::path(res_wstr);
 
+	cbBufSize = sizeof(szBuf);
 	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
 		L".html", NULL, szBuf, &cbBufSize);
 	res_wstr = wstring(szBuf, cbBufSize);
-
 	paths.html_exe = filesystem::path(res_wstr);
 
+	cbBufSize = sizeof(szBuf);
 	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
 		L".docx", NULL, szBuf, &cbBufSize);
 	res_wstr = wstring(szBuf, cbBufSize);
-
 	paths.docx_exe = filesystem::path(res_wstr);
 
+	cbBufSize = sizeof(szBuf);
 	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
 		L".pdf", NULL, szBuf, &cbBufSize);
 	res_wstr = wstring(szBuf, cbBufSize);
-
 	paths.pdf_exe = filesystem::path(res_wstr);
 
+	cbBufSize = sizeof(szBuf);
 	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
 		L".tex", NULL, szBuf, &cbBufSize);
 	res_wstr = wstring(szBuf, cbBufSize);
-
 	paths.tex_exe = filesystem::path(res_wstr);
 }
 
@@ -1166,15 +1165,19 @@ void RunExternalProgram(Log& logger, std::filesystem::path executeable, std::fil
 
 	wstring wexec{ executeable.wstring() }, wfile{ file.wstring() };
 	vector<wchar_t> exec(wexec.begin(), wexec.end());
+	// exec.push_back(L'\0');
+	exec.back() = L' ';
+	for (auto i = 0; i < wfile.size(); i++) {
+		exec.push_back(wfile[i]);
+	}
 	exec.push_back(L'\0');
-
-	vector<wchar_t> command_line(wfile.begin(), wfile.end());
-	command_line.push_back(L'\0');
-
+	//vector<wchar_t> command_line(wfile.begin(), wfile.end());
+	//command_line.push_back(L'\0');
+	
 	// Start the child process. 
 	if (!CreateProcess(
-		&exec[0],           // No module name (use command line)
-		&command_line[0],    // Command line
+		NULL,           // No module name (use command line)
+		&exec[0],    // Command line
 		NULL,                           // Process handle not inheritable
 		NULL,                           // Thread handle not inheritable
 		TRUE,                           // Set handle inheritance
@@ -1185,7 +1188,7 @@ void RunExternalProgram(Log& logger, std::filesystem::path executeable, std::fil
 		&pi)                            // Pointer to PROCESS_INFORMATION structure
 		)
 	{
-		logger << to_string(GetLastError()) << endl;
+		logger << "Error opening the file " << to_string(GetLastError()) << endl;
 		return;
 	}
 	else
