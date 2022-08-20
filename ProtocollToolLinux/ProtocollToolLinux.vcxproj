@@ -257,6 +257,7 @@
     <RemoteOutRelDir>Build-Linux/$(Platform)/$(Configuration)</RemoteOutRelDir>
     <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
     <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
+    <SourcePath>D:\Code\C++\VisualStudioProjects\ProtocollTool\ProtocollTool;/usr/local/include/;$(IncludePath);$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <OutDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</OutDir>
@@ -266,6 +267,7 @@
     <RemoteOutRelDir>$(RemoteProjectRelDir)/Build-Linux/$(Platform)/$(Configuration)/</RemoteOutRelDir>
     <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
     <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
+    <SourcePath>D:\Code\C++\VisualStudioProjects\ProtocollTool\ProtocollTool;/usr/local/include/;$(IncludePath);$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <OutDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</OutDir>
@@ -275,6 +277,7 @@
     <RemoteOutRelDir>Build-Linux/$(Platform)/$(Configuration)</RemoteOutRelDir>
     <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
     <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
+    <SourcePath>D:\Code\C++\VisualStudioProjects\ProtocollTool\ProtocollTool;/usr/local/include/;$(IncludePath);$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <OutDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</OutDir>
@@ -284,6 +287,7 @@
     <RemoteOutRelDir>$(RemoteProjectRelDir)/Build-Linux/$(Platform)/$(Configuration)/</RemoteOutRelDir>
     <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
     <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
+    <SourcePath>D:\Code\C++\VisualStudioProjects\ProtocollTool\ProtocollTool;/usr/local/include/;$(IncludePath);$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</OutDir>
@@ -293,6 +297,7 @@
     <RemoteOutRelDir>Build-Linux/$(Platform)/$(Configuration)</RemoteOutRelDir>
     <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
     <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
+    <SourcePath>D:\Code\C++\VisualStudioProjects\ProtocollTool\ProtocollTool;/usr/local/include/;$(IncludePath);$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</OutDir>
@@ -302,6 +307,7 @@
     <RemoteOutRelDir>$(RemoteProjectRelDir)/Build-Linux/$(Platform)/$(Configuration)/</RemoteOutRelDir>
     <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
     <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
+    <SourcePath>D:\Code\C++\VisualStudioProjects\ProtocollTool\ProtocollTool;/usr/local/include/;$(IncludePath);$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <OutDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</OutDir>
@@ -311,6 +317,7 @@
     <RemoteOutRelDir>Build-Linux/$(Platform)/$(Configuration)</RemoteOutRelDir>
     <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
     <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
+    <SourcePath>D:\Code\C++\VisualStudioProjects\ProtocollTool\ProtocollTool;/usr/local/include/;$(IncludePath);$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <OutDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</OutDir>
@@ -320,22 +327,27 @@
     <RemoteOutRelDir>$(RemoteProjectRelDir)/Build-Linux/$(Platform)/$(Configuration)/</RemoteOutRelDir>
     <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
     <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
+    <SourcePath>D:\Code\C++\VisualStudioProjects\ProtocollTool\ProtocollTool;/usr/local/include/;$(IncludePath);$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|ARM'">
     <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
     <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
+    <SourcePath>D:\Code\C++\VisualStudioProjects\ProtocollTool\ProtocollTool;/usr/local/include/;$(IncludePath);$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|ARM64'">
     <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
     <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
+    <SourcePath>D:\Code\C++\VisualStudioProjects\ProtocollTool\ProtocollTool;/usr/local/include/;$(IncludePath);$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'">
     <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
     <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
+    <SourcePath>D:\Code\C++\VisualStudioProjects\ProtocollTool\ProtocollTool;/usr/local/include/;$(IncludePath);$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|x86'">
     <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
     <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
+    <SourcePath>D:\Code\C++\VisualStudioProjects\ProtocollTool\ProtocollTool;/usr/local/include/;$(IncludePath);$(SourcePath)</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <ClCompile>

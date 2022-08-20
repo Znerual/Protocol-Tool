@@ -13,6 +13,7 @@
 #include "commands_linux.h"
 #include "file_manager_linux.h"
 
+#include <vector>
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -41,7 +42,7 @@ char* completion_generator(const char* text, int state) {
     // This function is called with state=0 the first time; subsequent calls are
     // with a nonzero state. state=0 can be used to perform one-time
     // initialization for this completion session.
-    static std::vector<std::string> matches;
+    static vector<string> matches;
     static size_t match_index = 0;
 
     if (state == 0) {
@@ -97,50 +98,10 @@ SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &sbInfoEx);
     // https://docs.microsoft.com/en-us/previous-versions/chzww271(v=vs.140)?redirectedfrom=MSDN
     int width, height;
     get_console_size(height, width);
-    {
-        string fillerb = "|_____________________________|", fillerm = "|                             |", fillert = "_____________________________", welcome =  "|Welcome to the Protocol Tool!|";
-        pad(fillert, width - 1, ' ', true, MIDDLE);
-        pad(fillerm, width - 1, ' ', true, MIDDLE);
-        pad(fillerb, width - 1, ' ', true, MIDDLE);
-        pad(welcome, width - 1, ' ', true, MIDDLE);
-        cout << colorize(BLUE, WHITE) << fillert << '\n';
-        cout << colorize(BLUE, WHITE) << fillerm << '\n';
-        cout << colorize(BLUE, WHITE) << welcome << '\n';
-        cout << colorize(BLUE, WHITE) << fillerb << '\n';
-    }
-
+    print_greetings(width);
     Config conf;
 
-    try {
-        //conf = Config("D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\para.conf");
-        conf = Config("para.conf");
-        cout << colorize(YELLOW, WHITE) << "  Loaded the configuration file\n";
-    }
-    catch (IOException& e) {
-        string config_path;
-        cout << colorize(RED, WHITE) << "  Error " << e.what() << " while loading the configuration file from " << "D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\para.conf" << '\n';
-        cout << colorize(BLACK, WHITE) << "  Please specify the path where the configuration file (para.conf) can be found:" << endl;
-        cout << colorize(BLACK, WHITE) << "  Path to para.conf: ";
-
-        bool found_config = false;
-        while (!found_config)
-        {
-            cin >> config_path;
-            cin.ignore(10000, '\n');
-            cin.clear();
-            try {
-                conf = Config(config_path);
-                found_config = true;
-                break;
-            }
-            catch (IOException& e2) {
-                cout << colorize(RED, WHITE) << "  Error " << e2.what() << " while loading the configuration file " << "para.conf" << '\n';
-                cout << colorize(BLACK, WHITE) << "  Please specify the path where the configuration file (para.conf) can be found. \n  In order to avoid this error, place the conf.para file ";
-                cout << colorize(BLACK, WHITE) << "  in the same directory as the .exe file.\nPath to conf.para:";
-            }
-        }
-
-    }
+    load_config("para.conf", conf);
 
     // read in config arguments and setup paths
     bool ask_pandoc, has_pandoc, write_log;
@@ -190,77 +151,8 @@ SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &sbInfoEx);
         // find default applications for opening markdown files
     // TODO check error if all paths do not exist
 
-    if (!filesystem::exists(paths.base_path))
-    {
-
-
-        bool found_base_path = false;
-        while (!found_base_path)
-        {
-            string base_path_str;
-            cout << colorize(RED, WHITE) << "  No path for the note files was set. Set to an existing directory to include those notes or chose a new, empty directory" << endl;
-            cout << colorize(BLACK, WHITE) << "  Base Path: ";
-            cin >> base_path_str;
-            cin.clear();
-            cin.ignore(10000, '\n');
-
-
-            if (filesystem::create_directories(base_path_str)) // created new folder
-            {
-                cout << colorize(BLACK, WHITE) << "  Created a new folder at " << base_path_str << endl;
-                found_base_path = true;
-            }
-            else { // use existing folder
-                cout << colorize(BLACK, WHITE) << "  Found the folder " << base_path_str << endl;
-
-                // check for existing files
-                if (filesystem::exists(filesystem::path(base_path_str) / paths.file_path)) {
-                    bool invalid_files = false;
-                    for (const auto& entry : filesystem::directory_iterator(filesystem::path(base_path_str) / paths.file_path))
-                    {
-                        if (entry.path().extension() != ".md" || entry.path().stem().string().size() != 9)
-                        {
-                            cout << colorize(RED, WHITE) << "  It seems as if invalid files are in the existing file folder!\nFound the file " << entry.path().filename() << " in the folder, which is not an appropiate note markdown file" << endl;
-                            invalid_files = true;
-                            break;
-                        }
-                    }
-                    if (!invalid_files)
-                    {
-                        found_base_path = true;
-                    }
-                    else {
-                        continue;
-                    }
-                }
-                else { // no file folder in selected base_path, can be used as new base_path
-                    found_base_path = true;
-                }
-
-            }
-
-            conf.set("BASE_PATH", base_path_str);
-            paths.base_path = filesystem::path(base_path_str);
-        }
-
-    }
-
-
-    if (!filesystem::exists(paths.base_path / paths.file_path))
-    {
-        cout << colorize(YELLOW, WHITE) << "  No folder found at the file path " << paths.base_path / paths.file_path << ".\n  Creating a new folder..." << endl;
-        filesystem::create_directories(paths.base_path / paths.file_path);
-    }
-    if (!filesystem::exists(paths.base_path / paths.data_path))
-    {
-        cout << colorize(YELLOW, WHITE) << "  No folder found at the data path " << paths.base_path / paths.data_path << ".\n  Creating a new folder..." << endl;
-        filesystem::create_directories(paths.base_path / paths.data_path);
-    }
-    if (!filesystem::exists(paths.base_path / paths.tmp_path))
-    {
-        cout << colorize(YELLOW, WHITE) << "  No folder found at the tmp path " << paths.base_path / paths.tmp_path << ".\n  Creating a new folder..." << endl;
-        filesystem::create_directories(paths.base_path / paths.tmp_path);
-    }
+    check_base_path(conf, paths);
+    check_standard_paths(paths);
 
     Log logger(paths.base_path / log_path, write_log);
     logger.setColor(YELLOW, WHITE);
@@ -294,9 +186,9 @@ SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &sbInfoEx);
     // mainloop for reading commands
     //char* buf;
     bool running = true;
-    string command , input;
+    string command;//, input;
     string prompt;
-    //char* input;
+    char* input;
     while (running)
     {
        
@@ -320,8 +212,8 @@ SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &sbInfoEx);
         AUTO_SUGGESTIONS auto_suggestions;
         input = readline(prompt.c_str());
         //getline(cin, input);
-        if (input.size() > 0) {
-            add_history(input.c_str());
+        if (strlen(input) > 0) {
+            add_history(input);
         }
 
         istringstream iss(input);
@@ -467,6 +359,10 @@ SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &sbInfoEx);
             open_selection(logger, paths, filter_selection);
 
         }
+        else if (command == "todo" || command == "todos")
+        {
+            show_todos(logger, paths);
+        }
         else if (command == "h" || command == "-h" || command == "help")
         {
             string argument;
@@ -591,8 +487,8 @@ SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &sbInfoEx);
             logger << "  Command " << command << " could not be parsed.\n";
             logger << wrap("Available options are : (n)ew, (f)ind, (f)ilter, (s)how, (a)dd_data, (d)etails, (t)ags, (u)pdate, (e)xport and (o)pen.", 3) << 'n';
         }
-
-        input = "";
+        free(input);
+        //input = "";
         logger << endl;
         //free(input);
   
