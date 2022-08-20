@@ -22,3 +22,4 @@ void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, c
 void deactivate_mode(Log& logger, Config& conf, int& active_mode, std::vector<std::string>& mode_tags);
 void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mode, std::vector<std::string>& mode_tags,  const std::string& file_ending);
 void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unordered_map<int, std::string>& mode_names, int& active_mode);
+void show_todos(Log& logger, const PATHS& paths);

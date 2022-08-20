@@ -91,78 +91,38 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 			show_file << "# " << date_str << " Version " << filesystem::path(path).stem().string()[8] << "<a id=\"" << filesystem::path(path).stem().string() << "\"></a>\n";
 		}
 
-		ifstream file(paths.base_path / paths.file_path / filesystem::path(path).filename());
-		if (!file.is_open()) {
-			logger << "Error opening note file " << (paths.base_path / paths.file_path / filesystem::path(path).filename()).string() << endl;
-		}
+		map<string, string> metadata;
 		vector<string> tags;
-		bool reading_tags = false;
-		int line_count = 0;
-		while (getline(file, line))
+		vector<string> content;
+		size_t line_count;
+		read_metadata_tags_content(logger, paths.base_path / paths.file_path / filesystem::path(path).filename(), metadata, tags, content, line_count);
+
+		// show metadata
+		if (show_options.show_metadata) {
+			for (const auto& [name, value] : metadata) {
+				show_file << name << ": " << value << "; ";
+			}
+			show_file << endl;
+		}
+		// show tags
+		if (show_options.show_tags)
 		{
-			// show everything
-			if (show_options.show_metadata) {
-				show_file << line;
-				if (line[0] == '#')
-				{
-					show_file << "<a id=\"" << line_count << "\"></a>";
-				}
-				show_file << '\n';
+			for (const auto& tag : tags) {
+				show_file << tag << ", ";
 			}
-
-			// show tags
-			else if (show_options.show_tags && !reading_tags)
-			{
-				if (line == "! TAGS START")
-				{
-					reading_tags = true;
-				}
-			}
-			else if (show_options.show_tags && reading_tags)
-			{
-
-				if (line != "! TAGS END")
-				{
-					line.erase(0, 2);
-					istringstream ss(line);
-					string tag;
-					while (ss >> tag)
-					{
-						tag = trim(tag);
-						tags.push_back(tag);
-					}
-				}
-				else
-				{
-					show_file << "Tags: ";
-					reading_tags = false;
-					for (const string& tag : tags)
-					{
-						show_file << tag << " ";
-					}
-					show_file << '\n';
-				}
-			}
-			// show only file content
-			else
-			{
-				if (line.substr(0, 2) != "! ")
-				{
-					show_file << line;
-					if (line[0] == '#')
-					{
-						show_file << "<a id=\"" << line_count << "\"></a>";
-					}
-					show_file << '\n';
-				}
-			}
-			line_count++;
-
+			show_file << endl;
 		}
 
-
-		file.close();
-		show_file << '\n';
+		// write content
+		for (const auto& line : content) {
+			show_file << line;
+			if (line[0] == '#') {
+				show_file << "<a id=\"" << line_count << "\"></a>";
+			}
+			show_file << '\n';
+			line_count++;
+		}
+		show_file << endl;
 	}
 
 	show_file.close();
@@ -253,11 +213,16 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 		open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path(tmp_filename));
 	}
 
+}
 
-
-
+void show_todos(Log& logger, const PATHS& paths)
+{
+	update_todos(logger, paths);
+	// maybe do a convert to first
+	open_file(logger, paths, paths.base_path / paths.tmp_path / "todos.md");
 
 }
+
 
 void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, const string& file_ending)
 {
