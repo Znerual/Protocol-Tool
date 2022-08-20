@@ -9,3 +9,7 @@ std::string get_filename(const PATHS& paths, time_t date, const std::string& fil
 void open_file(Log& logger, const PATHS paths, const std::filesystem::path file, std::vector<std::jthread>& open_files, HANDLE& hExit);
 void write_file(Log& logger, const PATHS& paths, const std::string& filename, time_t date, std::vector<std::string> tags, const std::string& file_ending, const bool create_data);
 int convert_document_to(const std::string& format, const std::string& ending, const PATHS& paths, const std::string& filename, const std::string& output_filename = "show");
+void update_todos(Log& logger, const PATHS& paths);
+void parse_file(Log& logger, const PATHS& paths, const std::string& filename);
+void read_metadata_without_tags(Log& logger, const std::string& path, std::map<std::string, std::string>& metadata);
+void read_metadata_tags_content(Log& logger, const std::filesystem::path& path, std::map<std::string, std::string>& metadata, std::vector<std::string>& tags, std::vector<std::string>& content, size_t& content_start);

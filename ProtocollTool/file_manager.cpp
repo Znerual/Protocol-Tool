@@ -103,7 +103,7 @@ vector<string> read_tags(Log& logger, const string& path) {
 			reading_tags = true;
 			deprecated = true;
 		}
-		else if (reading_tags && !line.starts_with("\t- #")) {
+		else if (reading_tags && !line.starts_with("\t- #") && !line.starts_with("    - #")) {
 			reading_tags = false;
 			break;
 		}
@@ -123,8 +123,8 @@ vector<string> read_tags(Log& logger, const string& path) {
 			}
 		}
 		else if (reading_tags) {
-			line.erase(0, 4); // removed the leading \t- # part
-			line = trim(line);
+			line = trim(line); // remove whitespaces or tab
+			line.erase(0, 3); // remove - #
 			boost::algorithm::to_lower(line);
 			tags.push_back(line);
 		}
@@ -133,6 +133,123 @@ vector<string> read_tags(Log& logger, const string& path) {
 	file.close();
 
 	return tags;
+}
+
+void read_metadata_without_tags(Log& logger, const string& path, map<string, string>& metadata) {
+	ifstream file(path);
+	if (!file.is_open()) {
+		logger << "File " << path << " could not be openend." << '\n';
+		return;
+	}
+
+	bool reading_tags = false;
+	bool deprecated = false, reading_metadata = false;
+	string line, tag;
+	while (getline(file, line)) {
+#ifndef _WIN32
+		line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+#endif
+		if (line == "---" && reading_metadata || (deprecated && !line.starts_with("! "))) {
+			return;
+		}
+		else if (line == "---" && !reading_metadata) {
+			reading_metadata = true;
+		}
+		else if (line.starts_with("! ") && !reading_metadata) {
+			reading_metadata = true;
+			deprecated = true;
+		}
+		else if ((deprecated && line == "! TAGS START") || line == "tags:") {
+			reading_tags = true;
+		}
+		else if (reading_tags && ((deprecated && line == "! TAGS END") || (!deprecated && (!line.starts_with("\t- #") || !line.starts_with("    - #"))))) {
+			reading_tags = false;
+		}
+		else if (!reading_tags && reading_metadata) {
+			if (size_t del_pos = line.find(":") == string::npos) {
+				metadata[line] = "";
+			}
+			else {
+				metadata[line.substr(0, del_pos)] = line.substr(del_pos);
+			}
+		}
+
+	}
+	file.close();
+}
+
+void read_metadata_tags_content(Log& logger, const filesystem::path& path, map<string, string>& metadata, vector<string>& tags, vector<string>& content, size_t& content_start) {
+	
+	content_start = 0;
+	ifstream file(path);
+	if (!file.is_open()) {
+		logger << "File " << path << " could not be openend." << '\n';
+		return;
+	}
+
+	bool reading_tags = false;
+	bool deprecated = false, reading_metadata=false;
+	string line, tag;
+	while (getline(file, line)) {
+#ifndef _WIN32
+		line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+#endif
+		
+		if (line == "---" && reading_metadata || (deprecated && !line.starts_with("! "))) {
+			reading_metadata = false;
+			content_start++;
+		}
+		else if (line == "---" && !reading_metadata) {
+			reading_metadata = true;
+			content_start++;
+		}
+		else if (line.starts_with("! ") && !reading_metadata) {
+			reading_metadata = true;
+			deprecated = true;
+			content_start++;
+		} 
+		else if ((deprecated && line == "! TAGS START") || line == "tags:") {
+			reading_tags = true;
+			content_start++;
+		} 
+		else if (reading_tags && ((deprecated && line == "! TAGS END") || (!deprecated && (!line.starts_with("\t- #") || !line.starts_with("    - #"))))) {
+			reading_tags = false;
+			content_start++;
+		}
+		else if (!reading_tags && reading_metadata) {
+			if (size_t del_pos = line.find(":") == string::npos) {
+				metadata[line] = "";
+			}
+			else {
+				metadata[line.substr(0, del_pos)] = line.substr(del_pos);
+			}
+			content_start++;
+		}
+		else if (reading_tags && deprecated) {
+			line.erase(0, 2); // remove leading !  part
+			istringstream ss(line);
+			while (ss >> tag) // split at delimiter
+			{
+				tag = trim(tag);
+				tag.erase(0, 1); // remove leading #
+				boost::algorithm::to_lower(tag);
+				tags.push_back(tag);
+			}
+			content_start++;
+		}
+		else if (reading_tags) {
+			line = trim(line); // remove whitespaces or tab
+			line.erase(0, 3); // remove - #
+			boost::algorithm::to_lower(line);
+			tags.push_back(line);
+			content_start++;
+		}
+		else {
+			content.push_back(line);
+		}
+
+	}
+	file.close();
 }
 
 void update_tags(Log& logger, const PATHS& paths, map<string, time_t>& file_map, map<string, vector<string>>& tag_map, map<string, int>& tag_count, vector<string>& filter_selection, const bool add_new_to_filter_selection)
@@ -238,14 +355,14 @@ void write_file(Log& logger, const PATHS& paths, const string& filename, time_t 
 **/
 void parse_file(Log& logger, const PATHS& paths, const string& filename) {
 	// eventually parse dates and create ics files https://github.com/jgonera/icalendarlib
-	ifstream file(paths.file_path / filesystem::path(filename));
+	ifstream file(paths.base_path / paths.file_path / filesystem::path(filename));
 	if (!file.is_open()) {
 		logger << "Error parse_file: File " << paths.file_path / filesystem::path(filename) << " could not be openend." << '\n';
 	}
 	string ofile_name = "." + filesystem::path(filename).stem().string();
-	ofstream ofile(paths.tmp_path / filesystem::path(ofile_name));
+	ofstream ofile(paths.base_path / paths.tmp_path / filesystem::path(ofile_name));
 	if (!ofile.is_open()) {
-		logger << "Error writting in parse_file: File " << paths.file_path / filesystem::path(ofile_name) << " could not be openend." << '\n';
+		logger << "Error writting in parse_file: File " << (paths.file_path / filesystem::path(ofile_name)).string() << " could not be openend." << '\n';
 	}
 
 	ofile << "! TODOS START" << '\n';
@@ -260,6 +377,9 @@ void parse_file(Log& logger, const PATHS& paths, const string& filename) {
 	bool deprecated = false;
 	while (getline(file, line))
 	{
+#ifndef _WIN32
+		line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+#endif
 		// skip metadata
 		
 		// check for old metadata format
@@ -291,7 +411,8 @@ void parse_file(Log& logger, const PATHS& paths, const string& filename) {
 		}
 
 		// search for TODO
-		if (size_t pos = line.find("TODO") != string::npos) {
+		size_t pos = line.find("TODO");
+		if (pos != string::npos) {
 
 			// search for end of TODO
 			size_t todo_end = line.find_first_of(")].}", pos);
@@ -301,8 +422,8 @@ void parse_file(Log& logger, const PATHS& paths, const string& filename) {
 				todo_end -= pos;
 			}
 
-			ofile << "- " << line.substr(pos, todo_end) << "([" << date_str << "](../";
-			ofile << paths.file_path / filesystem::path(filename) << last_section << ")" << ")\n";
+			ofile << "- " << line.substr(pos, todo_end) << " ([" << date_str << "](../";
+			ofile << (paths.file_path / filesystem::path(filename)).string() << last_section << ")" << ")\n";
 		}
 	}
 
@@ -360,14 +481,17 @@ void update_todos(Log& logger, const PATHS& paths) {
 		logger << "Error update_todos: File " << paths.base_path / paths.tmp_path / "todos.md" << " could not be openend." << '\n';
 	}
 	for (const auto& pfile : parsed_files) {
-		ifstream file(paths.base_path / filesystem::path(pfile));
+		ifstream file(paths.base_path / paths.tmp_path /  filesystem::path(pfile));
 		if (!file.is_open()) {
-			logger << "Error update_todos: File " << paths.base_path / filesystem::path(pfile) << " could not be openend." << '\n';
+			logger << "Error update_todos: File " << paths.base_path / paths.tmp_path / filesystem::path(pfile) << " could not be openend." << '\n';
 		}
 
 		string line;
 		bool read_todos = false;
 		while (getline(file, line)) {
+#ifndef _WIN32
+			line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+#endif
 			if (line == "! TODOS START") {
 				read_todos = true;
 				continue;
@@ -380,5 +504,7 @@ void update_todos(Log& logger, const PATHS& paths) {
 				output << line << "\n";
 			}
 		}
+		file.close();
 	}
+	output.close();
 }
