@@ -1,4 +1,5 @@
 #include "file_manager.h"
+#include "conversions.h"
 
 #include <boost/algorithm/string.hpp>
 
@@ -91,25 +92,41 @@ vector<string> read_tags(Log& logger, const string& path) {
 	}
 
 	bool reading_tags = false;
+	bool deprecated = false;
 	string line, tag;
 	while (getline(file, line))
 	{
 		if (line == "tags:") {
 			reading_tags = true;
 		}
+		else if (line == "! TAGS START") {
+			reading_tags = true;
+			deprecated = true;
+		}
 		else if (reading_tags && !line.starts_with("\t- #")) {
 			reading_tags = false;
 			break;
 		}
-		else if (reading_tags) {
-			line.erase(0, 4); // removed the leading # part
+		else if (reading_tags && line == "! TAGS END") {
+			reading_tags = false;
+			break;
+		}
+		else if (reading_tags && deprecated) {
+			line.erase(0, 2); // remove leading !  part
 			istringstream ss(line);
 			while (ss >> tag) // split at delimiter
 			{
 				tag = trim(tag);
+				tag.erase(0, 1); // remove leading #
 				boost::algorithm::to_lower(tag);
 				tags.push_back(tag);
 			}
+		}
+		else if (reading_tags) {
+			line.erase(0, 4); // removed the leading \t- # part
+			line = trim(line);
+			boost::algorithm::to_lower(line);
+			tags.push_back(line);
 		}
 
 	}
@@ -210,4 +227,158 @@ void write_file(Log& logger, const PATHS& paths, const string& filename, time_t 
 
 
 	file.close();
+}
+
+/**
+* Searches for TODOs in a given file
+*
+* @param logger reference to logger instance
+* @param paths reference to PATHS instance
+* @param filename file to be parsed
+**/
+void parse_file(Log& logger, const PATHS& paths, const string& filename) {
+	// eventually parse dates and create ics files https://github.com/jgonera/icalendarlib
+	ifstream file(paths.file_path / filesystem::path(filename));
+	if (!file.is_open()) {
+		logger << "Error parse_file: File " << paths.file_path / filesystem::path(filename) << " could not be openend." << '\n';
+	}
+	string ofile_name = "." + filesystem::path(filename).stem().string();
+	ofstream ofile(paths.tmp_path / filesystem::path(ofile_name));
+	if (!ofile.is_open()) {
+		logger << "Error writting in parse_file: File " << paths.file_path / filesystem::path(ofile_name) << " could not be openend." << '\n';
+	}
+
+	ofile << "! TODOS START" << '\n';
+	// get note date
+	time_t date_t;
+	string date_str;
+	str2date_short(date_t, filename);
+	date2str(date_str, date_t);
+
+	string line, last_section = "";
+	bool metadata = false;
+	bool deprecated = false;
+	while (getline(file, line))
+	{
+		// skip metadata
+		
+		// check for old metadata format
+		if (line.starts_with("! ")) {
+			deprecated = true;
+			metadata = true;
+			continue;
+		}
+		else if (deprecated && metadata) {
+			metadata = false;
+			continue;
+		}
+		// check for new metadata format
+		else if (line == "---") {
+			metadata = !metadata;
+			continue;
+		}
+
+		// find most recent section for jumping to
+		if (line.starts_with("#")) {
+			last_section = trim(line, " ,\n\r\t\f\v#");
+			for (auto i = 0; i < last_section.size(); i++) {
+				if (isspace(last_section[i])) {
+					last_section[i] = '-';
+				}
+			}
+			last_section = "#" + last_section;
+			continue;
+		}
+
+		// search for TODO
+		if (size_t pos = line.find("TODO") != string::npos) {
+
+			// search for end of TODO
+			size_t todo_end = line.find_first_of(")].}", pos);
+
+			// convert to len for substr
+			if (todo_end != string::npos) {
+				todo_end -= pos;
+			}
+
+			ofile << "- " << line.substr(pos, todo_end) << "([" << date_str << "](../";
+			ofile << paths.file_path / filesystem::path(filename) << last_section << ")" << ")\n";
+		}
+	}
+
+	ofile << "! TODOS END" << endl;
+
+	file.close();
+	ofile.close();
+}
+
+/**
+* Compares all files in the FILES directory to see whether they were modified after the last creation
+* of their corresponding parsed file. Afterwards, the Todo information from the todo files is collected
+* and written to the output file
+*
+* @param logger reference to logger instance
+* @param paths reference to PATHS instance
+**/
+void update_todos(Log& logger, const PATHS& paths) {
+	map<string, time_t> files_map;
+	list<string> parsed_files;
+
+	for (const auto& entry : filesystem::directory_iterator(paths.base_path / paths.file_path))
+	{
+		files_map[entry.path().stem().string()] = chrono::system_clock::to_time_t(clock_cast<chrono::system_clock>(entry.last_write_time()));
+	}
+
+	// remove files that have recent parsed files
+	for (const auto& entry : filesystem::directory_iterator(paths.base_path / paths.tmp_path))
+	{
+		// check if path is path to parsed file by skipping leading .
+		string parsed_fname = entry.path().string().substr(1);
+		if (files_map.contains(parsed_fname)) {
+
+			// compare last modified values
+			if (files_map[parsed_fname] < chrono::system_clock::to_time_t(clock_cast<chrono::system_clock>(entry.last_write_time()))) {
+				files_map.erase(parsed_fname);
+				parsed_files.push_back(entry.path().string());
+			}
+		}
+	}
+
+	// parse files when parsed files are old or missing
+	for (const auto& [name_stem, mod_date] : files_map) {
+		string filename = name_stem + ".md";
+		parse_file(logger, paths, filename);
+		parsed_files.push_back("." + name_stem);
+	}
+
+	parsed_files.sort();
+	parsed_files.reverse();
+
+	// combine results from parsed files to output file
+	ofstream output(paths.base_path / paths.tmp_path / "todos.md");
+	if (!output.is_open()) {
+		logger << "Error update_todos: File " << paths.base_path / paths.tmp_path / "todos.md" << " could not be openend." << '\n';
+	}
+	for (const auto& pfile : parsed_files) {
+		ifstream file(paths.base_path / filesystem::path(pfile));
+		if (!file.is_open()) {
+			logger << "Error update_todos: File " << paths.base_path / filesystem::path(pfile) << " could not be openend." << '\n';
+		}
+
+		string line;
+		bool read_todos = false;
+		while (getline(file, line)) {
+			if (line == "! TODOS START") {
+				read_todos = true;
+				continue;
+			}
+			else if (line == "! TODOS END") {
+				read_todos = false;
+				continue;
+			}
+			else if (read_todos) {
+				output << line << "\n";
+			}
+		}
+	}
 }
