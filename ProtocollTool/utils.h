@@ -90,9 +90,9 @@ public:
 };
 
 const std::string WHITESPACE = " ,\n\r\t\f\v";
-std::string ltrim(const std::string& s);
-std::string rtrim(const std::string& s);
-std::string trim(const std::string& s);
+std::string ltrim(const std::string& s, const std::string& characters = WHITESPACE);
+std::string rtrim(const std::string& s, const std::string& characters = WHITESPACE);
+std::string trim(const std::string& s, const std::string& characters = WHITESPACE);
 
 template<typename T>
 void pad(std::basic_string<T>& s, typename std::basic_string<T>::size_type n, T c, const bool cap_right = true, const ALIGN align = LEFT);

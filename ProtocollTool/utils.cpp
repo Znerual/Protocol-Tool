@@ -94,20 +94,20 @@ std::string wrap(const std::string s, const int margin, const ALIGN align) {
 }
 
 
-std::string ltrim(const std::string& s)
+std::string ltrim(const std::string& s, const string& characters)
 {
-	size_t start = s.find_first_not_of(WHITESPACE);
+	size_t start = s.find_first_not_of(characters);
 	return (start == std::string::npos) ? "" : s.substr(start);
 }
 
-std::string rtrim(const std::string& s)
+std::string rtrim(const std::string& s, const string& characters)
 {
-	size_t end = s.find_last_not_of(WHITESPACE);
+	size_t end = s.find_last_not_of(characters);
 	return (end == std::string::npos) ? "" : s.substr(0, end + 1);
 }
 
-std::string trim(const std::string& s) {
-	return rtrim(ltrim(s));
+std::string trim(const std::string& s, const string& characters) {
+	return rtrim(ltrim(s, characters), characters);
 }
 
 
