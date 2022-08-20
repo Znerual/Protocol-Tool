@@ -17,6 +17,9 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 	FORMAT_OPTIONS format_options;
 	parse_show_args(logger, iss, conf, active_mode, show_options, format_options);
 
+	// sort selection
+	sort(filter_selection.begin(), filter_selection.end());
+
 	// write content of selected files to output file
 	ofstream show_file(paths.base_path / paths.tmp_path / filesystem::path(tmp_filename));
 	string date_str;
@@ -90,79 +93,37 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 
 			show_file << "# " << date_str << " Version " << filesystem::path(path).stem().string()[8] << "<a id=\"" << filesystem::path(path).stem().string() << "\"></a>\n";
 		}
-
-		ifstream file(paths.base_path / paths.file_path / filesystem::path(path).filename());
-		if (!file.is_open()) {
-			logger << "Error opening note file " << (paths.base_path / paths.file_path / filesystem::path(path).filename()).string() << endl;
-		}
+		map<string, string> metadata;
 		vector<string> tags;
-		bool reading_tags = false;
-		int line_count = 0;
-		while (getline(file, line))
+		vector<string> content;
+		size_t line_count;
+		read_metadata_tags_content(logger, paths.base_path / paths.file_path / filesystem::path(path).filename(), metadata, tags, content, line_count);
+		// show metadata
+		if (show_options.show_metadata) {
+			for (const auto& [name, value] : metadata) {
+				show_file << name << ": " << value << "; ";
+			}
+			show_file << endl;
+		}
+		// show tags
+		if (show_options.show_tags)
 		{
-			// show everything
-			if (show_options.show_metadata) {
-				show_file << line;
-				if (line[0] == '#')
-				{
-					show_file << "<a id=\"" << line_count << "\"></a>";
-				}
-				show_file << '\n';
+			for (const auto& tag : tags) {
+				show_file << tag << ", ";
 			}
-
-			// show tags
-			else if (show_options.show_tags && !reading_tags)
-			{
-				if (line == "! TAGS START")
-				{
-					reading_tags = true;
-				}
-			}
-			else if (show_options.show_tags && reading_tags)
-			{
-
-				if (line != "! TAGS END")
-				{
-					line.erase(0, 2);
-					istringstream ss(line);
-					string tag;
-					while (ss >> tag)
-					{
-						tag = trim(tag);
-						tags.push_back(tag);
-					}
-				}
-				else
-				{
-					show_file << "Tags: ";
-					reading_tags = false;
-					for (const string& tag : tags)
-					{
-						show_file << tag << " ";
-					}
-					show_file << '\n';
-				}
-			}
-			// show only file content
-			else
-			{
-				if (line.substr(0, 2) != "! ")
-				{
-					show_file << line;
-					if (line[0] == '#')
-					{
-						show_file << "<a id=\"" << line_count << "\"></a>";
-					}
-					show_file << '\n';
-				}
-			}
-			line_count++;
-
+			show_file << endl;
 		}
 
-
-		file.close();
-		show_file << '\n';
+		// write content
+		for (const auto& line : content) {
+			show_file << line;
+			if (line[0] == '#') {
+				show_file << "<a id=\"" << line_count << "\"></a>";
+			}
+			show_file << '\n';
+			line_count++;
+		}
+		show_file << endl;
 	}
 
 	show_file.close();
@@ -195,16 +156,15 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 	// pandoc -f markdown 28062022a.md -t latex -o test.tex
 	if (has_pandoc)
 	{
-
 		if (format_options.html)
 		{
 			if (int returnCode = convert_document_to("html", "html", paths, tmp_filename, "show") != 0) {
 				logger << "Error " << returnCode << " while converting markdown to html using pandoc" << endl;
 			}
-			else {
-				open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.html"), open_files, hExit);
-				//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.html")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-			}
+			
+			open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.html"), open_files, hExit);
+			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.html")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+			
 		}
 
 		if (format_options.markdown)
@@ -219,10 +179,10 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 			if (int returnCode = convert_document_to("docx", "docx", paths, tmp_filename, "show") != 0) {
 				logger << "Error " << returnCode << " while converting markdown to docx using pandoc" << endl;
 			}
-			else {
-				//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.docx")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-				open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.docx"), open_files, hExit);
-			}
+			
+			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.docx")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+			open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.docx"), open_files, hExit);
+			
 		}
 
 		if (format_options.tex)
@@ -230,10 +190,10 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 			if (int returnCode = convert_document_to("latex", "tex", paths, tmp_filename, "show") != 0) {
 				logger << "Error " << returnCode << " while converting markdown to latex (tex) using pandoc" << endl;
 			}
-			else {
-				//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.tex")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-				open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.tex"), open_files, hExit);
-			}
+			
+			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.tex")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+			open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.tex"), open_files, hExit);
+			
 		}
 
 		if (format_options.pdf)
@@ -241,10 +201,10 @@ void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int
 			if (int returnCode = convert_document_to("pdf", "pdf", paths, tmp_filename, "show") != 0) {
 				logger << "Error " << returnCode << " while converting markdown to pdf using pandoc" << endl;
 			}
-			else {
-				//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.pdf")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-				open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.pdf"), open_files, hExit);
-			}
+			
+			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.pdf")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+			open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.pdf"), open_files, hExit);
+			
 		}
 
 	}
@@ -764,6 +724,14 @@ void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unorder
 
 		logger << filler << '\n';
 	}
+}
+
+void show_todos(Log& logger, const PATHS& paths, vector<jthread>& open_files, HANDLE& hExit)
+{
+	update_todos(logger, paths);
+	// maybe do a convert to first
+	open_file(logger, paths, paths.base_path / paths.tmp_path / "todos.md", open_files, hExit);
+
 }
 
 void filter_notes(Log& logger, istringstream& iss, const PATHS& paths, vector<string>& filter_selection, map<string, time_t>& file_map, map<string, vector<string>> tag_map, vector<string> mode_tags)
