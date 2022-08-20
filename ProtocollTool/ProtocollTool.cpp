@@ -297,6 +297,7 @@ int main()
         }
         else if (command == "t" || command == "tags") 
         {
+            //TODO add option to sort by amount of tags and not alphabetic
             if (filter_selection.size() == 0) {
                 filter_selection.reserve(tag_map.size());
                 for (const auto& [path, tag] : tag_map)
@@ -304,6 +305,7 @@ int main()
                     filter_selection.push_back(path);
                 }
             }
+            
             logger.setColor(GREEN, WHITE);
             logger << "  Tags";
             if (active_mode != -1) {
@@ -363,6 +365,10 @@ int main()
         {
             open_selection(logger, paths, filter_selection, open_files, hExit);
             
+        }
+        else if (command == "todo" || command == "todos")
+        {
+            show_todos(logger, paths, open_files, hExit);
         }
         else if (command == "h" || command == "-h" || command == "help")
         {
