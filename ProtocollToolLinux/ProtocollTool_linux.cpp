@@ -32,7 +32,7 @@
 
 using namespace std;
 
-AUTO_INPUT auto_input;
+COMMAND_INPUT auto_input;
 map<string, int> tag_count;
 unordered_map<int, string> mode_names;
 
@@ -54,7 +54,7 @@ char* completion_generator(const char* text, int state) {
         AUTO_SUGGESTIONS auto_suggestions = AUTO_SUGGESTIONS();
         auto_input.input = rl_line_buffer;
         // Collect a vector of matches: vocabulary words that begin with text.
-        parse_cmd(auto_input, auto_comp, auto_suggestions);
+        find_cmd_suggestion(auto_input, auto_comp, auto_suggestions);
         for (const auto& sug : auto_suggestions.auto_sugs) {
             matches.push_back(text + sug); 
         }
