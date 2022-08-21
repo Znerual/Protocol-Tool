@@ -5,11 +5,7 @@
 
 #include "utils.h"
 
-struct AUTO_INPUT {
-	std::string input;
-	CMD_STRUCTURE cmd_structure;
-	CMD_NAMES cmd_names;
-};
+
 
 struct AUTO_SUGGESTIONS {
 	std::string auto_sug;
@@ -25,7 +21,7 @@ struct AUTO_SUGGESTIONS {
 
 void read_cmd_structure(const std::filesystem::path filepath, CMD_STRUCTURE& cmds);
 void read_cmd_names(std::filesystem::path filepath, CMD_NAMES& cmd_names);
-void parse_cmd(const AUTO_INPUT& auto_input, AUTOCOMPLETE& auto_comp, AUTO_SUGGESTIONS& auto_suggestions);
+void find_cmd_suggestion(const COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_comp, AUTO_SUGGESTIONS& auto_suggestions);
 
-void cicle_suggestions(Log& logger, AUTO_INPUT& auto_input, AUTOCOMPLETE& auto_comp, AUTO_SUGGESTIONS& auto_suggestions, std::string& last_input, size_t& length_last_suggestion, bool up);
-void get_suggestion(Log& logger, AUTO_INPUT& auto_input, AUTOCOMPLETE& auto_comp, AUTO_SUGGESTIONS& auto_suggestions, std::string& last_input, size_t& length_last_suggestion);
+void cicle_suggestions(Log& logger, COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_comp, AUTO_SUGGESTIONS& auto_suggestions, std::string& last_input, size_t& length_last_suggestion, bool up);
+void get_suggestion(Log& logger, COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_comp, AUTO_SUGGESTIONS& auto_suggestions, std::string& last_input, size_t& length_last_suggestion);

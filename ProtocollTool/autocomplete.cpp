@@ -98,7 +98,7 @@ void read_cmd_names(filesystem::path filepath, CMD_NAMES& cmd_names) {
 	}
 }
 
-void parse_cmd(const AUTO_INPUT& auto_input, AUTOCOMPLETE& auto_comp, AUTO_SUGGESTIONS& auto_suggestions) {
+void find_cmd_suggestion(const COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_comp, AUTO_SUGGESTIONS& auto_suggestions) {
 	enum class CMD_STATE { CMD, PA, OA, OAOA };
 	CMD_STATE state = CMD_STATE::CMD;
 
@@ -330,10 +330,10 @@ void parse_cmd(const AUTO_INPUT& auto_input, AUTOCOMPLETE& auto_comp, AUTO_SUGGE
 
 }
 
-void get_suggestion(Log& logger, AUTO_INPUT& auto_input, AUTOCOMPLETE& auto_comp, AUTO_SUGGESTIONS& auto_suggestions, std::string& last_input, size_t& length_last_suggestion)
+void get_suggestion(Log& logger, COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_comp, AUTO_SUGGESTIONS& auto_suggestions, std::string& last_input, size_t& length_last_suggestion)
 {
 	auto_suggestions = AUTO_SUGGESTIONS();
-	parse_cmd(auto_input, auto_comp, auto_suggestions);
+	find_cmd_suggestion(auto_input, auto_comp, auto_suggestions);
 	logger.input('\t');
 
 	// check if only one prediction exists. 
@@ -351,12 +351,12 @@ void get_suggestion(Log& logger, AUTO_INPUT& auto_input, AUTOCOMPLETE& auto_comp
 	auto_suggestions.auto_sugs_pos = auto_suggestions.auto_sugs.begin(); // reset position for cycling through with arrow keys
 }
 
-void cicle_suggestions(Log& logger, AUTO_INPUT& auto_input, AUTOCOMPLETE& auto_comp, AUTO_SUGGESTIONS& auto_suggestions, std::string& last_input, size_t& length_last_suggestion, bool up)
+void cicle_suggestions(Log& logger, COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_comp, AUTO_SUGGESTIONS& auto_suggestions, std::string& last_input, size_t& length_last_suggestion, bool up)
 {
 	// check if no suggestion is available or if the user changed the input
 	if (auto_suggestions.auto_sugs.empty() || last_input != auto_input.input) {
 		auto_suggestions = AUTO_SUGGESTIONS();
-		parse_cmd(auto_input, auto_comp, auto_suggestions);
+		find_cmd_suggestion(auto_input, auto_comp, auto_suggestions);
 		auto_suggestions.auto_sugs_pos = auto_suggestions.auto_sugs.begin();
 		length_last_suggestion = 0;
 		last_input = auto_input.input;

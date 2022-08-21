@@ -28,6 +28,8 @@
 
 using namespace std;
 
+set<OA> OA_DATA = { OA::TAGS, OA::DATES, OA::REGTEXT, OA::VERSIONS, OA::NAME };
+
 template<typename T>
 void pad(basic_string<T>& s, typename basic_string<T>::size_type n, T c, const bool cap_right, const ALIGN align) {
 	if (n > s.length()) {
@@ -1402,5 +1404,117 @@ AUTOCOMPLETE::AUTOCOMPLETE(const CMD_NAMES& cmd_names, const std::map<std::strin
 	this->tags = TrieTree();
 	for (const auto& [tag, _] : tag_count) {
 		this->tags.insert(tag);
+	}
+}
+
+void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA, vector<string>>& pargs, vector<OA>& oaflags, map<OA, vector<OA>>& oaoargs, map<OA, vector<string>>& oastrargs) {
+	enum class CMD_STATE { CMD, PA, OA, OAOA };
+	CMD_STATE state = CMD_STATE::CMD;
+
+	// read whole input into vector
+	list<string> input_words{};
+	istringstream iss(command_input.input);
+	string word;
+	while (iss >> word) {
+		input_words.push_back(word);
+	}
+
+	// check if command exists
+	if (command_input.cmd_names.cmd_names.left.count(input_words.front()) != 1) {
+		logger << "No command with name " << input_words.front() << " found." << endl;
+		return;
+	}
+
+	// find command
+	cmd = command_input.cmd_names.cmd_names.left.at(input_words.front());
+	if (input_words.size() == 1) {
+		return;
+	}
+	input_words.pop_front();
+
+
+	// check for positional arguments
+	list<PA> pa_args = command_input.cmd_structure.at(cmd).first;
+	bool skip_pa = false;
+	for (const auto& pa_arg : pa_args) {
+		if (pa_arg == PA::TAGS) {
+			// tags, take everything until optional arguments are found (or nothing left)
+			while (input_words.size() > 0) {
+				if (input_words.front().starts_with("-")) {
+					skip_pa = true;
+					break;
+				}
+				pargs[PA::TAGS].push_back(input_words.front());
+				input_words.pop_front();
+			}
+			if (skip_pa) {
+				break;
+			}
+		}
+		else {
+			if (input_words.front().starts_with("-")) {
+				break;
+			}
+			pargs[pa_arg].push_back(input_words.front());
+			input_words.pop_front();
+		}
+	}
+
+	unordered_map<OA, list<OA>> oa_args = command_input.cmd_structure.at(cmd).second;
+	OA current_oa;
+	while (input_words.size() > 0) {
+		if (command_input.cmd_names.oa_names.left.count(input_words.front()) != 1) {
+			logger << "Optional parameter " << input_words.front() << " not recognized. Skipping option." << endl;
+			input_words.pop_front();
+			continue;
+		}
+		current_oa = command_input.cmd_names.oa_names.left.at(input_words.front());
+		input_words.pop_front();
+
+		// flag arguments
+		if (oa_args.at(current_oa).size() == 0) {
+			oaflags.push_back(current_oa);
+			continue;
+		}
+
+
+		// oa arguments with one parameter or more
+		if (input_words.front().starts_with("-")) {
+			logger << "No parameter for optional argument " << command_input.cmd_names.oa_names.right.at(current_oa) << " found next argument " << input_words.front() << ". Skipping option." << endl;
+		}
+
+		// go over all possible parameter
+		//NOTE DONE: All parameters for an optional argument are not allowed to start with a -. Currently, this is not the case!
+		// resolve this by adding new OA that can be taken as parameters for the OA and name them in the cmd_names.dat without hyphens
+		// and change the cmd.dat for the edit_mode command to use the new parameter.
+		// TODO: Change commands to work with this change
+		for (const auto& oa_parameter : oa_args.at(current_oa)) {
+
+			// tags is a special one that collects more than one words per oa
+			if (oa_parameter == OA::TAGS) {
+				while (input_words.size() > 0) {
+					if (input_words.front().starts_with("-")) {
+						break;
+					}
+					oastrargs[OA::TAGS].push_back(input_words.front());
+					input_words.pop_front();
+				}
+			}
+			else {
+				// check if parameter should be a string or OA
+				// if its a string, it needs to appear in the input
+				if (OA_DATA.contains(oa_parameter)) {
+					oastrargs[current_oa].push_back(input_words.front());
+					input_words.pop_front();
+				}
+				// Flag value, does not need to be in data
+				else {
+					if (command_input.cmd_names.oa_names.right.at(oa_parameter) == input_words.front()) {
+						oaoargs[current_oa].push_back(oa_parameter);
+					}
+				}
+			}
+
+		}
 	}
 }

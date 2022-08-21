@@ -9,6 +9,7 @@
 #include <boost/bimap.hpp>
 #include <stdlib.h>
 #include <stdio.h>
+#include <set>
 
 #ifdef _WIN32
 #include <tchar.h>
@@ -26,7 +27,9 @@ enum ALIGN {LEFT, MIDDLE, RIGHT};
 
 enum class CMD { NEW, FIND, FILTER, SHOW, ADD_DATA, DETAILS, TAGS, QUIT, CREATE_MODE, DELETE_MODE, EDIT_MODE, ACTIVATE, DEACTIVATE, MODES, UPDATE, OPEN, HELP, TODOS };
 enum class PA { DATE, TAGS, MODE_NAME };
-enum class OA { DATA, DATE_R, CTAGS, CATAGS, NTAGS, REGT, REGC, VERS_R, STAGS, MDATA, TOC, NODATE, IMG, HTML, TEX, PDF, DOCX, MD, PATH, LPATH, LMOD, CONTENT, ADDOPT, REMOPT, ADDTAG, REMTAG, CHANAME, TAGS, DATES, REGTEXT, VERSIONS, NAME, CMD };
+enum class OA { DATA, DATE_R, CTAGS, CATAGS, NTAGS, REGT, REGC, VERS_R, STAGS, MDATA, TOC, NODATE, IMG, HTML, TEX, PDF, DOCX, MD, PATH, LPATH, LMOD, CONTENT, ADDOPT, REMOPT, ADDTAG, REMTAG, CHANAME, TAGS, DATES, REGTEXT, VERSIONS, NAME, CMD, STAGS_ARG, MDATA_ARG, TOC_ARG, NODATE_ARG, IMG_ARG, HTML_ARG, TEX_ARG, PDF_ARG, DOCX_ARG, MD_ARG, PATH_ARG, LPATH_ARG, LMOD_ARG, CONTENT_ARG };
+extern std::set<OA> OA_DATA;
+
 
 typedef boost::bimap<std::string, CMD> cmd_map;
 typedef boost::bimap<std::string, PA> pa_map;
@@ -77,6 +80,12 @@ struct CMD_NAMES {
 	cmd_map cmd_names;
 	pa_map pa_names;
 	oa_map oa_names;
+};
+
+struct COMMAND_INPUT {
+	std::string input;
+	CMD_STRUCTURE cmd_structure;
+	CMD_NAMES cmd_names;
 };
 
 class AUTOCOMPLETE {
@@ -150,5 +159,7 @@ void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, std::
  void parse_add_note(Log& logger, std::istringstream& iss, const PATHS& paths, const std::string& file_ending, std::string& filename, time_t& date_t, std::vector<std::string>& tags, bool& add_data);
  bool parse_mode_option(std::string& argument, MODE_OPTIONS& mode_options);
  bool parse_format(Log& logger, std::string& argument, FORMAT_OPTIONS& format_options);
+
+ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
 
  

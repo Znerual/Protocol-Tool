@@ -55,3 +55,17 @@ OA
 30 VERSIONS
 31 NAME
 32 CMD
+33 show_tags
+34 metadata
+35 table_of_content
+36 hide_date
+37 open_images
+38 html
+39 tex
+40 pdf
+41 docx
+42 md
+43 path
+44 long_path
+45 last_modified
+46 content

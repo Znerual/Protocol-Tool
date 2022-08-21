@@ -164,7 +164,7 @@ int main()
 
     logger.setColor(BLACK, WHITE);
     
-    AUTO_INPUT auto_input;
+    COMMAND_INPUT auto_input;
     read_cmd_structure(filesystem::path("cmd.dat"), auto_input.cmd_structure);
     read_cmd_names(filesystem::path("cmd_names.dat"), auto_input.cmd_names);
     AUTOCOMPLETE auto_comp(auto_input.cmd_names, tag_count, mode_names); // update trietrees when tags and/or modes are added/changed
@@ -213,7 +213,7 @@ int main()
                 break;
             }
             else {
-                logger << "Error in parse_cmd, invalid return " << return_key << endl;
+                logger << "Error in find_cmd_suggestion, invalid return " << return_key << endl;
             }
         }
        
@@ -223,6 +223,11 @@ int main()
         istringstream iss(auto_input.input);
         iss >> command;
         boost::algorithm::to_lower(command);
+
+        map<PA, vector<string>> pa = map<PA, vector<string>>();
+        vector<OA> flags = vector<OA>();
+        map<OA, vector<OA>> oaoa = map<OA, vector<OA>>();
+        map<OA, vector<string>> oastr = map<OA, vector<string>>();
 
         if (command == "n" || command == "new") 
         {
@@ -368,7 +373,10 @@ int main()
         }
         else if (command == "todo" || command == "todos")
         {
-            show_todos(logger, paths, open_files, hExit);
+            Show_todos show_todos_cmd = Show_todos(&logger, &paths, &conf, &open_files, &hExit);
+            
+            show_todos_cmd.run(pa, flags, oaoa, oastr);
+            //show_todos(logger, paths, open_files, hExit);
         }
         else if (command == "h" || command == "-h" || command == "help")
         {

@@ -1,6 +1,8 @@
 #include "commands.h"
 #include "file_manager.h"
 #include "watcher_windows.h"
+//#include "autocomplete.h"
+
 
 #include <sstream>
 #include <fstream>
@@ -1111,4 +1113,15 @@ void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, c
 		logger << "Mode " << mode_name << " not found." << endl;
 	}
 
+}
+
+void Show_todos::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+	update_todos(*(this->logger), *(this->paths));
+	// maybe do a convert to first
+	open_file(*logger, *paths, paths->base_path / paths->tmp_path / "todos.md", *open_files, *hExit);
+}
+
+void Show_modes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
 }
