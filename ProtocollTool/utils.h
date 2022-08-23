@@ -27,7 +27,7 @@ enum ALIGN {LEFT, MIDDLE, RIGHT};
 
 enum class CMD { NEW, FIND, FILTER, SHOW, ADD_DATA, DETAILS, TAGS, QUIT, CREATE_MODE, DELETE_MODE, EDIT_MODE, ACTIVATE, DEACTIVATE, MODES, UPDATE, OPEN, HELP, TODOS };
 enum class PA { DATE, TAGS, MODE_NAME };
-enum class OA { DATA, DATE_R, CTAGS, CATAGS, NTAGS, REGT, REGC, VERS_R, STAGS, MDATA, TOC, NODATE, IMG, HTML, TEX, PDF, DOCX, MD, PATH, LPATH, LMOD, CONTENT, ADDOPT, REMOPT, ADDTAG, REMTAG, CHANAME, TAGS, DATES, REGTEXT, VERSIONS, NAME, CMD, STAGS_ARG, MDATA_ARG, TOC_ARG, NODATE_ARG, IMG_ARG, HTML_ARG, TEX_ARG, PDF_ARG, DOCX_ARG, MD_ARG, PATH_ARG, LPATH_ARG, LMOD_ARG, CONTENT_ARG };
+enum class OA { DATA, DATE_R, CTAGS, CATAGS, NTAGS, REGT, REGC, VERS_R, STAGS, MDATA, TOC, NODATE, IMG, HTML, TEX, PDF, DOCX, MD, PATH, LPATH, LMOD, CONTENT, ADDOPT, REMOPT, ADDTAG, REMTAG, CHANAME, TAGS, DATES, REGTEXT, VERSIONS, NAME, CMD, STAGS_ARG, MDATA_ARG, TOC_ARG, NODATE_ARG, IMG_ARG, HTML_ARG, TEX_ARG, PDF_ARG, DOCX_ARG, MD_ARG, PATH_ARG, LPATH_ARG, LMOD_ARG, CONTENT_ARG, ADDWF, REMWF, PATHANDTAGS, PATHD };
 extern std::set<OA> OA_DATA;
 
 
@@ -36,7 +36,9 @@ typedef boost::bimap<std::string, PA> pa_map;
 typedef boost::bimap<std::string, OA> oa_map;
 
 typedef std::unordered_map<CMD, std::pair<std::list<PA>, std::unordered_map<OA, std::list<OA>>>> CMD_STRUCTURE;
+typedef std::unordered_map<OA, bool> MODE_OPTIONS;
 
+/*
 struct SHOW_OPTIONS {
 	bool show_tags = false;
 	bool show_metadata = false;
@@ -64,6 +66,7 @@ struct MODE_OPTIONS {
 	FORMAT_OPTIONS format_options;
 	DETAIL_OPTIONS detail_options;
 };
+*/
 struct PATHS {
 	std::filesystem::path base_path;
 	std::filesystem::path file_path;
@@ -143,7 +146,7 @@ void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, std::
  void add(MODE_OPTIONS& to, MODE_OPTIONS& from);
  void remove(MODE_OPTIONS& to, MODE_OPTIONS& from);
 
-
+ void init_mode_options(MODE_OPTIONS& mode_options);
  void set_mode_options(Config& conf, MODE_OPTIONS& mode_options, const int& active_mode);
  void get_mode_options(Config& conf, MODE_OPTIONS& mode_options, const int& active_mode);
 
