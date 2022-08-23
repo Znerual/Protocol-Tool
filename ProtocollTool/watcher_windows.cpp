@@ -255,3 +255,19 @@ void get_folder_watcher(Config& conf, int& active_mode, unordered_map<string, ve
 		folder_watcher_tags[folder_path_str] = folder_tags;
 	}
 }
+
+void set_folder_watcher(Config& conf, int& active_mode, unordered_map<string, vector<string>>& folder_watcher_tags) {
+	(conf).set("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS", static_cast<int>(folder_watcher_tags.size()));
+	int folder_counter = 0; // not ideal, order in map can change but does not matter because all entries are treated equal
+	for (const auto& [folder_path, tags] : folder_watcher_tags) {
+		(conf).set("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_NUM_TAGS", static_cast<int>(tags.size()));
+		(conf).set("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_PATH", folder_path);
+
+		for (auto j = 0; j < tags.size(); j++)
+		{
+			(conf).set("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_TAG_" + to_string(j), tags.at(j));
+
+		}
+		folder_counter++;
+	}
+}
