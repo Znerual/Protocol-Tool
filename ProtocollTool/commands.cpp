@@ -396,7 +396,7 @@ void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& 
 
 	get_mode_tags(conf, mode_id, mode_tags);
 
-	MODE_OPTIONS mode_options;
+	MODE_OPTIONS mode_options = MODE_OPTIONS();
 	get_mode_options(conf, mode_options, mode_id);
 	unordered_map<string, vector<string>> folder_watcher_tags;
 	get_folder_watcher(conf, mode_id, folder_watcher_tags);
@@ -1123,5 +1123,363 @@ void Show_todos::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<
 }
 
 void Show_modes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+	int con_col, con_row;
+	get_console_size(con_row, con_col);
+
+	string mode_name{ "Mode name:" }, mode_tags{ "Mode tags: ..." }, mode_options{ "Options: ..." }, watch_folder{ "Watch folders: ..." }, folder_tags{ " with tags: ..." }, filler{};
+	pad(mode_name, 26, ' ');
+	pad(mode_tags, con_col - 26, ' '); //46
+
+	pad(mode_options, con_col, ' ');
+	pad(watch_folder, 30, ' ');
+	pad(folder_tags, con_col - 30, ' ');
+	pad(filler, con_col, '-');
+	*logger << filler << '\n';
+	*logger << mode_name << mode_tags << '\n' << mode_options << '\n' << watch_folder << folder_tags << '\n';
+	*logger << filler << "\n";
+	for (const auto& [id, name] : *mode_names)
+	{
+		// show name
+		string display_name = name;
+		pad(display_name, 25, ' ');
+		*logger << display_name << " ";
+
+		// show tags
+		int num_tags;
+		(*conf).get("MODE_" + to_string(id) + "_NUM_TAGS", num_tags);
+		ostringstream tags;
+		int tag_width = 0;
+		if (num_tags > 0) {
+			tag_width = ((con_col - 26 - 1) / num_tags) - 1;
+		}
+
+
+		if (tag_width < 8) {
+			tag_width = 7;
+		}
+
+		int extra_tag_width = 0;
+		string tag;
+		for (auto i = 0; i < num_tags; i++) {
+			(*conf).get("MODE_" + to_string(id) + "_TAG_" + to_string(i), tag);
+
+			if (tag.size() < tag_width) {
+				extra_tag_width += tag_width - tag.size();
+			}
+			else if (extra_tag_width > 0) {
+				int dif = tag.size() - tag_width;
+				if (dif >= extra_tag_width) {
+					pad(tag, tag_width + extra_tag_width, ' ');
+					extra_tag_width = 0;
+				}
+				else {
+					pad(tag, tag_width + dif, ' ');
+					extra_tag_width -= dif;
+				}
+			}
+			else {
+				pad(tag, tag_width, ' ');
+			}
+
+
+			tags << tag << ' ';
+		}
+		string tags_str = tags.str();
+		if (tags_str.size() > 0)
+			tags_str.erase(tags_str.end() - 1);
+		pad(tags_str, (con_col - 26 - 1), ' ');
+		*logger << tags_str << " ";
+
+
+		// show options
+		MODE_OPTIONS mode_options;
+		get_mode_options((*conf), mode_options, *active_mode);
+
+		ostringstream opt;
+		if (mode_options.show_options.show_tags)
+			opt << "-st ";
+		if (mode_options.show_options.show_metadata)
+			opt << "-sm ";
+		if (mode_options.show_options.show_table_of_content)
+			opt << "-sc ";
+		if (mode_options.show_options.show_data)
+			opt << "-sd ";
+		if (mode_options.show_options.hide_date)
+			opt << "-hd ";
+		if (mode_options.show_options.open_image_data)
+			opt << "-si ";
+		if (mode_options.format_options.html)
+			opt << "-shtml ";
+		if (mode_options.format_options.tex)
+			opt << "stex ";
+		if (mode_options.format_options.pdf)
+			opt << "spdf ";
+		if (mode_options.format_options.docx)
+			opt << "sdocx ";
+		if (mode_options.format_options.markdown)
+			opt << "smd ";
+		if (mode_options.detail_options.detail_tags)
+			opt << "dt ";
+		if (mode_options.detail_options.detail_path)
+			opt << "dp ";
+		if (mode_options.detail_options.detail_long_path)
+			opt << "dlp ";
+		if (mode_options.detail_options.detail_last_modified)
+			opt << "dlm ";
+		if (mode_options.detail_options.detail_content)
+			opt << "dc ";
+
+		string options = opt.str();
+		if (options.size() > 0)
+			options.erase(options.end() - 1);
+
+		pad(options, con_col, ' ');
+		*logger << options << '\n';
+
+		// show watched folders and tags
+		int num_folders;
+		string folder_path_str;
+		(*conf).get("MODE_" + to_string(id) + "_NUM_WATCH_FOLDERS", num_folders);
+		for (auto i = 0; i < num_folders; i++)
+		{
+			int num_folder_tags;
+			int folder_tag_width = 0;
+			if (num_tags > 0) {
+				folder_tag_width = ((con_col - 28 - 1) / num_tags) - 1;
+			}
+			if (folder_tag_width < 8) {
+				folder_tag_width = 7;
+			}
+
+			string folder_tags_str;
+			ostringstream folder_tags;
+			(*conf).get("MODE_" + to_string(id) + "_WATCH_FOLDERS_" + to_string(i) + "_NUM_TAGS", num_folder_tags);
+			(*conf).get("MODE_" + to_string(id) + "_WATCH_FOLDERS_" + to_string(i) + "_PATH", folder_path_str);
+
+			string folder_tag;
+			int extra_folder_tag_width = 0;
+			for (auto j = 0; j < num_folder_tags; j++)
+			{
+				(*conf).get("MODE_" + to_string(id) + "_WATCH_FOLDERS_" + to_string(i) + "_TAG_" + to_string(j), folder_tag);
+				// left bound padding of tags
+				if (folder_tag.size() < folder_tag_width) {
+					extra_folder_tag_width += folder_tag_width - folder_tag.size();
+				}
+				else if (extra_folder_tag_width > 0) {
+					int dif = folder_tag.size() - folder_tag_width;
+					if (dif >= extra_folder_tag_width) {
+						pad(folder_tag, folder_tag_width + extra_folder_tag_width, ' ');
+						extra_folder_tag_width = 0;
+					}
+					else {
+						pad(folder_tag, folder_tag_width + dif, ' ');
+						extra_folder_tag_width -= dif;
+					}
+				}
+				else {
+					pad(folder_tag, folder_tag_width, ' ');
+				}
+
+				folder_tags << folder_tag << " ";
+
+			}
+			folder_tags_str = folder_tags.str();
+			folder_tags_str.erase(folder_tags_str.end() - 1);
+			pad(folder_path_str, 29, ' ', false);
+			pad(folder_tags_str, con_col - 30, ' ');
+			*logger << folder_path_str << " " << folder_tags_str << '\n';
+		}
+
+		*logger << filler << '\n';
+	}
+}
+
+void Activate_mode_command::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+	*mode_tags = vector<string>();
+	*active_mode = -1;
+
+
+	if (pargs.size() == 0)
+	{
+		*logger << "Specify the name of the mode you want to activate" << endl;
+		return;
+	}
+
+	string mode_name = pargs.at(PA::MODE_NAME).at(0);
+	
+	for (const auto& [id, name] : *mode_names)
+	{
+		if (name == mode_name)
+		{
+			*active_mode = id;
+		}
+	}
+
+	if (*active_mode != -1)
+	{
+		activate_mode(*logger, *conf, *paths, *active_mode, *mode_tags, *file_watchers, *file_ending, *update_files, *hStopEvent, *open_files, *hExit);
+	}
+	else {
+		*logger << "Mode " << mode_name << " not found." << endl;
+	}
+}
+
+void Deactivate_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+	*active_mode = -1;
+	*mode_tags = vector<string>();
+
+	SetEvent(*hStopEvent);
+	for (jthread& watcher : *file_watchers) {
+		watcher.request_stop();
+	}
+
+	*file_watchers = vector<jthread>();
+}
+
+void Edit_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+	deactivate_mode(*logger, (*conf), *active_mode, *mode_tags, *file_watchers, *hStopEvent);
+
+	string mode_name;
+	if (pargs.size() == 0)
+	{
+		*logger << "Specify name of the mode that should be edited" << endl;
+		return;
+	}
+
+	mode_name = pargs.at(PA::MODE_NAME).at(0);
+	boost::algorithm::to_lower(mode_name);
+
+	int mode_id = -1;
+	for (const auto& [id, name] : *mode_names) // check if name exists
+	{
+		if (mode_name == name)
+		{
+			mode_id = id;
+		}
+	}
+
+	if (mode_id == -1)
+	{
+		*logger << "Mode " << mode_name << " could not be found! See available modes with the command: modes." << endl;
+		return;
+	}
+
+	// Add or remove tags
+	get_mode_tags((*conf), mode_id, *mode_tags);
+	if (oastrargs.contains(OA::ADDTAG)) {
+		for (const auto& tag : oastrargs.at(OA::ADDTAG)) {
+			if (find(mode_tags->begin(), mode_tags->end(), tag) == mode_tags->end()) {
+				mode_tags->push_back(tag);
+			}
+		}
+		//(*mode_tags).insert(mode_tags->end(), oastrargs.at(OA::ADDTAG).begin(), oastrargs.at(OA::ADDTAG).end());
+	}
+	if (oastrargs.contains(OA::REMTAG)) {
+		for (const auto& tag : oastrargs.at(OA::REMTAG)) {
+			if (find(mode_tags->begin(), mode_tags->end(), tag) != mode_tags->end()) {
+				mode_tags->erase(std::remove(mode_tags->begin(), mode_tags->end(), tag));
+			}
+		}
+	}
+	set_mode_tags((*conf), mode_id, *mode_tags);
+
+	// Add or remove mode options
+	MODE_OPTIONS mode_options;
+	get_mode_options((*conf), mode_options, mode_id);
+	if (oaoargs.contains(OA::ADDOPT)) {
+		for (const auto& opt : oaoargs.at(OA::ADDOPT)) {
+			mode_options.at(opt) = true;
+		}
+	}
+	if (oaoargs.contains(OA::REMOPT)) {
+		for (const auto& opt : oaoargs.at(OA::REMOPT)) {
+			mode_options.at(opt) = false;
+		}
+	}
+	set_mode_options((*conf), mode_options, mode_id);
+
+	// Add or remove file watchers
+	unordered_map<string, vector<string>> folder_watcher_tags;
+	get_folder_watcher((*conf), mode_id, folder_watcher_tags);
+	if (oastrargs.contains(OA::ADDWF)) {
+		// if path exists, set tags of folder to watch to new tags (excluding first argument, which is the path itself)
+		if (filesystem::exists(oastrargs.at(OA::ADDWF).at(0))) {
+			folder_watcher_tags[oastrargs.at(OA::ADDWF).at(0)] = vector<string>(oastrargs.at(OA::ADDWF).begin()+1, oastrargs.at(OA::ADDWF).end());
+		}
+		else {
+			*logger << "Could not add watcher to folder " << oastrargs.at(OA::ADDWF).at(0) << " becaues the path does not exist." << endl;
+		}
+	}
+	if (oastrargs.contains(OA::REMWF)) {
+		if (folder_watcher_tags.contains(oastrargs.at(OA::REMWF).at(0))) {
+			folder_watcher_tags.erase(oastrargs.at(OA::REMWF).at(0));
+		}
+		else {
+			*logger << "Could not remove folder watcher from folder " << oastrargs.at(OA::REMWF).at(0) << " because no folder watcher is registered for this folder.";
+			if (folder_watcher_tags.size() == 0) {
+				*logger << " Currently, there are no folder watchers active." << endl;
+			}
+			else {
+				*logger << " Registered folder are: ";
+				for (const auto& [folder_path, _] : folder_watcher_tags) {
+					*logger << folder_path << "; ";
+				}
+				*logger << endl;
+			}
+		}
+	}
+	set_folder_watcher((*conf), mode_id, folder_watcher_tags);
+
+	// Change mode name
+	if (oastrargs.contains(OA::CHANAME)) {
+		string new_mode_name = oastrargs.at(OA::CHANAME).at(0);
+		mode_names->at(mode_id) = new_mode_name;
+		(*conf).set("MODE_" + to_string(mode_id) + "_NAME", new_mode_name);
+	}
+
+	activate_mode(*logger, *conf, *paths, *active_mode, *mode_tags, *file_watchers, *file_ending, *update_files, *hStopEvent, *open_files, *hExit);
+}
+
+void Delete_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+}
+
+void Create_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+}
+
+void Open_selection::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+}
+
+void Show_details::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+}
+
+void Add_data::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+}
+
+void Add_note::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+}
+
+void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+}
+
+void Find_notes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+}
+
+void Filter_notes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+}
+
+void Update_tags::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
 }
