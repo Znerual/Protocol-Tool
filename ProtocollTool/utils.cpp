@@ -28,7 +28,7 @@
 
 using namespace std;
 
-set<OA> OA_DATA = { OA::TAGS, OA::DATES, OA::REGTEXT, OA::VERSIONS, OA::NAME };
+set<OA> OA_DATA = { OA::TAGS, OA::DATES, OA::REGTEXT, OA::VERSIONS, OA::NAME, OA::PATHD, OA::PATHANDTAGS};
 
 template<typename T>
 void pad(basic_string<T>& s, typename basic_string<T>::size_type n, T c, const bool cap_right, const ALIGN align) {
@@ -118,13 +118,13 @@ void load_config(const std::string init_path, Config& conf)
 	try {
 		//conf = Config("D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\para.conf");
 		conf = Config(init_path);
-		cout << colorize(YELLOW, WHITE) << "  Loaded the configuration file\n";
+		std::cout << colorize(YELLOW, WHITE) << "  Loaded the configuration file\n";
 	}
 	catch (IOException& e) {
 		string config_path;
-		cout << colorize(RED, WHITE) << "  Error " << e.what() << " while loading the configuration file from " << "D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\para.conf" << '\n';
-		cout << colorize(BLACK, WHITE) << "  Please specify the path where the configuration file (para.conf) can be found:" << endl;
-		cout << colorize(BLACK, WHITE) << "  Path to para.conf: ";
+		std::cout << colorize(RED, WHITE) << "  Error " << e.what() << " while loading the configuration file from " << "D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\para.conf" << '\n';
+		std::cout << colorize(BLACK, WHITE) << "  Please specify the path where the configuration file (para.conf) can be found:" << endl;
+		std::cout << colorize(BLACK, WHITE) << "  Path to para.conf: ";
 
 		bool found_config = false;
 		while (!found_config)
@@ -138,9 +138,9 @@ void load_config(const std::string init_path, Config& conf)
 				break;
 			}
 			catch (IOException& e2) {
-				cout << colorize(RED, WHITE) << "  Error " << e2.what() << " while loading the configuration file " << "para.conf" << '\n';
-				cout << colorize(BLACK, WHITE) << "  Please specify the path where the configuration file (para.conf) can be found. \n  In order to avoid this error, place the conf.para file ";
-				cout << colorize(BLACK, WHITE) << "  in the same directory as the .exe file.\nPath to conf.para:";
+				std::cout << colorize(RED, WHITE) << "  Error " << e2.what() << " while loading the configuration file " << "para.conf" << '\n';
+				std::cout << colorize(BLACK, WHITE) << "  Please specify the path where the configuration file (para.conf) can be found. \n  In order to avoid this error, place the conf.para file ";
+				std::cout << colorize(BLACK, WHITE) << "  in the same directory as the .exe file.\nPath to conf.para:";
 			}
 		}
 
@@ -155,8 +155,8 @@ void check_base_path(Config& conf, PATHS& paths)
 		while (!found_base_path)
 		{
 			string base_path_str;
-			cout << colorize(RED, WHITE) << "  No path for the note files was set. Set to an existing directory to include those notes or chose a new, empty directory" << endl;
-			cout << colorize(BLACK, WHITE) << "  Base Path: ";
+			std::cout << colorize(RED, WHITE) << "  No path for the note files was set. Set to an existing directory to include those notes or chose a new, empty directory" << endl;
+			std::cout << colorize(BLACK, WHITE) << "  Base Path: ";
 			cin >> base_path_str;
 			cin.clear();
 			cin.ignore(10000, '\n');
@@ -164,12 +164,12 @@ void check_base_path(Config& conf, PATHS& paths)
 
 			if (filesystem::create_directories(base_path_str)) // created new folder
 			{
-				cout << colorize(BLACK, WHITE) << "  Created a new folder at " << base_path_str << endl;
+				std::cout << colorize(BLACK, WHITE) << "  Created a new folder at " << base_path_str << endl;
 				found_base_path = true;
 			}
 			else 
 			{ // use existing folder
-				cout << colorize(BLACK, WHITE) << "  Found the folder " << base_path_str << endl;
+				std::cout << colorize(BLACK, WHITE) << "  Found the folder " << base_path_str << endl;
 
 				// check for existing files
 				if (filesystem::exists(filesystem::path(base_path_str) / paths.file_path)) {
@@ -178,7 +178,7 @@ void check_base_path(Config& conf, PATHS& paths)
 					{
 						if (entry.path().extension() != ".md" || entry.path().stem().string().size() != 9)
 						{
-							cout << colorize(RED, WHITE) << "  It seems as if invalid files are in the existing file folder!\nFound the file " << entry.path().filename() << " in the folder, which is not an appropiate note markdown file" << endl;
+							std::cout << colorize(RED, WHITE) << "  It seems as if invalid files are in the existing file folder!\nFound the file " << entry.path().filename() << " in the folder, which is not an appropiate note markdown file" << endl;
 							invalid_files = true;
 							break;
 						}
@@ -207,17 +207,17 @@ void check_standard_paths(PATHS& paths)
 {
 	if (!filesystem::exists(paths.base_path / paths.file_path))
 	{
-		cout << colorize(YELLOW, WHITE) << "  No folder found at the file path " << paths.base_path / paths.file_path << ".\n  Creating a new folder..." << endl;
+		std::cout << colorize(YELLOW, WHITE) << "  No folder found at the file path " << paths.base_path / paths.file_path << ".\n  Creating a new folder..." << endl;
 		filesystem::create_directories(paths.base_path / paths.file_path);
 	}
 	if (!filesystem::exists(paths.base_path / paths.data_path))
 	{
-		cout << colorize(YELLOW, WHITE) << "  No folder found at the data path " << paths.base_path / paths.data_path << ".\n  Creating a new folder..." << endl;
+		std::cout << colorize(YELLOW, WHITE) << "  No folder found at the data path " << paths.base_path / paths.data_path << ".\n  Creating a new folder..." << endl;
 		filesystem::create_directories(paths.base_path / paths.data_path);
 	}
 	if (!filesystem::exists(paths.base_path / paths.tmp_path))
 	{
-		cout << colorize(YELLOW, WHITE) << "  No folder found at the tmp path " << paths.base_path / paths.tmp_path << ".\n  Creating a new folder..." << endl;
+		std::cout << colorize(YELLOW, WHITE) << "  No folder found at the tmp path " << paths.base_path / paths.tmp_path << ".\n  Creating a new folder..." << endl;
 		filesystem::create_directories(paths.base_path / paths.tmp_path);
 	}
 }
@@ -244,148 +244,81 @@ void get_console_size(int& rows, int& columns)
 }
 #endif
 
-void add(FORMAT_OPTIONS& to, FORMAT_OPTIONS& from) {
-	if (from.docx)
-		to.docx = true;
-	if (from.pdf)
-		to.pdf = true;
-	if (from.markdown)
-		to.markdown = true;
-	if (from.tex)
-		to.tex = true;
-	if (from.html)
-		to.html = true;
-	
-}
-
-void add(SHOW_OPTIONS& to, SHOW_OPTIONS& from) {
-	if (from.show_data)
-		to.show_data = true;
-	if (from.show_metadata)
-		to.show_metadata = true;
-	if (from.show_tags)
-		to.show_tags = true;
-	if (from.show_table_of_content)
-		to.show_table_of_content = true;
-	if (from.hide_date)
-		to.hide_date = true;
-	if (from.open_image_data)
-		to.open_image_data = true;
-	
-
-}
-
-void add(DETAIL_OPTIONS& to, DETAIL_OPTIONS& from) {
-	if (from.detail_content)
-		to.detail_content = true;
-	if (from.detail_path)
-		to.detail_path = true;
-	if (from.detail_long_path)
-		to.detail_long_path = true;
-	if (from.detail_last_modified)
-		to.detail_last_modified = true;
-	if (from.detail_tags)
-		to.detail_tags = true;
-
-}
-
-void remove(FORMAT_OPTIONS& to, FORMAT_OPTIONS& from) {
-	if (from.docx)
-		to.docx = false;
-	if (from.pdf)
-		to.pdf = false;
-	if (from.markdown)
-		to.markdown = false;
-	if (from.tex)
-		to.tex = false;
-	if (from.html)
-		to.html = false;
-
-}
-
-void remove(SHOW_OPTIONS& to, SHOW_OPTIONS& from) {
-	if (from.show_data)
-		to.show_data = false;
-	if (from.show_metadata)
-		to.show_metadata = false;
-	if (from.show_tags)
-		to.show_tags = false;
-	if (from.show_table_of_content)
-		to.show_table_of_content = false;
-	if (from.hide_date)
-		to.hide_date = false;
-	if (from.open_image_data)
-		to.open_image_data = false;
-
-
-}
-
-void remove(DETAIL_OPTIONS& to, DETAIL_OPTIONS& from) {
-	if (from.detail_content)
-		to.detail_content = false;
-	if (from.detail_path)
-		to.detail_path = false;
-	if (from.detail_long_path)
-		to.detail_long_path = false;
-	if (from.detail_last_modified)
-		to.detail_last_modified = false;
-	if (from.detail_tags)
-		to.detail_tags = false;
-
-}
-
-void add(MODE_OPTIONS& to, MODE_OPTIONS& from) {
-	add(to.format_options, from.format_options);
-	add(to.detail_options, from.detail_options);
-	add(to.show_options, from.show_options);
-}
-
-void remove(MODE_OPTIONS& to, MODE_OPTIONS& from) {
-	remove(to.format_options, from.format_options);
-	remove(to.detail_options, from.detail_options);
-	remove(to.show_options, from.show_options);
+void init_mode_options(MODE_OPTIONS& mode_options) {
+	if (!mode_options.contains(OA::STAGS))
+		mode_options[OA::STAGS] = false;
+	if (!mode_options.contains(OA::MDATA))
+		mode_options[OA::MDATA] = false;
+	if (!mode_options.contains(OA::TOC))
+		mode_options[OA::TOC] = false;
+	if (!mode_options.contains(OA::DATA))
+		mode_options[OA::DATA] = false;
+	if (!mode_options.contains(OA::NODATE))
+		mode_options[OA::NODATE] = false;
+	if (!mode_options.contains(OA::IMG))
+		mode_options[OA::IMG] = false;
+	if (!mode_options.contains(OA::HTML))
+		mode_options[OA::HTML] = false;
+	if (!mode_options.contains(OA::TEX))
+		mode_options[OA::TEX] = false;
+	if (!mode_options.contains(OA::PDF))
+		mode_options[OA::PDF] = false;
+	if (!mode_options.contains(OA::DOCX))
+		mode_options[OA::DOCX] = false;
+	if (!mode_options.contains(OA::MD))
+		mode_options[OA::MD] = false;
+	if (!mode_options.contains(OA::PATH))
+		mode_options[OA::PATH] = false;
+	if (!mode_options.contains(OA::LPATH))
+		mode_options[OA::LPATH] = false;
+	if (!mode_options.contains(OA::LMOD))
+		mode_options[OA::LMOD] = false;
+	if (!mode_options.contains(OA::CONTENT))
+		mode_options[OA::CONTENT] = false;
 }
 
 void set_mode_options(Config& conf, MODE_OPTIONS& mode_options, const int& active_mode)
 {
-	conf.set("MODE_" + to_string(active_mode) + "_SHOW_TAGS", mode_options.show_options.show_tags);
-	conf.set("MODE_" + to_string(active_mode) + "_SHOW_METADATA", mode_options.show_options.show_metadata);
-	conf.set("MODE_" + to_string(active_mode) + "_SHOW_TABLE_OF_CONTENT", mode_options.show_options.show_table_of_content);
-	conf.set("MODE_" + to_string(active_mode) + "_SHOW_DATA", mode_options.show_options.show_data);
-	conf.set("MODE_" + to_string(active_mode) + "_SHOW_HIDE_DATE", mode_options.show_options.hide_date);
-	conf.set("MODE_" + to_string(active_mode) + "_SHOW_OPEN_IMAGES", mode_options.show_options.open_image_data);
-	conf.set("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_HTML", mode_options.format_options.html);
-	conf.set("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_TEX", mode_options.format_options.tex);
-	conf.set("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_PDF", mode_options.format_options.pdf);
-	conf.set("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_DOCX", mode_options.format_options.docx);
-	conf.set("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_MD", mode_options.format_options.markdown);
+	init_mode_options(mode_options);
 
-	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_TAGS", mode_options.detail_options.detail_tags);
-	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_PATH", mode_options.detail_options.detail_path);
-	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_LONG_PATH", mode_options.detail_options.detail_long_path);
-	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_LAST_MODIFIED", mode_options.detail_options.detail_last_modified);
-	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_SHOW_CONTENT", mode_options.detail_options.detail_content);
+	conf.set("MODE_" + to_string(active_mode) + "_SHOW_TAGS", mode_options.at(OA::STAGS));
+	conf.set("MODE_" + to_string(active_mode) + "_SHOW_METADATA", mode_options.at(OA::MDATA));
+	conf.set("MODE_" + to_string(active_mode) + "_SHOW_TABLE_OF_CONTENT", mode_options.at(OA::TOC));
+	conf.set("MODE_" + to_string(active_mode) + "_SHOW_DATA", mode_options.at(OA::DATA));
+	conf.set("MODE_" + to_string(active_mode) + "_SHOW_HIDE_DATE", mode_options.at(OA::NODATE));
+	conf.set("MODE_" + to_string(active_mode) + "_SHOW_OPEN_IMAGES", mode_options.at(OA::IMG));
+	conf.set("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_HTML", mode_options.at(OA::HTML));
+	conf.set("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_TEX", mode_options.at(OA::TEX));
+	conf.set("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_PDF", mode_options.at(OA::PDF));
+	conf.set("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_DOCX", mode_options.at(OA::DOCX));
+	conf.set("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_MD", mode_options.at(OA::MD));
+	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_TAGS", mode_options.at(OA::STAGS));
+	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_PATH", mode_options.at(OA::PATH));
+	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_LONG_PATH", mode_options.at(OA::LPATH));
+	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_LAST_MODIFIED", mode_options.at(OA::LMOD));
+	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_SHOW_CONTENT", mode_options.at(OA::CONTENT));
 }
 
 void get_mode_options(Config& conf, MODE_OPTIONS& mode_options, const int& active_mode)
 {
-	conf.get("MODE_" + to_string(active_mode) + "_SHOW_TAGS", mode_options.show_options.show_tags);
-	conf.get("MODE_" + to_string(active_mode) + "_SHOW_METADATA", mode_options.show_options.show_metadata);
-	conf.get("MODE_" + to_string(active_mode) + "_SHOW_TABLE_OF_CONTENT", mode_options.show_options.show_table_of_content);
-	conf.get("MODE_" + to_string(active_mode) + "_SHOW_DATA", mode_options.show_options.show_data);
-	conf.get("MODE_" + to_string(active_mode) + "_SHOW_HIDE_DATE", mode_options.show_options.hide_date);
-	conf.get("MODE_" + to_string(active_mode) + "_SHOW_OPEN_IMAGES", mode_options.show_options.open_image_data);
-	conf.get("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_HTML", mode_options.format_options.html);
-	conf.get("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_TEX", mode_options.format_options.tex);
-	conf.get("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_PDF", mode_options.format_options.pdf);
-	conf.get("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_DOCX", mode_options.format_options.docx);
-	conf.get("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_MD", mode_options.format_options.markdown);
-		 
-	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_TAGS", mode_options.detail_options.detail_tags);
-	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_PATH", mode_options.detail_options.detail_path);
-	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_LONG_PATH", mode_options.detail_options.detail_long_path);
-	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_LAST_MODIFIED", mode_options.detail_options.detail_last_modified);
-	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_SHOW_CONTENT", mode_options.detail_options.detail_content);
+	init_mode_options(mode_options);
+
+	conf.get("MODE_" + to_string(active_mode) + "_SHOW_TAGS", mode_options.at(OA::STAGS));
+	conf.get("MODE_" + to_string(active_mode) + "_SHOW_METADATA", mode_options.at(OA::MDATA));
+	conf.get("MODE_" + to_string(active_mode) + "_SHOW_TABLE_OF_CONTENT", mode_options.at(OA::TOC));
+	conf.get("MODE_" + to_string(active_mode) + "_SHOW_DATA", mode_options.at(OA::DATA));
+	conf.get("MODE_" + to_string(active_mode) + "_SHOW_HIDE_DATE", mode_options.at(OA::NODATE));
+	conf.get("MODE_" + to_string(active_mode) + "_SHOW_OPEN_IMAGES", mode_options.at(OA::IMG));
+	conf.get("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_HTML", mode_options.at(OA::HTML));
+	conf.get("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_TEX", mode_options.at(OA::TEX));
+	conf.get("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_PDF", mode_options.at(OA::PDF));
+	conf.get("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_DOCX", mode_options.at(OA::DOCX));
+	conf.get("MODE_" + to_string(active_mode) + "_SHOW_OPEN_AS_MD", mode_options.at(OA::MD));
+	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_TAGS", mode_options.at(OA::STAGS));
+	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_PATH", mode_options.at(OA::PATH));
+	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_LONG_PATH", mode_options.at(OA::LPATH));
+	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_LAST_MODIFIED", mode_options.at(OA::LMOD));
+	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_SHOW_CONTENT", mode_options.at(OA::CONTENT));
 }
 
 
@@ -1422,6 +1355,11 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 	// check if command exists
 	if (command_input.cmd_names.cmd_names.left.count(input_words.front()) != 1) {
 		logger << "No command with name " << input_words.front() << " found." << endl;
+		logger << "It should be one of the following commands:\n";
+		for (const auto& [cmd_name, cmd] : command_input.cmd_names.cmd_names.left) {
+			logger << cmd_name << ", ";
+		}
+		logger << "\nRun help [CMD_NAME] for more information." << endl;
 		return;
 	}
 
@@ -1439,12 +1377,16 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 	for (const auto& pa_arg : pa_args) {
 		if (pa_arg == PA::TAGS) {
 			// tags, take everything until optional arguments are found (or nothing left)
+			string tag;
 			while (input_words.size() > 0) {
 				if (input_words.front().starts_with("-")) {
 					skip_pa = true;
 					break;
 				}
-				pargs[PA::TAGS].push_back(input_words.front());
+				tag = trim(input_words.front());
+				boost::to_lower(tag);
+
+				pargs[PA::TAGS].push_back(tag);
 				input_words.pop_front();
 			}
 			if (skip_pa) {
@@ -1462,10 +1404,12 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 
 	unordered_map<OA, list<OA>> oa_args = command_input.cmd_structure.at(cmd).second;
 	OA current_oa;
+	bool show_help = false;
 	while (input_words.size() > 0) {
 		if (command_input.cmd_names.oa_names.left.count(input_words.front()) != 1) {
 			logger << "Optional parameter " << input_words.front() << " not recognized. Skipping option." << endl;
 			input_words.pop_front();
+			show_help = true;
 			continue;
 		}
 		current_oa = command_input.cmd_names.oa_names.left.at(input_words.front());
@@ -1480,7 +1424,9 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 
 		// oa arguments with one parameter or more
 		if (input_words.front().starts_with("-")) {
-			logger << "No parameter for optional argument " << command_input.cmd_names.oa_names.right.at(current_oa) << " found next argument " << input_words.front() << ". Skipping option." << endl;
+			logger << "No set parameter for optional argument " << command_input.cmd_names.oa_names.right.at(current_oa) << " found, it takes " << oa_args.at(current_oa).size() <<" parameter. Continuing with next argument " << input_words.front() << endl;
+			show_help = true;
+			continue;
 		}
 
 		// go over all possible parameter
@@ -1491,12 +1437,20 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 		for (const auto& oa_parameter : oa_args.at(current_oa)) {
 
 			// tags is a special one that collects more than one words per oa
-			if (oa_parameter == OA::TAGS) {
+			if (oa_parameter == OA::TAGS || oa_parameter == OA::PATHANDTAGS) {
+				if (input_words.size() == 0) {
+					logger << "Expecting more but found no further input." << endl;
+					show_help = true;
+				}
+				string tag;
 				while (input_words.size() > 0) {
 					if (input_words.front().starts_with("-")) {
 						break;
 					}
-					oastrargs[OA::TAGS].push_back(input_words.front());
+					tag = trim(input_words.front());
+					if (oa_parameter == OA::TAGS)
+						boost::to_lower(tag);
+					oastrargs[OA::TAGS].push_back(tag);
 					input_words.pop_front();
 				}
 			}
@@ -1517,4 +1471,19 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 
 		}
 	}
+	if (show_help) {
+		logger << "During the parsing of the command, some options were not recognized. The command " << command_input.cmd_names.cmd_names.right.at(cmd);
+		logger << " can be used with the following options:\n";
+		logger << command_input.cmd_names.cmd_names.right.at(cmd) << " ";
+		for (const PA& pai : command_input.cmd_structure.at(cmd).first) {
+			logger << pai << " ";
+		}
+		for (const auto& [oai, oaoa_listi] : command_input.cmd_structure.at(cmd).second) {
+			logger << oai << " ";
+			for (const OA& oaoa : oaoa_listi) {
+				logger << oaoa << " ";
+			}
+		}
+		logger << endl;
+	}	
 }
