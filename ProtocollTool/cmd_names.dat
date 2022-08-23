@@ -69,3 +69,7 @@ OA
 44 long_path
 45 last_modified
 46 content
+47 -add_watch_folder
+48 -remove_watch_folder
+49 PATHANDTAGS
+50 PATH
