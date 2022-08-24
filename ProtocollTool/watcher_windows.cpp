@@ -236,7 +236,7 @@ void note_change_watcher(Log& logger, const PATHS paths, bool& update_files, HAN
 	}
 }
 
-void get_folder_watcher(Config& conf, int& active_mode, unordered_map<string, vector<string>>& folder_watcher_tags) {
+void get_folder_watcher(Config& conf, const int& active_mode, unordered_map<string, vector<string>>& folder_watcher_tags) {
 	int num_folders = 0;
 	string folder_path_str, tag;
 	conf.get("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS", num_folders);
@@ -256,7 +256,7 @@ void get_folder_watcher(Config& conf, int& active_mode, unordered_map<string, ve
 	}
 }
 
-void set_folder_watcher(Config& conf, int& active_mode, unordered_map<string, vector<string>>& folder_watcher_tags) {
+void set_folder_watcher(Config& conf, const int& active_mode, unordered_map<string, vector<string>>& folder_watcher_tags) {
 	(conf).set("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS", static_cast<int>(folder_watcher_tags.size()));
 	int folder_counter = 0; // not ideal, order in map can change but does not matter because all entries are treated equal
 	for (const auto& [folder_path, tags] : folder_watcher_tags) {
