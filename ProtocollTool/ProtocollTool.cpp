@@ -228,11 +228,31 @@ int main()
         vector<OA> flags = vector<OA>();
         map<OA, vector<OA>> oaoa = map<OA, vector<OA>>();
         map<OA, vector<string>> oastr = map<OA, vector<string>>();
-
+        
+        map<CMD, Command> command_fn = { {CMD::NEW , Add_note(&logger, &paths, &conf, &active_mode, &file_ending, &file_map, &tag_map, &mode_tags, &filter_selection, &open_files, &hExit)}
+            {CMD::FIND, Find_notes()},
+            {CMD::FILTER, Filter_notes()},
+            {CMD::SHOW, Show_filtered_notes()},
+            {CMD::ADD_DATA, Add_data()},
+            {CMD::DETAILS, Show_details()},
+            {CMD::TAGS, Tags},
+            {CMD::QUIT, },
+            {CMD::CREATE_MODE, }, 
+            {CMD::DELETE_MODE, },
+            {CMD::EDIT_MODE, },
+            {CMD::ACTIVATE, }, 
+            {CMD::DEACTIVATE, },
+            {CMD::MODES, }, 
+            {CMD::UPDATE, },
+            {CMD::OPEN, },
+            {CMD::HELP,},
+            {CMD::TODOS, }
+        };
         if (command == "n" || command == "new") 
         {
-            add_note(logger, iss, paths, file_ending, file_map, tag_map, mode_tags, filter_selection, open_files, hExit);
+            //add_note(logger, iss, paths, file_ending, file_map, tag_map, mode_tags, filter_selection, open_files, hExit);
         }
+        /*
         else if (command == "f") { // could be find or filter
             logger.setColor(GREEN, WHITE);
             if (filter_selection.size() == 0) {
@@ -332,12 +352,14 @@ int main()
             } 
             logger.setColor(BLACK, WHITE);
         }
+        */
         else if (command == "q" || command == "quit" || command == "exit") 
         {
             SetEvent(hExit);
             running = false;
             break;
         }
+        /*
         else if (command == "c" || command == "create" || command == "create_mode")
         {
             create_mode(logger, iss, conf, paths, num_modes, mode_names, mode_tags, active_mode, file_watchers, file_ending, update_files, hStopEvent, open_files, hExit);
@@ -354,16 +376,21 @@ int main()
         {
             deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, hStopEvent);
         }
+        */
         else if (command == "modes" ||  command == "show_modes")
         {
-            show_modes(logger, iss, conf, mode_names, active_mode);
+            Show_modes show_modes_cmd = Show_modes(&logger, &paths, &conf, &mode_names, &active_mode, &auto_input.cmd_names);
+            show_modes_cmd.run(pa, flags, oaoa, oastr);
+            //show_modes(logger, iss, conf, mode_names, active_mode);
         }
+        /*
         else if (command == "edit_mode" || command == "edit")
         {
             edit_mode(logger, iss, conf, paths, mode_names, mode_tags, active_mode, file_watchers, file_ending, update_files, hStopEvent, open_files, hExit);
         }
         else if (command == "u" || command == "update")
         {
+       
             update_tags(logger, paths, file_map, tag_map, tag_count, filter_selection, false);
         }
         else if (command == "o" || command == "open")
@@ -371,6 +398,7 @@ int main()
             open_selection(logger, paths, filter_selection, open_files, hExit);
             
         }
+        */
         else if (command == "todo" || command == "todos")
         {
             Show_todos show_todos_cmd = Show_todos(&logger, &paths, &conf, &open_files, &hExit);
@@ -508,7 +536,7 @@ int main()
 
         if (update_files)
         {
-            update_tags(logger, paths, file_map, tag_map, tag_count, filter_selection, true);
+            //update_tags(logger, paths, file_map, tag_map, tag_count, filter_selection, true);
             update_files = false;
             // TODO update now
         }
