@@ -9,9 +9,10 @@
 #include <filesystem>
 #include <regex>
 
+#include <tabulate/table.hpp>
 #include <boost/algorithm/string.hpp>
 using namespace std;
-
+/*
 void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int& active_mode, const PATHS& paths, const string& tmp_filename, std::vector<std::string>& filter_selection, const bool& has_pandoc, std::vector<std::jthread>& open_files, HANDLE& hExit)
 {
 	// parse arguments
@@ -339,30 +340,7 @@ void delete_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_mo
 	}
 }
 
-void get_mode_tags(Config& conf, const int& mode_id, vector<string>& mode_tags) {
-	int num_tags;
-	conf.get("MODE_" + to_string(mode_id) + "_NUM_TAGS", num_tags);
 
-	string mode_tag;
-	for (auto i = 0; i < num_tags; i++)
-	{
-		conf.get("MODE_" + to_string(mode_id) + "_TAG_" + to_string(i), mode_tag);
-		mode_tag = trim(mode_tag);
-		boost::to_lower(mode_tag);
-		mode_tags.push_back(mode_tag);
-	}
-
-}
-
-void set_mode_tags(Config& conf, const int& mode_id, vector<string>& mode_tags) {
-	conf.set("MODE_" + to_string(mode_id) + "_NUM_TAGS", static_cast<int>(mode_tags.size()));
-
-	for (auto i = 0; i < mode_tags.size(); i++)
-	{
-		conf.set("MODE_" + to_string(mode_id) + "_TAG_" + to_string(i), mode_tags.at(i));
-	}
-
-}
 
 void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit)
 {
@@ -915,10 +893,7 @@ void add_note(Log& logger, std::istringstream& iss, const PATHS& paths, const st
 	// open new file
 	open_file(logger, paths, (paths.base_path / paths.file_path / filesystem::path(filename)), open_files, hExit);
 	//open_md_editor(logger, (paths.base_path / paths.file_path / filesystem::path(filename)));
-	/*
-	const wstring exec_filename = (paths.base_path / paths.file_path / filesystem::path(filename)).wstring();
-	ShellExecute(0, L"open", exec_filename.c_str(), 0, 0, SW_SHOW);
-	*/
+	
 	// update file_map, tag_map, tag_count and filter selection
 	string path = (paths.file_path / filesystem::path(filename)).string();
 	file_map[path] = time_t(NULL);
@@ -1038,7 +1013,7 @@ void open_selection(Log& logger, const PATHS& paths, std::vector<std::string> fi
 		logger << "Found no file to open in the current selection. Use (f)ind to set selection." << endl;
 	}
 }
-
+*/
 void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit)
 {
 
@@ -1083,7 +1058,7 @@ void deactivate_mode(Log& logger, Config& conf, int& active_mode, vector<string>
 
 	file_watchers = vector<jthread>();
 }
-
+/*
 void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, std::unordered_map<int, std::string>& mode_names, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit)
 {
 	mode_tags = vector<string>();
@@ -1114,6 +1089,33 @@ void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, c
 	}
 
 }
+*/
+
+void get_mode_tags(Config& conf, const int& mode_id, vector<string>& mode_tags) {
+	int num_tags;
+	conf.get("MODE_" + to_string(mode_id) + "_NUM_TAGS", num_tags);
+
+	string mode_tag;
+	for (auto i = 0; i < num_tags; i++)
+	{
+		conf.get("MODE_" + to_string(mode_id) + "_TAG_" + to_string(i), mode_tag);
+		mode_tag = trim(mode_tag);
+		boost::to_lower(mode_tag);
+		mode_tags.push_back(mode_tag);
+	}
+
+}
+
+void set_mode_tags(Config& conf, const int& mode_id, vector<string>& mode_tags) {
+	conf.set("MODE_" + to_string(mode_id) + "_NUM_TAGS", static_cast<int>(mode_tags.size()));
+
+	for (auto i = 0; i < mode_tags.size(); i++)
+	{
+		conf.set("MODE_" + to_string(mode_id) + "_TAG_" + to_string(i), mode_tags.at(i));
+	}
+
+}
+
 
 void Show_todos::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
@@ -1124,8 +1126,44 @@ void Show_todos::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<
 
 void Show_modes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
-	int con_col, con_row;
-	get_console_size(con_row, con_col);
+	//int con_col, con_row;
+	//get_console_size(con_row, con_col);
+
+	tabulate::Table modes_table;
+	//modes_table.format().width(con_col-1);
+	tabulate::Table name_tags_table;
+	tabulate::Table wf_table;
+
+	name_tags_table.add_row({ "Mode name", "Mode tags" });
+	wf_table.add_row({ "Watch folders", "with tags" });
+	name_tags_table.format()
+		.padding_top(0)
+		.padding_bottom(0)
+		.hide_border();
+
+	wf_table.format()
+		.padding_top(0)
+		.padding_bottom(0)
+		.hide_border();
+
+	modes_table.add_row({ name_tags_table });
+	modes_table.add_row({ "Options" });
+	modes_table.add_row({ wf_table });
+
+	modes_table.format()
+		.font_style({ tabulate::FontStyle::italic })
+		//.border_top(" ")
+		//.border_bottom(" ")
+		//.border_left(" ")
+		//.border_right(" ")
+		.corner(" ")
+		.font_align({ tabulate::FontAlign::center });
+
+	modes_table[2].format().padding_bottom(1);
+
+
+	/*
+	
 
 	string mode_name{ "Mode name:" }, mode_tags{ "Mode tags: ..." }, mode_options{ "Options: ..." }, watch_folder{ "Watch folders: ..." }, folder_tags{ " with tags: ..." }, filler{};
 	pad(mode_name, 26, ' ');
@@ -1138,17 +1176,20 @@ void Show_modes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<
 	*logger << filler << '\n';
 	*logger << mode_name << mode_tags << '\n' << mode_options << '\n' << watch_folder << folder_tags << '\n';
 	*logger << filler << "\n";
+	* */
 	for (const auto& [id, name] : *mode_names)
 	{
 		// show name
-		string display_name = name;
+		
+		/*string display_name = name;
 		pad(display_name, 25, ' ');
 		*logger << display_name << " ";
-
+		*/
 		// show tags
 		int num_tags;
 		(*conf).get("MODE_" + to_string(id) + "_NUM_TAGS", num_tags);
 		ostringstream tags;
+		/*
 		int tag_width = 0;
 		if (num_tags > 0) {
 			tag_width = ((con_col - 26 - 1) / num_tags) - 1;
@@ -1158,12 +1199,12 @@ void Show_modes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<
 		if (tag_width < 8) {
 			tag_width = 7;
 		}
-
 		int extra_tag_width = 0;
+		*/
 		string tag;
 		for (auto i = 0; i < num_tags; i++) {
 			(*conf).get("MODE_" + to_string(id) + "_TAG_" + to_string(i), tag);
-
+			/*
 			if (tag.size() < tag_width) {
 				extra_tag_width += tag_width - tag.size();
 			}
@@ -1182,20 +1223,39 @@ void Show_modes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<
 				pad(tag, tag_width, ' ');
 			}
 
-
+			*/
 			tags << tag << ' ';
 		}
 		string tags_str = tags.str();
+		tags_str.erase(tags_str.end() - 1);
+		/*
 		if (tags_str.size() > 0)
-			tags_str.erase(tags_str.end() - 1);
 		pad(tags_str, (con_col - 26 - 1), ' ');
 		*logger << tags_str << " ";
+		*/
+		tabulate::Table m_table;
+		m_table.add_row({ name, tags_str });
+		m_table.format()
+			.padding(0)
+			.hide_border();
 
+		modes_table.add_row({ m_table });
 
 		// show options
 		MODE_OPTIONS mode_options;
 		get_mode_options((*conf), mode_options, *active_mode);
 
+		ostringstream options;
+		for (const auto& option : mode_options) {
+			if (option.second) {
+				options << this->cmd_names->oa_names.right.at(option.first)<< " ";
+			}
+		}
+		string mode_options_str = options.str();
+		mode_options_str.erase(mode_options_str.size() - 1);
+		modes_table.add_row({ mode_options_str });
+
+		/*
 		ostringstream opt;
 		if (mode_options.show_options.show_tags)
 			opt << "-st ";
@@ -1236,8 +1296,30 @@ void Show_modes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<
 
 		pad(options, con_col, ' ');
 		*logger << options << '\n';
+		*/
+		unordered_map<string, vector<string>> folder_watcher;
+		get_folder_watcher(*conf, id, folder_watcher);
+		for (const auto& [folder_path, fw_tags] : folder_watcher) {
+			ostringstream fw_tags_ss;
+			for (const auto& tagstr : fw_tags) {
+				fw_tags_ss << tagstr << " ";
+			}
+			string fw_tags_str = fw_tags_ss.str();
+			fw_tags_str.erase(fw_tags_str.size() - 1);
+			tabulate::Table fw_table;
 
+			fw_table.add_row({ folder_path, fw_tags_str });
+			fw_table.format()
+				.padding(0)
+				//.border(" ")
+				.hide_border();
+
+			modes_table.add_row({ fw_table });
+		}
+
+		
 		// show watched folders and tags
+		/*
 		int num_folders;
 		string folder_path_str;
 		(*conf).get("MODE_" + to_string(id) + "_NUM_WATCH_FOLDERS", num_folders);
@@ -1292,7 +1374,10 @@ void Show_modes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<
 		}
 
 		*logger << filler << '\n';
+		* 
+		*/
 	}
+	*logger << modes_table << endl;
 }
 
 void Activate_mode_command::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
@@ -1446,40 +1531,684 @@ void Edit_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<O
 
 void Delete_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
+	deactivate_mode(*logger, (*conf), *active_mode, *mode_tags, *file_watchers, *hStopEvent);
+
+	if (pargs.size() == 0)
+	{
+		*logger << "Specify name of the mode that should be deleted" << endl;
+		return;
+	}
+
+	string mode_name;
+	mode_name = pargs.at(PA::MODE_NAME).at(0);
+	boost::algorithm::to_lower(mode_name);
+
+	int mode_id = -1;
+	for (const auto& [id, name] : *mode_names) // check if name already exists
+	{
+		if (mode_name == name)
+		{
+			mode_id = id;
+		}
+	}
+
+	if (mode_id != -1)
+	{
+		mode_names->erase(mode_id);
+	}
+	else {
+		*logger << "Mode " << mode_name << " not found." << endl;
+		return;
+	}
+
+
+	num_modes -= 1;
+	(*conf).set("NUM_MODES", num_modes);
+
+	int num_tags;
+	(*conf).get("MODE_" + to_string(mode_id) + "_NUM_TAGS", num_tags);
+	(*conf).remove("MODE_" + to_string(mode_id) + "_NUM_TAGS");
+	for (auto i = 0; i < num_tags; i++)
+	{
+		(*conf).remove("MODE_" + to_string(mode_id) + "_TAG_" + to_string(i));
+	}
+
+	(*conf).remove("MODE_" + to_string(mode_id) + "_NAME");
+
+	int num_watch_folder, num_folder_tags;
+	(*conf).get("MODE_" + to_string(*active_mode) + "_NUM_WATCH_FOLDERS", num_watch_folder);
+	(*conf).remove("MODE_" + to_string(*active_mode) + "_NUM_WATCH_FOLDERS");
+	for (auto i = 0; i < num_watch_folder; i++) {
+		(*conf).get("MODE_" + to_string(*active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_NUM_TAGS", num_folder_tags);
+		(*conf).remove("MODE_" + to_string(*active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_NUM_TAGS");
+		(*conf).remove("MODE_" + to_string(*active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_PATH");
+
+		for (auto j = 0; j < num_folder_tags; j++)
+		{
+			(*conf).remove("MODE_" + to_string(*active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_TAG_" + to_string(j));
+
+		}
+	}
 }
 
 void Create_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
+	deactivate_mode(*logger, *conf, *active_mode, *mode_tags, *file_watchers, *hStopEvent);
+
+	string mode_name;
+	if (pargs.size() == 0) {
+		*logger << "You need to specify a mode name" << endl;
+	}
+	mode_name = pargs.at(PA::MODE_NAME).at(0);
+	boost::algorithm::to_lower(mode_name);
+
+	for (const auto& [id, name] : *mode_names) // check if name already exists
+	{
+		if (mode_name == name)
+		{
+			*logger << "Mode already exists! Delete the old mode with the command (del)ete before creating a new one" << endl;
+			return;
+		}
+	}
+
+	*mode_tags = pargs.at(PA::TAGS);
+	unordered_map<string, vector<string>> folder_watcher_tags;
+	if (oastrargs.contains(OA::ADDWF)) {
+		folder_watcher_tags.at(oastrargs.at(OA::ADDWF).at(0)) = vector<string>(oastrargs.at(OA::ADDWF).begin() + 1, oastrargs.at(OA::ADDWF).end());
+	}
+
+	//MODE_OPTIONS mode_options;
+	//parse_create_mode(logger, iss, conf, mode_name, mode_tags, folder_watcher_tags, mode_options);
+
+
+	
+
+	*active_mode = static_cast<int>(mode_names->size()); // set id to next free number
+	mode_names->at(*active_mode) = mode_name;
+
+	num_modes += 1;
+	(*conf).set("NUM_MODES", num_modes);
+	(*conf).set("MODE_" + to_string(*active_mode) + "_NAME", mode_name);
+	(*conf).set("MODE_" + to_string(*active_mode) + "_NUM_TAGS", static_cast<int>(mode_tags->size()));
+
+	MODE_OPTIONS mode_options;
+	init_mode_options(mode_options);
+	for (const auto& flag : oaflags) {
+		mode_options[flag] = true;
+	}
+	set_mode_options((*conf), mode_options, *active_mode);
+
+	for (auto i = 0; i < mode_tags->size(); i++)
+	{
+		(*conf).set("MODE_" + to_string(*active_mode) + "_TAG_" + to_string(i), mode_tags->at(i));
+	}
+
+
+	(*conf).set("MODE_" + to_string(*active_mode) + "_NUM_WATCH_FOLDERS", static_cast<int>(folder_watcher_tags.size()));
+	int folder_counter = 0; // not ideal, order in map can change but does not matter because all entries are treated equal
+	for (const auto& [folder_path, tags] : folder_watcher_tags) {
+		(*conf).set("MODE_" + to_string(*active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_NUM_TAGS", static_cast<int>(tags.size()));
+		(*conf).set("MODE_" + to_string(*active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_PATH", folder_path);
+
+		for (auto j = 0; j < tags.size(); j++)
+		{
+			(*conf).set("MODE_" + to_string(*active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_TAG_" + to_string(j), tags.at(j));
+
+		}
+		folder_counter++;
+	}
+
+
+	activate_mode(*logger, (*conf), *paths, *active_mode, *mode_tags, *file_watchers, *file_ending, *update_files, *hStopEvent, *open_files, *hExit);
 }
 
 void Open_selection::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
+	if (filter_selection->size() == 1)
+	{
+		//const wstring exec_filename = (paths.base_path / filesystem::path(filter_selection.at(0))).wstring();
+		//ShellExecute(0, L"open", exec_filename.c_str(), 0, 0, SW_SHOW);
+		open_file(*logger, *paths, paths->base_path / filesystem::path(filter_selection->at(0)), *open_files, *hStopEvent);
+	}
+	else if (filter_selection->size() > 1)
+	{
+		string choice;
+		*logger << filter_selection->size() << " found in the selection. Open all of them? (y/n)" << endl;
+		cin >> choice;
+		cin.clear();
+		cin.ignore(10000, '\n');
+		logger->input(choice);
+		if (choice == "y" || choice == "Y") {
+
+			for (const string& path : *filter_selection)
+			{
+				//const wstring exec_filename = (paths.base_path / filesystem::path(path)).wstring();
+				//ShellExecute(0, L"open", exec_filename.c_str(), 0, 0, SW_SHOW);
+				open_file(*logger, *paths, paths->base_path / filesystem::path(path), *open_files, *hStopEvent);
+			}
+		}
+	}
+	else {
+		*logger << "Found no file to open in the current selection. Use (f)ind to set selection." << endl;
+	}
 }
 
 void Show_details::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
+	MODE_OPTIONS mode_options;
+	get_mode_options(*conf, mode_options, *active_mode);
+	for (const auto& flag : oaflags) {
+		mode_options[flag] = true;
+	}
+
+	time_t note_date;
+	string date_str, modified_date_str;
+	for (const string& path : *filter_selection)
+	{
+		string filename = filesystem::path(path).stem().string();
+		str2date_short(note_date, filename.substr(0, 8));
+		date2str(date_str, note_date);
+		*logger << date_str;
+		if (filename[8] != 'a')
+		{
+			*logger << " Version " << filename[8];
+		}
+		if (mode_options.contains(OA::LPATH))
+		{
+			*logger << " at " << paths->base_path / filesystem::path(path);
+		}
+		else if (mode_options.contains(OA::PATH))
+		{
+			*logger << " at " << path;
+		}
+		if (mode_options.contains(OA::TAGS))
+		{
+			*logger << " with tags: ";
+			for (const auto& tag : tag_map->at(path))
+			{
+				*logger << tag << " ";
+			}
+		}
+		if (mode_options.contains(OA::LMOD))
+		{
+			date2str_long(modified_date_str, file_map->at(path));
+			*logger << " last modified at " << modified_date_str;
+		}
+		if (mode_options.contains(OA::CONTENT))
+		{
+			ifstream file(paths->base_path / filesystem::path(path));
+			string str((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+			file.close();
+
+			*logger << " with note text:\n" << str;
+		}
+		*logger << endl;
+	}
 }
 
 void Add_data::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
+	filesystem::path data_dir = paths->base_path / paths->data_path;
+	if (filter_selection->size() > 1)
+	{
+		string choice;
+		*logger << filter_selection->size() << " found in the selection. Add data folders for all of them? (y/n)" << endl;
+		cin >> choice;
+		cin.clear();
+		cin.ignore(10000, '\n');
+		logger->input(choice);
+		if (choice == "y" || choice == "Y") {
+
+			for (const string& path : *filter_selection)
+			{
+				filesystem::create_directories(data_dir / filesystem::path(path).stem());
+				*logger << "Added data directory for " << filesystem::path(path).stem() << endl;
+			}
+		}
+	}
+	else if (filter_selection->size() == 1)
+	{
+		filesystem::create_directories(data_dir / filesystem::path(filter_selection->at(0)).stem());
+		*logger << "Added data directory for " << filesystem::path(filter_selection->at(0)).stem() << endl;
+	}
+	else {
+		*logger << "No file found in the selection. Use the find command to specify which note should have a data folder added." << endl;
+		return;
+	}
 }
 
 void Add_note::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
+	MODE_OPTIONS mode_options;
+	get_mode_options(*conf, mode_options, *active_mode);
+	for (const auto& flag : oaflags) {
+		mode_options[flag] = true;
+	}
+
+	if (pargs.size() == 0 || !pargs.contains(PA::DATE)) {
+		*logger << "Need to input a date for the note" << endl;
+	}
+
+	time_t date;
+	CONV_ERROR ret = str2date(date, pargs.at(PA::DATE).at(0));
+	if (ret != CONV_ERROR::CONV_SUCCESS) {
+		*logger << "First argument of the new command has to be the date: ((t)oday, (y)esterday, dd, dd.mm, dd.mm.yyyy), set date to today" << endl;
+		date = time(NULL);
+	}
+
+	string filename = get_filename(*paths, date, *file_ending);
+	vector<string> tags;
+	if (pargs.contains(PA::TAGS)) {
+		tags = pargs.at(PA::TAGS);
+	}
+	else {
+		tags = vector<string>();
+	}
+	tags.insert(tags.end(), mode_tags->begin(), mode_tags->end());
+
+	write_file(*logger, *paths, filename, date, tags, *file_ending, mode_options.contains(OA::DATA));
+
+
+	// open new file
+	open_file(*logger, *paths, (paths->base_path / paths->file_path / filesystem::path(filename)), *open_files, *hExit);
+	//open_md_editor(logger, (paths.base_path / paths.file_path / filesystem::path(filename)));
+
+	// update file_map, tag_map, tag_count and filter selection
+	string path = (paths->file_path / filesystem::path(filename)).string();
+	file_map->at(path) = time_t(NULL);
+	tag_map->at(path) = tags;
+	filter_selection->push_back(path);
+	get_tag_count(*tag_map, *filter_selection);
 }
 
 void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
+	// sort selection
+	sort(filter_selection->begin(), filter_selection->end());
+
+	MODE_OPTIONS mode_options;
+	get_mode_options(*conf, mode_options, *active_mode);
+	for (const auto& flag : oaflags) {
+		mode_options[flag] = true;
+	}
+	// write content of selected files to output file
+	ofstream show_file(paths->base_path / paths->tmp_path / filesystem::path(*tmp_filename));
+	string date_str;
+	time_t date_t;
+	CONV_ERROR ret;
+	string line;
+	if (mode_options.contains(OA::TOC) && !mode_options.contains(OA::NODATE))
+	{
+		show_file << "# Table of Contents" << '\n';
+
+		int i = 1;
+		for (const string& path : *filter_selection)
+		{
+			ret = str2date_short(date_t, filesystem::path(path).stem().string().substr(0, 8));
+			if (ret != CONV_SUCCESS) {
+				*logger << "Error opening file " << path << ". Invalid filename." << endl;
+				show_file.close();
+				return;
+			}
+			ret = date2str(date_str, date_t);
+			if (ret != CONV_SUCCESS) {
+				*logger << "Error opening file " << path << ". Invalid filename." << endl;
+				show_file.close();
+				return;
+			}
+
+			show_file << i++ << ". [note from " << date_str << " Version " << filesystem::path(path).stem().string()[8] << "](#" << filesystem::path(path).stem().string() << ")\n";
+			ifstream file(paths->base_path / filesystem::path(path));
+			int line_count = 0;
+			while (getline(file, line))
+			{
+				if (line[0] == '#')
+				{
+					size_t start = line.find_first_not_of("# ");
+					if (start == string::npos)
+					{
+						continue;
+					}
+					string tab;
+					for (size_t j = 0; j < start - 1; j++)
+					{
+						tab += "\t";
+					}
+					show_file << tab << "-" << "[" << line.substr(start) << "](#" << line_count << ")\n";
+				}
+				line_count++;
+			}
+			file.close();
+		}
+		show_file << endl;
+	}
+
+
+	for (const string& path : *filter_selection)
+	{
+
+		// add date to the output
+		if (!mode_options.contains(OA::NODATE)) {
+			ret = str2date_short(date_t, filesystem::path(path).stem().string().substr(0, 8));
+			if (ret != CONV_SUCCESS) {
+				*logger << "Error opening file " << path << ". Invalid filename." << endl;
+				show_file.close();
+				return;
+			}
+			ret = date2str(date_str, date_t);
+			if (ret != CONV_SUCCESS) {
+				*logger << "Error opening file " << path << ". Invalid filename." << endl;
+				show_file.close();
+				return;
+			}
+
+			show_file << "# " << date_str << " Version " << filesystem::path(path).stem().string()[8] << "<a id=\"" << filesystem::path(path).stem().string() << "\"></a>\n";
+		}
+		map<string, string> metadata;
+		vector<string> tags;
+		vector<string> content;
+		size_t line_count;
+		read_metadata_tags_content(*logger, paths->base_path / paths->file_path / filesystem::path(path).filename(), metadata, tags, content, line_count);
+		// show metadata
+		if (mode_options.contains(OA::MDATA)) {
+			for (const auto& [name, value] : metadata) {
+				show_file << name << ": " << value << "; ";
+			}
+			show_file << endl;
+		}
+		// show tags
+		if (mode_options.contains(OA::STAGS)) 
+		{
+			for (const auto& tag : tags) {
+				show_file << tag << ", ";
+			}
+			show_file << endl;
+		}
+
+		// write content
+		for (const auto& line : content) {
+			show_file << line;
+			if (line[0] == '#') {
+				show_file << "<a id=\"" << line_count << "\"></a>";
+			}
+			show_file << '\n';
+			line_count++;
+		}
+		show_file << endl;
+	}
+
+	show_file.close();
+
+	// open showfile and data folders
+	if (mode_options.contains(OA::DATA))
+	{
+		for (const string& path : *filter_selection)
+		{
+			//const wstring datapath = (paths.base_path / paths.data_path / filesystem::path(path).stem()).wstring();
+			//ShellExecute(NULL, L"open", datapath.c_str(), NULL, NULL, SW_SHOWNORMAL);
+			open_file(*logger, *paths, paths->base_path / paths->data_path / filesystem::path(path).stem(), *open_files, *hExit);
+			if (mode_options.contains(OA::IMG))
+			{
+				// search for image data in the folder
+				for (const auto& entry : filesystem::directory_iterator(paths->base_path / paths->data_path / filesystem::path(path).stem()))
+				{
+					const string ext = entry.path().extension().string();
+					if (ext == "jpg" || ext == "png" || ext == "jpeg" || ext == "gif")
+					{
+						open_file(*logger, *paths, entry.path(), *open_files, *hExit);
+						//ShellExecute(NULL, L"open", entry.path().wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+					}
+				}
+			}
+		}
+	}
+
+	// convert by pandoc by
+	// pandoc -f markdown 28062022a.md -t latex -o test.tex
+	if (has_pandoc)
+	{
+		if (mode_options.contains(OA::HTML))
+		{
+			if (int returnCode = convert_document_to("html", "html", *paths, *tmp_filename, "show") != 0) {
+				*logger << "Error " << returnCode << " while converting markdown to html using pandoc" << endl;
+			}
+
+			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.html"), *open_files, *hExit);
+			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.html")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+
+		}
+
+		if (mode_options.contains(OA::MD))
+		{
+
+			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.md")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.md"), *open_files, *hExit);
+		}
+
+		if (mode_options.contains(OA::DOCX))
+		{
+			if (int returnCode = convert_document_to("docx", "docx", *paths, *tmp_filename, "show") != 0) {
+				*logger << "Error " << returnCode << " while converting markdown to docx using pandoc" << endl;
+			}
+
+			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.docx")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.docx"), *open_files, *hExit);
+
+		}
+
+		if (mode_options.contains(OA::TEX))
+		{
+			if (int returnCode = convert_document_to("latex", "tex", *paths, *tmp_filename, "show") != 0) {
+				*logger << "Error " << returnCode << " while converting markdown to latex (tex) using pandoc" << endl;
+			}
+
+			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.tex")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.tex"), *open_files, *hExit);
+
+		}
+
+		if (mode_options.contains(OA::PDF))
+		{
+			if (int returnCode = convert_document_to("pdf", "pdf", *paths, *tmp_filename, "show") != 0) {
+				*logger << "Error " << returnCode << " while converting markdown to pdf using pandoc" << endl;
+			}
+
+			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.pdf")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.pdf"), *open_files, *hExit);
+
+		}
+
+	}
+	else {
+		//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path(tmp_filename)).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+		open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path(*tmp_filename), *open_files, *hExit);
+	}
+
+
 }
 
 void Find_notes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
+	*filter_selection = vector<string>();
+	filter_selection->reserve(tag_map->size());
+
+	for (const auto& [path, tag] : *tag_map)
+	{
+		filter_selection->push_back(path);
+	}
+
+	filter_notes(logger, paths, conf, active_mode, mode_tags, tag_map, filter_selection, oaflags, oastrargs);
 }
 
 void Filter_notes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
+	filter_notes(logger, paths, conf, active_mode, mode_tags, tag_map, filter_selection, oaflags, oastrargs);
+}
+
+void filter_notes(Log* logger, PATHS* paths, Config* conf, int *active_mode, std::vector<std::string>* mode_tags, std::map<std::string, std::vector<std::string>>* tag_map, std::vector<std::string>* filter_selection, std::vector<OA>& oaflags, std::map<OA, std::vector<string>>& oastrargs) {
+	MODE_OPTIONS mode_options;
+	get_mode_options(*conf, mode_options, *active_mode);
+	for (const auto& flag : oaflags) {
+		mode_options[flag] = true;
+	}
+
+	vector<string> _filter_selection;
+
+	vector<string> catags_args = oastrargs.at(OA::CATAGS);
+	catags_args.insert(catags_args.begin(), mode_tags->begin(), mode_tags->end());
+
+	for (const auto& path : *filter_selection)
+	{
+		// filter for date
+		if (oastrargs.contains(OA::DATE_R))
+		{
+			time_t note_date;
+			str2date_short(note_date, filesystem::path(path).stem().string());
+			if (oastrargs.at(OA::DATE_R).size() == 1)
+			{
+				time_t filter_date;
+				str2date(filter_date, oastrargs.at(OA::DATE_R).at(0));
+				if (filter_date != note_date)
+					continue;
+			}
+			else if (oastrargs.at(OA::DATE_R).size() == 2) {
+				time_t filter_begin, filter_end;
+				str2date(filter_begin, oastrargs.at(OA::DATE_R).at(0));
+				str2date(filter_end, oastrargs.at(OA::DATE_R).at(1));
+				if (note_date < filter_begin || note_date > filter_end) {
+					continue;
+				}
+			}
+			else {
+				*logger << "Invalid number of date arguments. Expects one or two date values." << endl;
+			}
+
+		}
+
+		// filter for version
+		if (oastrargs.contains(OA::VERS_R))
+		{
+			string note_version = to_string(filesystem::path(path).stem().string()[8]);
+			if (find(oastrargs.at(OA::VERS_R).begin(), oastrargs.at(OA::VERS_R).end(), note_version) == oastrargs.at(OA::VERS_R).end())
+			{
+				continue;
+			}
+
+		}
+
+		// filter for having a data folder
+		if (mode_options.contains(OA::DATA))
+		{
+			if (!filesystem::exists(paths->base_path / paths->data_path / filesystem::path(path).stem())) {
+				continue;
+			}
+		}
+
+		// filter for tags where only one of the tags needs to match
+		if (oastrargs.contains(OA::CTAGS))
+		{
+			bool has_tag = false;
+			vector<string> tags = tag_map->at(path);
+			for (auto& tag : oastrargs.at(OA::CTAGS))
+			{
+				tag = trim(tag);
+				boost::algorithm::to_lower(tag);
+				if (find(tags.begin(), tags.end(), tag) != tags.end()) {
+					has_tag = true;
+					break;
+				}
+			}
+
+			if (!has_tag)
+			{
+				continue;
+			}
+		}
+
+		// filter for tags where all tags need to match
+		if (catags_args.size() > 0)
+		{
+			bool all_match = true;
+			vector<string> tags = tag_map->at(path);
+			for (auto& tag : catags_args)
+			{
+				tag = trim(tag);
+				boost::algorithm::to_lower(tag);
+				if (find(tags.begin(), tags.end(), tag) == tags.end()) {
+					all_match = false;
+					break;
+				}
+			}
+			if (!all_match)
+			{
+				continue;
+			}
+
+		}
+
+		// filter for tags that can not be in the tag list of the note
+		if (oastrargs.contains(OA::NTAGS))
+		{
+			bool has_tag = false;
+			string tag_copy;
+			for (const auto& tag : oastrargs.at(OA::CTAGS))
+			{
+				tag_copy = trim(tag);
+				boost::algorithm::to_lower(tag_copy);
+				if (find(tag_map->at(path).begin(), tag_map->at(path).end(), tag_copy) != tag_map->at(path).end()) {
+					has_tag = true;
+					break;
+				}
+			}
+
+			if (has_tag)
+			{
+				continue;
+			}
+		}
+
+		// filtering for regex in the tags
+		if (oastrargs.contains(OA::REGT))
+		{
+			regex pat(oastrargs.at(OA::REGT).at(0));
+			bool found_match = false;
+			string tag_copy;
+			for (const auto& tag : tag_map->at(path))
+			{
+				// found match
+				tag_copy = trim(tag);
+				boost::to_lower(tag_copy);
+				if (regex_match(tag_copy, pat)) {
+					found_match = true;
+					break;
+				}
+			}
+
+			if (!found_match) {
+				continue;
+			}
+		}
+
+		// filtering for regex in the file content
+		if (oastrargs.contains(OA::REGC))
+		{
+			regex pat(oastrargs.at(OA::REGC).at(0));
+			ifstream file(paths->base_path / filesystem::path(path));
+			const string content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+			file.close();
+
+			if (!regex_match(content, pat)) {
+				continue;
+			}
+		}
+
+
+		_filter_selection.push_back(path);
+	}
+	*filter_selection = _filter_selection;
 }
 
 void Update_tags::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
+	update_tags(*logger, *paths, *file_map, *tag_map, *tag_count, *filter_selection, *add_new_to_filter_selection);
 }

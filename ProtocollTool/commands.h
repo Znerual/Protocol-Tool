@@ -10,7 +10,7 @@
 class Command {
 public:
 	Command(Log* logger, PATHS* paths, Config* conf) : logger(logger), paths(paths), conf(conf) {};
-	virtual void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs) = 0;
+	void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
 
 protected:
 	Log* logger;
@@ -31,11 +31,12 @@ private:
 
 class Show_modes : public Command {
 public:
-	Show_modes(Log* logger, PATHS* paths, Config* conf, std::unordered_map<int, std::string>* mode_names, int* active_mode) : Command(logger, paths, conf), mode_names(mode_names), active_mode(active_mode) {};
+	Show_modes(Log* logger, PATHS* paths, Config* conf, std::unordered_map<int, std::string>* mode_names, int* active_mode, CMD_NAMES* cmd_names) : Command(logger, paths, conf), mode_names(mode_names), active_mode(active_mode), cmd_names(cmd_names) {};
 	void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
 private:
 	std::unordered_map<int, std::string>* mode_names;
 	int* active_mode;
+	CMD_NAMES* cmd_names;
 };
 
 class Activate_mode_command : public Command {
@@ -142,9 +143,10 @@ private:
 
 class Add_note : public Command {
 public:
-	Add_note(Log* logger, PATHS* paths, Config* conf, std::string* file_ending, std::map<std::string, time_t>* file_map, std::map<std::string, std::vector<std::string>>* tag_map, std::vector<std::string>* mode_tags, std::vector<std::string>* filter_selection, std::vector<std::jthread>* open_files, HANDLE* hExit) : Command(logger, paths, conf), file_ending(file_ending),  file_map(file_map), tag_map(tag_map), mode_tags(mode_tags), filter_selection(filter_selection), open_files(open_files), hExit(hExit) {};
+	Add_note(Log* logger, PATHS* paths, Config* conf, int* active_mode, std::string* file_ending, std::map<std::string, time_t>* file_map, std::map<std::string, std::vector<std::string>>* tag_map, std::vector<std::string>* mode_tags, std::vector<std::string>* filter_selection, std::vector<std::jthread>* open_files, HANDLE* hExit) : Command(logger, paths, conf), active_mode(active_mode), file_ending(file_ending),  file_map(file_map), tag_map(tag_map), mode_tags(mode_tags), filter_selection(filter_selection), open_files(open_files), hExit(hExit) {};
 	void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
 private:
+	int* active_mode;
 	std::string* file_ending;
 	std::map<std::string, time_t>* file_map;
 	std::map<std::string, std::vector<std::string>>* tag_map;
@@ -169,9 +171,10 @@ private:
 
 class Find_notes : public Command {
 public:
-	Find_notes(Log* logger, PATHS* paths, Config* conf, std::vector<std::string>* filter_selection, std::map<std::string, time_t>* file_map, std::map<std::string, std::vector<std::string>>* tag_map, std::vector<std::string>* mode_tags) : Command(logger, paths, conf), filter_selection(filter_selection), file_map(file_map), tag_map(tag_map), mode_tags(mode_tags) {};
+	Find_notes(Log* logger, PATHS* paths, Config* conf, int* active_mode, std::vector<std::string>* filter_selection, std::map<std::string, time_t>* file_map, std::map<std::string, std::vector<std::string>>* tag_map, std::vector<std::string>* mode_tags) : Command(logger, paths, conf), active_mode(active_mode), filter_selection(filter_selection), file_map(file_map), tag_map(tag_map), mode_tags(mode_tags) {};
 	void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
 private:
+	int* active_mode;
 	std::vector<std::string>* filter_selection;
 	std::map<std::string, time_t>* file_map;
 	std::map<std::string, std::vector<std::string>>* tag_map;
@@ -180,9 +183,10 @@ private:
 
 class Filter_notes : public Command {
 public:
-	Filter_notes(Log* logger, PATHS* paths, Config* conf, std::vector<std::string>* filter_selection, std::map<std::string, time_t>* file_map, std::map<std::string, std::vector<std::string>>* tag_map, std::vector<std::string>* mode_tags) : Command(logger, paths, conf), filter_selection(filter_selection), file_map(file_map), tag_map(tag_map), mode_tags(mode_tags) {};
+	Filter_notes(Log* logger, PATHS* paths, Config* conf, int* active_mode, std::vector<std::string>* filter_selection, std::map<std::string, time_t>* file_map, std::map<std::string, std::vector<std::string>>* tag_map, std::vector<std::string>* mode_tags) : Command(logger, paths, conf), active_mode(active_mode), filter_selection(filter_selection), file_map(file_map), tag_map(tag_map), mode_tags(mode_tags) {};
 	void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
 private:
+	int* active_mode;
 	std::vector<std::string>* filter_selection;
 	std::map<std::string, time_t>* file_map;
 	std::map<std::string, std::vector<std::string>>* tag_map;
@@ -201,7 +205,11 @@ private:
 	bool* add_new_to_filter_selection;
 };
 
+void filter_notes(Log* logger, PATHS* paths, Config* conf, int* active_mode, std::vector<std::string>* mode_tags, std::map<std::string, std::vector<std::string>>* tag_map, std::vector<std::string>* filter_selection, std::vector<OA>& oaflags, std::map<OA, std::vector<std::string>>& oastrargs);
 
+void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mode, std::vector<std::string>& mode_tags, std::vector<std::jthread>& file_watchers, const std::string& file_ending, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit);
+void deactivate_mode(Log& logger, Config& conf, int& active_mode, std::vector<std::string>& mode_tags, std::vector<std::jthread>& file_watchers, HANDLE& hStopEvent);
+/*
 
 void update_tags(Log& logger, const PATHS& paths, std::map<std::string, time_t>& file_map, std::map<std::string, std::vector<std::string>>& tag_map, std::map<std::string, int>& tag_count, std::vector<std::string>& filter_selection, const bool add_new_to_filter_selection);
 void filter_notes(Log& logger, std::istringstream& iss, const PATHS& paths, std::vector<std::string>& filter_selection, std::map<std::string, time_t>& file_map, std::map<std::string, std::vector<std::string>> tag_map, std::vector<std::string> mode_tags);
@@ -215,8 +223,7 @@ void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS
 void delete_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_modes, std::unordered_map<int, std::string>& mode_names, std::vector<std::string>& mode_tags, int& active_mode, std::vector<std::jthread>& file_watchers, HANDLE& hStopEvent);
 void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, std::unordered_map<int, std::string>& mode_names, std::vector<std::string>& mode_tags, int& active_mode, std::vector<std::jthread>& file_watchers, const std::string& file_ending, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit);
 void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, std::unordered_map<int, std::string>& mode_names, int& active_mode, std::vector<std::string>& mode_tags, std::vector<std::jthread>& file_watchers, const std::string& file_ending, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit);
-void deactivate_mode(Log& logger, Config& conf, int& active_mode, std::vector<std::string>& mode_tags, std::vector<std::jthread>& file_watchers, HANDLE& hStopEvent);
 
-void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mode, std::vector<std::string>& mode_tags, std::vector<std::jthread>& file_watchers, const std::string& file_ending, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit);
 void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unordered_map<int, std::string>& mode_names, int& active_mode);
 //void show_todos(Log& logger, const PATHS& paths, std::vector<std::jthread>& open_files, HANDLE& hExit);
+*/
