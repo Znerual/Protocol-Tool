@@ -135,16 +135,6 @@ void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, std::
 void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, std::string& mode_name, std::vector<std::string>& mode_tags,	MODE_OPTIONS& mode_options);
 #endif
 
- 
-
- void add(FORMAT_OPTIONS& to, FORMAT_OPTIONS& from);
- void add(SHOW_OPTIONS& to, SHOW_OPTIONS& from);
- void add(DETAIL_OPTIONS& to, DETAIL_OPTIONS& from);
- void remove(FORMAT_OPTIONS& to, FORMAT_OPTIONS& from);
- void remove(SHOW_OPTIONS& to, SHOW_OPTIONS& from);
- void remove(DETAIL_OPTIONS& to, DETAIL_OPTIONS& from);
- void add(MODE_OPTIONS& to, MODE_OPTIONS& from);
- void remove(MODE_OPTIONS& to, MODE_OPTIONS& from);
 
  void init_mode_options(MODE_OPTIONS& mode_options);
  void set_mode_options(Config& conf, MODE_OPTIONS& mode_options, const int& active_mode);
@@ -156,6 +146,8 @@ void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, std::
  void print_greetings(const int& width);
 
  void get_pandoc_installed(Log& logger, Config& conf,bool& ask_pandoc, bool& has_pandoc);
+
+ /*
  void parse_find_args(Log& logger, std::istringstream& iss, bool& data_only, std::vector<time_t>& date_args, std::vector<std::string>& ctags_args, std::vector<std::string>& catags_args, std::vector<std::string>& ntags_args, std::string& regex, std::string& regex_content, std::vector<char>& version_args);
  void parse_details_args(Log& logger, std::istringstream& iss, Config& conf, int& active_mode, DETAIL_OPTIONS& detail_options);
  void parse_show_args(Log& logger, std::istringstream& iss, Config& conf, int& active_mode, SHOW_OPTIONS& show_options, FORMAT_OPTIONS& format_options);
@@ -166,3 +158,4 @@ void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, std::
  void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
 
  
+ */
