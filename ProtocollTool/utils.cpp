@@ -28,7 +28,7 @@
 
 using namespace std;
 
-set<OA> OA_DATA = { OA::TAGS, OA::DATES, OA::REGTEXT, OA::VERSIONS, OA::NAME, OA::PATHD, OA::PATHANDTAGS};
+set<OA> OA_DATA = { OA::TAGS, OA::DATES, OA::DATE_R, OA::REGTEXT, OA::VERSIONS, OA::NAME, OA::PATHD, OA::PATHANDTAGS};
 
 template<typename T>
 void pad(basic_string<T>& s, typename basic_string<T>::size_type n, T c, const bool cap_right, const ALIGN align) {
@@ -322,10 +322,163 @@ void get_mode_options(Config& conf, MODE_OPTIONS& mode_options, const int& activ
 }
 
 
+#ifdef _WIN32
+void set_console_background(const int& width, const int& height) {
+	DWORD dwBytesWritten;
+	WORD colors[3]{ BACKGROUND_BLUE, BACKGROUND_GREEN, BACKGROUND_RED };
+	FillConsoleOutputAttribute(GetStdHandle(STD_OUTPUT_HANDLE), BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED, width * height, { 0,0 }, &dwBytesWritten);
+}
 
+void set_console_font() {
+	CONSOLE_FONT_INFOEX cfi;
+	cfi.cbSize = sizeof cfi;
+	cfi.nFont = 0;
+	cfi.dwFontSize.X = 0;
+	cfi.dwFontSize.Y = 18;
+	cfi.FontFamily = FF_DONTCARE;
+	cfi.FontWeight = FW_NORMAL;
+	wcscpy_s(cfi.FaceName, L"Lucida Console"); // Consolas
+	SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &cfi);
+	//SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 240);
+}
+#endif
+void print_greetings(const int& width) {
+	string fillerb{ "|_____________________________|" }, fillerm{ "|                             |" }, fillert{ "_____________________________" }, welcome{ "|Welcome to the Protocol Tool!|" };
+	pad(fillert, width - 1, ' ', true, MIDDLE);
+	pad(fillerm, width - 1, ' ', true, MIDDLE);
+	pad(fillerb, width - 1, ' ', true, MIDDLE);
+	pad(welcome, width - 1, ' ', true, MIDDLE);
+	cout << colorize(BLUE, WHITE) << fillert << '\n';
+	cout << colorize(BLUE, WHITE) << fillerm << '\n';
+	cout << colorize(BLUE, WHITE) << welcome << '\n';
+	cout << colorize(BLUE, WHITE) << fillerb << '\n';
+}
+#ifdef _WIN32
+
+
+void get_default_applications(PATHS& paths) {
+	wstring res_wstr;
+	TCHAR szBuf[512];
+	DWORD cbBufSize = sizeof(szBuf);
+
+	HRESULT hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
+		L".md", NULL, szBuf, &cbBufSize);
+	//if (FAILED(hr)) { /* handle error */ }
+	res_wstr = wstring(szBuf, cbBufSize);
+	paths.md_exe = filesystem::path(res_wstr);
+
+	cbBufSize = sizeof(szBuf);
+	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
+		L".html", NULL, szBuf, &cbBufSize);
+	res_wstr = wstring(szBuf, cbBufSize);
+	paths.html_exe = filesystem::path(res_wstr);
+
+	cbBufSize = sizeof(szBuf);
+	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
+		L".docx", NULL, szBuf, &cbBufSize);
+	res_wstr = wstring(szBuf, cbBufSize);
+	paths.docx_exe = filesystem::path(res_wstr);
+
+	cbBufSize = sizeof(szBuf);
+	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
+		L".pdf", NULL, szBuf, &cbBufSize);
+	res_wstr = wstring(szBuf, cbBufSize);
+	paths.pdf_exe = filesystem::path(res_wstr);
+
+	cbBufSize = sizeof(szBuf);
+	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
+		L".tex", NULL, szBuf, &cbBufSize);
+	res_wstr = wstring(szBuf, cbBufSize);
+	paths.tex_exe = filesystem::path(res_wstr);
+}
+
+
+void get_pandoc_installed(Log& logger, Config& conf, bool& ask_pandoc, bool& has_pandoc)
+{
+	FILE* pipe = _popen("pandoc -v", "r");
+	if (!pipe)
+	{
+		cerr << "Could not start command" << endl;
+	}
+	int returnCode = _pclose(pipe);
+	if (returnCode != 0 && ask_pandoc)
+	{
+		logger.setColor(BLUE, WHITE);
+		logger << "  Could not find pandoc. It is not required but highly recommended for this application, since html, tex and pdf output is only possible with the package.\n";
+		logger << "  Do you want to install it? (y/n) or never ask again (naa)?" << endl;
+		logger << "  The program needs to be restarted after the installation and will close when you decide to install pandoc." << endl;
+		string choice;
+		cin >> choice;
+		cin.clear();
+		cin.ignore(100000, '\n');
+		logger.input(choice);
+
+		if (choice == "y" || choice == "yes")
+		{
+			ShellExecute(NULL, L"open", L"https://pandoc.org/installing.html", NULL, NULL, SW_SHOW);
+			exit(0);
+		}
+		else if (choice == "naa" || choice == "never_ask_again")
+		{
+			conf.set("ASK_PANDOC", false);
+		}
+	}
+	else if (returnCode == 0) {
+		has_pandoc = true;
+		conf.set("HAS_PANDOC", true);
+	}
+	else {
+		has_pandoc = false;
+		conf.set("HAS_PANDOC", false);
+	}
+}
+#else
+void get_pandoc_installed(Log& logger, Config& conf, bool& ask_pandoc, bool& has_pandoc) {
+	// check if pandoc is installed
+	FILE* pipe = popen("pandoc -v", "r");
+	if (!pipe)
+	{
+		cerr << "Could not start command" << endl;
+	}
+	int returnCode = pclose(pipe);
+	if (returnCode != 0 && ask_pandoc)
+	{
+		logger.setColor(BLUE, WHITE);
+		logger << "  Could not find pandoc. It is not required but highly recommended for this application, since html, tex and pdf output is only possible with the package.\n";
+		logger << "  Do you want to install it? (y/n) or never ask again (naa)?" << endl;
+		logger << "  The program needs to be restarted after the installation and will close when you decide to install pandoc." << endl;
+		string choice;
+		cin >> choice;
+		cin.clear();
+		cin.ignore(100000, '\n');
+		logger.input(choice);
+
+		if (choice == "y" || choice == "yes")
+		{
+			system("xdg-open https://pandoc.org/installing.html");
+			exit(0);
+		}
+		else if (choice == "naa" || choice == "never_ask_again")
+		{
+			conf.set("ASK_PANDOC", false);
+		}
+	}
+	else if (returnCode == 0) {
+		has_pandoc = true;
+		conf.set("HAS_PANDOC", true);
+	}
+	else {
+		has_pandoc = false;
+		conf.set("HAS_PANDOC", false);
+	}
+}
+#endif // _WIN32
+
+
+/*
 void parse_show_args(Log& logger, std::istringstream& iss, Config& conf, int& active_mode, SHOW_OPTIONS& show_options, FORMAT_OPTIONS& format_options)
 {
-	
+
 
 	string argument;
 	while (iss >> argument)
@@ -532,157 +685,6 @@ bool parse_folder_watcher(string& argument, FOLDER_WATCHER_MODE& mode, string& c
 	return false;
 }
 
-#ifdef _WIN32
-void set_console_background(const int& width, const int& height) {
-	DWORD dwBytesWritten;
-	WORD colors[3]{ BACKGROUND_BLUE, BACKGROUND_GREEN, BACKGROUND_RED };
-	FillConsoleOutputAttribute(GetStdHandle(STD_OUTPUT_HANDLE), BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED, width * height, { 0,0 }, &dwBytesWritten);
-}
-
-void set_console_font() {
-	CONSOLE_FONT_INFOEX cfi;
-	cfi.cbSize = sizeof cfi;
-	cfi.nFont = 0;
-	cfi.dwFontSize.X = 0;
-	cfi.dwFontSize.Y = 18;
-	cfi.FontFamily = FF_DONTCARE;
-	cfi.FontWeight = FW_NORMAL;
-	wcscpy_s(cfi.FaceName, L"Lucida Console"); // Consolas
-	SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &cfi);
-	//SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 240);
-}
-#endif
-void print_greetings(const int& width) {
-	string fillerb{ "|_____________________________|" }, fillerm{ "|                             |" }, fillert{ "_____________________________" }, welcome{ "|Welcome to the Protocol Tool!|" };
-	pad(fillert, width - 1, ' ', true, MIDDLE);
-	pad(fillerm, width - 1, ' ', true, MIDDLE);
-	pad(fillerb, width - 1, ' ', true, MIDDLE);
-	pad(welcome, width - 1, ' ', true, MIDDLE);
-	cout << colorize(BLUE, WHITE) << fillert << '\n';
-	cout << colorize(BLUE, WHITE) << fillerm << '\n';
-	cout << colorize(BLUE, WHITE) << welcome << '\n';
-	cout << colorize(BLUE, WHITE) << fillerb << '\n';
-}
-#ifdef _WIN32
-
-
-void get_default_applications(PATHS& paths) {
-	wstring res_wstr;
-	TCHAR szBuf[512];
-	DWORD cbBufSize = sizeof(szBuf);
-
-	HRESULT hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
-		L".md", NULL, szBuf, &cbBufSize);
-	//if (FAILED(hr)) { /* handle error */ }
-	res_wstr = wstring(szBuf, cbBufSize);
-	paths.md_exe = filesystem::path(res_wstr);
-
-	cbBufSize = sizeof(szBuf);
-	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
-		L".html", NULL, szBuf, &cbBufSize);
-	res_wstr = wstring(szBuf, cbBufSize);
-	paths.html_exe = filesystem::path(res_wstr);
-
-	cbBufSize = sizeof(szBuf);
-	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
-		L".docx", NULL, szBuf, &cbBufSize);
-	res_wstr = wstring(szBuf, cbBufSize);
-	paths.docx_exe = filesystem::path(res_wstr);
-
-	cbBufSize = sizeof(szBuf);
-	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
-		L".pdf", NULL, szBuf, &cbBufSize);
-	res_wstr = wstring(szBuf, cbBufSize);
-	paths.pdf_exe = filesystem::path(res_wstr);
-
-	cbBufSize = sizeof(szBuf);
-	hr = AssocQueryString(0, ASSOCSTR_EXECUTABLE,
-		L".tex", NULL, szBuf, &cbBufSize);
-	res_wstr = wstring(szBuf, cbBufSize);
-	paths.tex_exe = filesystem::path(res_wstr);
-}
-
-
-void get_pandoc_installed(Log& logger, Config& conf, bool& ask_pandoc, bool& has_pandoc)
-{
-	FILE* pipe = _popen("pandoc -v", "r");
-	if (!pipe)
-	{
-		cerr << "Could not start command" << endl;
-	}
-	int returnCode = _pclose(pipe);
-	if (returnCode != 0 && ask_pandoc)
-	{
-		logger.setColor(BLUE, WHITE);
-		logger << "  Could not find pandoc. It is not required but highly recommended for this application, since html, tex and pdf output is only possible with the package.\n";
-		logger << "  Do you want to install it? (y/n) or never ask again (naa)?" << endl;
-		logger << "  The program needs to be restarted after the installation and will close when you decide to install pandoc." << endl;
-		string choice;
-		cin >> choice;
-		cin.clear();
-		cin.ignore(100000, '\n');
-		logger.input(choice);
-
-		if (choice == "y" || choice == "yes")
-		{
-			ShellExecute(NULL, L"open", L"https://pandoc.org/installing.html", NULL, NULL, SW_SHOW);
-			exit(0);
-		}
-		else if (choice == "naa" || choice == "never_ask_again")
-		{
-			conf.set("ASK_PANDOC", false);
-		}
-	}
-	else if (returnCode == 0) {
-		has_pandoc = true;
-		conf.set("HAS_PANDOC", true);
-	}
-	else {
-		has_pandoc = false;
-		conf.set("HAS_PANDOC", false);
-	}
-}
-#else
-void get_pandoc_installed(Log& logger, Config& conf, bool& ask_pandoc, bool& has_pandoc) {
-	// check if pandoc is installed
-	FILE* pipe = popen("pandoc -v", "r");
-	if (!pipe)
-	{
-		cerr << "Could not start command" << endl;
-	}
-	int returnCode = pclose(pipe);
-	if (returnCode != 0 && ask_pandoc)
-	{
-		logger.setColor(BLUE, WHITE);
-		logger << "  Could not find pandoc. It is not required but highly recommended for this application, since html, tex and pdf output is only possible with the package.\n";
-		logger << "  Do you want to install it? (y/n) or never ask again (naa)?" << endl;
-		logger << "  The program needs to be restarted after the installation and will close when you decide to install pandoc." << endl;
-		string choice;
-		cin >> choice;
-		cin.clear();
-		cin.ignore(100000, '\n');
-		logger.input(choice);
-
-		if (choice == "y" || choice == "yes")
-		{
-			system("xdg-open https://pandoc.org/installing.html");
-			exit(0);
-		}
-		else if (choice == "naa" || choice == "never_ask_again")
-		{
-			conf.set("ASK_PANDOC", false);
-		}
-	}
-	else if (returnCode == 0) {
-		has_pandoc = true;
-		conf.set("HAS_PANDOC", true);
-	}
-	else {
-		has_pandoc = false;
-		conf.set("HAS_PANDOC", false);
-	}
-}
-#endif // _WIN32
 bool parse_format(Log& logger, string& argument, FORMAT_OPTIONS& format_options) {
 	if (argument == "html" || argument == "-html")
 	{
@@ -1056,7 +1058,7 @@ void parse_add_note(Log& logger, std::istringstream& iss, const PATHS& paths, co
 
 	filename = get_filename(paths, date_t, file_ending);
 }
-
+*/
 #ifdef _WIN32
 void RunExternalProgram(Log& logger, std::filesystem::path executeable, std::filesystem::path file, HANDLE& hExit)
 {
@@ -1450,21 +1452,26 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 					tag = trim(input_words.front());
 					if (oa_parameter == OA::TAGS)
 						boost::to_lower(tag);
-					oastrargs[OA::TAGS].push_back(tag);
+					oastrargs[oa_parameter].push_back(tag);
 					input_words.pop_front();
 				}
 			}
 			else {
 				// check if parameter should be a string or OA
 				// if its a string, it needs to appear in the input
-				if (OA_DATA.contains(oa_parameter)) {
-					oastrargs[current_oa].push_back(input_words.front());
-					input_words.pop_front();
-				}
-				// Flag value, does not need to be in data
-				else {
-					if (command_input.cmd_names.oa_names.right.at(oa_parameter) == input_words.front()) {
-						oaoargs[current_oa].push_back(oa_parameter);
+				while (input_words.size() > 0) {
+					if (input_words.front().starts_with("-")) {
+						break;
+					}
+					if (OA_DATA.contains(oa_parameter)) {
+						oastrargs[current_oa].push_back(input_words.front());
+						input_words.pop_front();
+					}
+					// Flag value, does not need to be in data
+					else {
+						if (command_input.cmd_names.oa_names.right.at(oa_parameter) == input_words.front()) {
+							oaoargs[current_oa].push_back(oa_parameter);
+						}
 					}
 				}
 			}
@@ -1476,12 +1483,12 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 		logger << " can be used with the following options:\n";
 		logger << command_input.cmd_names.cmd_names.right.at(cmd) << " ";
 		for (const PA& pai : command_input.cmd_structure.at(cmd).first) {
-			logger << pai << " ";
+			logger << command_input.cmd_names.pa_names.right.at(pai) << " ";
 		}
 		for (const auto& [oai, oaoa_listi] : command_input.cmd_structure.at(cmd).second) {
-			logger << oai << " ";
+			logger << command_input.cmd_names.oa_names.right.at(oai) << " ";
 			for (const OA& oaoa : oaoa_listi) {
-				logger << oaoa << " ";
+				logger << command_input.cmd_names.oa_names.right.at(oaoa) << " ";
 			}
 		}
 		logger << endl;
