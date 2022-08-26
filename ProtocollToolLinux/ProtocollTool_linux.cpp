@@ -32,52 +32,10 @@
 
 using namespace std;
 
-COMMAND_INPUT auto_input;
-map<string, int> tag_count;
-unordered_map<int, string> mode_names;
+//COMMAND_INPUT auto_input;
+//map<string, int> tag_count;
+//unordered_map<int, string> mode_names;
 
-
-
-char* completion_generator(const char* text, int state) {
-    // This function is called with state=0 the first time; subsequent calls are
-    // with a nonzero state. state=0 can be used to perform one-time
-    // initialization for this completion session.
-    static vector<string> matches;
-    static size_t match_index = 0;
-
-    if (state == 0) {
-        // During initialization, compute the actual matches for 'text' and keep
-        // them in a static vector.
-        matches.clear();
-        match_index = 0;
-        AUTOCOMPLETE auto_comp(auto_input.cmd_names, tag_count, mode_names); // update trietrees when tags and/or modes are added/changed
-        AUTO_SUGGESTIONS auto_suggestions = AUTO_SUGGESTIONS();
-        auto_input.input = rl_line_buffer;
-        // Collect a vector of matches: vocabulary words that begin with text.
-        find_cmd_suggestion(auto_input, auto_comp, auto_suggestions);
-        for (const auto& sug : auto_suggestions.auto_sugs) {
-            matches.push_back(text + sug); 
-        }
-        
-    }
-
-    if (match_index >= matches.size()) {
-        // We return nullptr to notify the caller no more matches are available.
-        return nullptr;
-    }
-    else {
-        // Return a malloc'd char* for the match. The caller frees it.
-        return strdup(matches[match_index++].c_str());
-    }
-}
-
-char** completer(const char* text, int start, int end) { 
-    // Don't do filename completion even if our generator finds no matches.
-    rl_attempted_completion_over = 1;
-    // Note: returning nullptr here will make readline use the default filename
-    // completer.
-    return rl_completion_matches(text, completion_generator);
-}
 
 int main()
 {
@@ -124,7 +82,7 @@ SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &sbInfoEx);
 
         // no base path, set to opt/Notes folder
         if (base_path_str.empty()) {
-            paths.base_path = "/usr/Notes";
+            paths.base_path = filesystem::path("/usr/Notes");
             conf.set("BASE_PATH", paths.base_path.string());
         }
         else {
@@ -169,16 +127,18 @@ SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &sbInfoEx);
     {
         filter_selection.push_back(path);
     }
-    tag_count = get_tag_count(tag_map, filter_selection);
+    map<string, int> tag_count = get_tag_count(tag_map, filter_selection);
 
     // mode tag variables
     vector<string> mode_tags;
-   
+
+    logger.setColor(BLACK, WHITE);
+
+    COMMAND_INPUT auto_input;
     read_cmd_structure(filesystem::path("cmd.dat"), auto_input.cmd_structure);
     read_cmd_names(filesystem::path("cmd_names.dat"), auto_input.cmd_names);
     
 
-    logger.setColor(BLACK, WHITE);
   
 
     rl_attempted_completion_function =  completer;
