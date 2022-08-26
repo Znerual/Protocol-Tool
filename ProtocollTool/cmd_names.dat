@@ -21,6 +21,7 @@ PA
 0 date
 1 tags
 2 mode_name
+3 CMD
 OA
 0 -data
 1 -dates
