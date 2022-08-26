@@ -10,7 +10,7 @@
 class Command {
 public:
 	Command(Log* logger, PATHS* paths, Config* conf) : logger(logger), paths(paths), conf(conf) {};
-	void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
+	virtual void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs) = 0;
 
 protected:
 	Log* logger;
@@ -20,6 +20,21 @@ protected:
 	
 };
 
+class Help : public Command {
+public:
+	Help(Log* logger, PATHS* paths, Config* conf) : Command(logger, paths, conf) {};
+	void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
+};
+
+class Quit : public Command {
+public:
+	Quit(Log* logger, PATHS* paths, Config* conf, HANDLE* hExit, bool* running) : Command(logger, paths, conf), hExit(hExit), running(running) {};
+	void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
+private:
+	HANDLE* hExit;
+	bool* running;
+};
+
 class Show_todos : public Command {
 public:
 	Show_todos(Log* logger, PATHS* paths, Config* conf, std::vector<std::jthread>* open_files, HANDLE* hExit) : Command(logger, paths, conf), open_files(open_files), hExit(hExit) {};
@@ -27,6 +42,17 @@ public:
 private:
 	std::vector<std::jthread>* open_files;
 	HANDLE* hExit;
+};
+
+class Show_tags : public Command {
+public:
+	Show_tags(Log* logger, PATHS* paths, Config* conf, int* active_mode, std::vector<std::string>* mode_tags, std::vector<std::string>* filter_selection, std::map<std::string, std::vector<std::string>>* tag_map) : Command(logger, paths, conf), active_mode(active_mode), mode_tags(mode_tags), filter_selection(filter_selection), tag_map(tag_map) {};
+	void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
+private:
+	int* active_mode;
+	std::vector<std::string>* mode_tags;
+	std::vector<std::string>* filter_selection;
+	std::map<std::string, std::vector<std::string>>* tag_map;
 };
 
 class Show_modes : public Command {
@@ -171,7 +197,7 @@ private:
 
 class Find_notes : public Command {
 public:
-	Find_notes(Log* logger, PATHS* paths, Config* conf, int* active_mode, std::vector<std::string>* filter_selection, std::map<std::string, time_t>* file_map, std::map<std::string, std::vector<std::string>>* tag_map, std::vector<std::string>* mode_tags) : Command(logger, paths, conf), active_mode(active_mode), filter_selection(filter_selection), file_map(file_map), tag_map(tag_map), mode_tags(mode_tags) {};
+	Find_notes(Log* logger, PATHS* paths, Config* conf, int* active_mode, std::vector<std::string>* filter_selection, std::map<std::string, time_t>* file_map, std::map<std::string, std::vector<std::string>>* tag_map, std::vector<std::string>* mode_tags, std::unordered_map<int, std::string>* mode_names) : Command(logger, paths, conf), active_mode(active_mode), filter_selection(filter_selection), file_map(file_map), tag_map(tag_map), mode_tags(mode_tags), mode_names(mode_names) {};
 	void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
 private:
 	int* active_mode;
@@ -179,11 +205,13 @@ private:
 	std::map<std::string, time_t>* file_map;
 	std::map<std::string, std::vector<std::string>>* tag_map;
 	std::vector<std::string>* mode_tags;
+	std::unordered_map<int, std::string>* mode_names;
+
 };
 
 class Filter_notes : public Command {
 public:
-	Filter_notes(Log* logger, PATHS* paths, Config* conf, int* active_mode, std::vector<std::string>* filter_selection, std::map<std::string, time_t>* file_map, std::map<std::string, std::vector<std::string>>* tag_map, std::vector<std::string>* mode_tags) : Command(logger, paths, conf), active_mode(active_mode), filter_selection(filter_selection), file_map(file_map), tag_map(tag_map), mode_tags(mode_tags) {};
+	Filter_notes(Log* logger, PATHS* paths, Config* conf, int* active_mode, std::vector<std::string>* filter_selection, std::map<std::string, time_t>* file_map, std::map<std::string, std::vector<std::string>>* tag_map, std::vector<std::string>* mode_tags, std::unordered_map<int, std::string>* mode_names) : Command(logger, paths, conf), active_mode(active_mode), filter_selection(filter_selection), file_map(file_map), tag_map(tag_map), mode_tags(mode_tags), mode_names(mode_names) {};
 	void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
 private:
 	int* active_mode;
@@ -191,18 +219,19 @@ private:
 	std::map<std::string, time_t>* file_map;
 	std::map<std::string, std::vector<std::string>>* tag_map;
 	std::vector<std::string>* mode_tags;
+	std::unordered_map<int, std::string>* mode_names;
 };
 
 class Update_tags : public Command {
 public:
-	Update_tags(Log* logger, PATHS* paths, Config* conf, std::map<std::string, time_t>* file_map, std::map<std::string, std::vector<std::string>>* tag_map, std::map<std::string, int>* tag_count, std::vector<std::string>* filter_selection, bool* add_new_to_filter_selection) : Command(logger, paths, conf), file_map(file_map), tag_map(tag_map), tag_count(tag_count), filter_selection(filter_selection), add_new_to_filter_selection(add_new_to_filter_selection) {};
+	Update_tags(Log* logger, PATHS* paths, Config* conf, std::map<std::string, time_t>* file_map, std::map<std::string, std::vector<std::string>>* tag_map, std::map<std::string, int>* tag_count, std::vector<std::string>* filter_selection, bool add_new_to_filter_selection) : Command(logger, paths, conf), file_map(file_map), tag_map(tag_map), tag_count(tag_count), filter_selection(filter_selection), add_new_to_filter_selection(add_new_to_filter_selection) {};
 	void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
 private:
 	std::map<std::string, time_t>* file_map;
 	std::map<std::string, std::vector<std::string>>* tag_map;
 	std::map<std::string, int>* tag_count;
 	std::vector<std::string>* filter_selection;
-	bool* add_new_to_filter_selection;
+	bool add_new_to_filter_selection;
 };
 
 void filter_notes(Log* logger, PATHS* paths, Config* conf, int* active_mode, std::vector<std::string>* mode_tags, std::map<std::string, std::vector<std::string>>* tag_map, std::vector<std::string>* filter_selection, std::vector<OA>& oaflags, std::map<OA, std::vector<std::string>>& oastrargs);

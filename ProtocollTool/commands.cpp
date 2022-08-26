@@ -12,1009 +12,12 @@
 #include <tabulate/table.hpp>
 #include <boost/algorithm/string.hpp>
 using namespace std;
-/*
-void show_filtered_notes(Log& logger, std::istringstream& iss, Config& conf, int& active_mode, const PATHS& paths, const string& tmp_filename, std::vector<std::string>& filter_selection, const bool& has_pandoc, std::vector<std::jthread>& open_files, HANDLE& hExit)
-{
-	// parse arguments
-	SHOW_OPTIONS show_options;
-	FORMAT_OPTIONS format_options;
-	parse_show_args(logger, iss, conf, active_mode, show_options, format_options);
 
-	// sort selection
-	sort(filter_selection.begin(), filter_selection.end());
-
-	// write content of selected files to output file
-	ofstream show_file(paths.base_path / paths.tmp_path / filesystem::path(tmp_filename));
-	string date_str;
-	time_t date_t;
-	CONV_ERROR ret;
-	string line;
-	if (show_options.show_table_of_content && !show_options.hide_date)
-	{
-		show_file << "# Table of Contents" << '\n';
-
-		int i = 1;
-		for (const string& path : filter_selection)
-		{
-			ret = str2date_short(date_t, filesystem::path(path).stem().string().substr(0, 8));
-			if (ret != CONV_SUCCESS) {
-				logger << "Error opening file " << path << ". Invalid filename." << endl;
-				show_file.close();
-				return;
-			}
-			ret = date2str(date_str, date_t);
-			if (ret != CONV_SUCCESS) {
-				logger << "Error opening file " << path << ". Invalid filename." << endl;
-				show_file.close();
-				return;
-			}
-
-			show_file << i++ << ". [note from " << date_str << " Version " << filesystem::path(path).stem().string()[8] << "](#" << filesystem::path(path).stem().string() << ")\n";
-			ifstream file(paths.base_path / filesystem::path(path));
-			int line_count = 0;
-			while (getline(file, line))
-			{
-				if (line[0] == '#')
-				{
-					size_t start = line.find_first_not_of("# ");
-					if (start == string::npos)
-					{
-						continue;
-					}
-					string tab;
-					for (size_t j = 0; j < start - 1; j++)
-					{
-						tab += "\t";
-					}
-					show_file << tab << "-" << "[" << line.substr(start) << "](#" << line_count << ")\n";
-				}
-				line_count++;
-			}
-			file.close();
-		}
-		show_file << endl;
-	}
-
-
-	for (const string& path : filter_selection)
-	{
-
-		// add date to the output
-		if (!show_options.hide_date) {
-			ret = str2date_short(date_t, filesystem::path(path).stem().string().substr(0, 8));
-			if (ret != CONV_SUCCESS) {
-				logger << "Error opening file " << path << ". Invalid filename." << endl;
-				show_file.close();
-				return;
-			}
-			ret = date2str(date_str, date_t);
-			if (ret != CONV_SUCCESS) {
-				logger << "Error opening file " << path << ". Invalid filename." << endl;
-				show_file.close();
-				return;
-			}
-
-			show_file << "# " << date_str << " Version " << filesystem::path(path).stem().string()[8] << "<a id=\"" << filesystem::path(path).stem().string() << "\"></a>\n";
-		}
-		map<string, string> metadata;
-		vector<string> tags;
-		vector<string> content;
-		size_t line_count;
-		read_metadata_tags_content(logger, paths.base_path / paths.file_path / filesystem::path(path).filename(), metadata, tags, content, line_count);
-		// show metadata
-		if (show_options.show_metadata) {
-			for (const auto& [name, value] : metadata) {
-				show_file << name << ": " << value << "; ";
-			}
-			show_file << endl;
-		}
-		// show tags
-		if (show_options.show_tags)
-		{
-			for (const auto& tag : tags) {
-				show_file << tag << ", ";
-			}
-			show_file << endl;
-		}
-
-		// write content
-		for (const auto& line : content) {
-			show_file << line;
-			if (line[0] == '#') {
-				show_file << "<a id=\"" << line_count << "\"></a>";
-			}
-			show_file << '\n';
-			line_count++;
-		}
-		show_file << endl;
-	}
-
-	show_file.close();
-
-	// open showfile and data folders
-	if (show_options.show_data)
-	{
-		for (const string& path : filter_selection)
-		{
-			//const wstring datapath = (paths.base_path / paths.data_path / filesystem::path(path).stem()).wstring();
-			//ShellExecute(NULL, L"open", datapath.c_str(), NULL, NULL, SW_SHOWNORMAL);
-			open_file(logger, paths, paths.base_path / paths.data_path / filesystem::path(path).stem(), open_files, hExit);
-			if (show_options.open_image_data)
-			{
-				// search for image data in the folder
-				for (const auto& entry : filesystem::directory_iterator(paths.base_path / paths.data_path / filesystem::path(path).stem()))
-				{
-					const string ext = entry.path().extension().string();
-					if (ext == "jpg" || ext == "png" || ext == "jpeg" || ext == "gif")
-					{
-						open_file(logger, paths, entry.path(), open_files, hExit);
-						//ShellExecute(NULL, L"open", entry.path().wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-					}
-				}
-			}
-		}
-	}
-
-	// convert by pandoc by
-	// pandoc -f markdown 28062022a.md -t latex -o test.tex
-	if (has_pandoc)
-	{
-		if (format_options.html)
-		{
-			if (int returnCode = convert_document_to("html", "html", paths, tmp_filename, "show") != 0) {
-				logger << "Error " << returnCode << " while converting markdown to html using pandoc" << endl;
-			}
-			
-			open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.html"), open_files, hExit);
-			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.html")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-			
-		}
-
-		if (format_options.markdown)
-		{
-
-			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.md")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-			open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.md"), open_files, hExit);
-		}
-
-		if (format_options.docx)
-		{
-			if (int returnCode = convert_document_to("docx", "docx", paths, tmp_filename, "show") != 0) {
-				logger << "Error " << returnCode << " while converting markdown to docx using pandoc" << endl;
-			}
-			
-			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.docx")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-			open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.docx"), open_files, hExit);
-			
-		}
-
-		if (format_options.tex)
-		{
-			if (int returnCode = convert_document_to("latex", "tex", paths, tmp_filename, "show") != 0) {
-				logger << "Error " << returnCode << " while converting markdown to latex (tex) using pandoc" << endl;
-			}
-			
-			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.tex")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-			open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.tex"), open_files, hExit);
-			
-		}
-
-		if (format_options.pdf)
-		{
-			if (int returnCode = convert_document_to("pdf", "pdf", paths, tmp_filename, "show") != 0) {
-				logger << "Error " << returnCode << " while converting markdown to pdf using pandoc" << endl;
-			}
-			
-			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.pdf")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-			open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path("show.pdf"), open_files, hExit);
-			
-		}
-
-	}
-	else {
-		//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path(tmp_filename)).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-		open_file(logger, paths, paths.base_path / paths.tmp_path / filesystem::path(tmp_filename), open_files, hExit);
-	}
-
-
-
-
-
-}
-
-void create_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit)
-{
-	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, hStopEvent);
-
-	string mode_name;
-	mode_tags = vector<string>();
-	unordered_map<string, vector<string>> folder_watcher_tags;
-	MODE_OPTIONS mode_options;
-	parse_create_mode(logger, iss, conf, mode_name, mode_tags, folder_watcher_tags, mode_options);
-
-	boost::algorithm::to_lower(mode_name);
-
-	for (const auto& [id, name] : mode_names) // check if name already exists
-	{
-		if (mode_name == name)
-		{
-			logger << "Mode already exists! Delete the old mode with the command (del)ete before creating a new one" << endl;
-			return;
-		}
-	}
-
-	active_mode = static_cast<int>(mode_names.size()); // set id to next free number
-	mode_names[active_mode] = mode_name;
-
-	num_modes += 1;
-	conf.set("NUM_MODES", num_modes);
-	conf.set("MODE_" + to_string(active_mode) + "_NAME", mode_name);
-	conf.set("MODE_" + to_string(active_mode) + "_NUM_TAGS", static_cast<int>(mode_tags.size()));
-
-	set_mode_options(conf, mode_options, active_mode);
-
-	for (auto i = 0; i < mode_tags.size(); i++)
-	{
-		conf.set("MODE_" + to_string(active_mode) + "_TAG_" + to_string(i), mode_tags.at(i));
-	}
-
-
-	conf.set("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS", static_cast<int>(folder_watcher_tags.size()));
-	int folder_counter = 0; // not ideal, order in map can change but does not matter because all entries are treated equal
-	for (const auto& [folder_path, tags] : folder_watcher_tags) {
-		conf.set("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_NUM_TAGS", static_cast<int>(tags.size()));
-		conf.set("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_PATH", folder_path);
-
-		for (auto j = 0; j < tags.size(); j++)
-		{
-			conf.set("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_TAG_" + to_string(j), tags.at(j));
-
-		}
-		folder_counter++;
-	}
-
-
-	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files, hStopEvent, open_files, hExit);
-
-}
-
-void delete_mode(Log& logger, std::istringstream& iss, Config& conf, int& num_modes, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, HANDLE& hStopEvent)
-{
-	string mode_name;
-	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, hStopEvent);
-
-	if (!iss)
-	{
-		logger << "Specify name of the mode that should be deleted" << endl;
-		return;
-	}
-
-	iss >> mode_name;
-	boost::algorithm::to_lower(mode_name);
-
-	int mode_id = -1;
-	for (const auto& [id, name] : mode_names) // check if name already exists
-	{
-		if (mode_name == name)
-		{
-			mode_id = id;
-		}
-	}
-
-	if (mode_id != -1)
-	{
-		mode_names.erase(mode_id);
-	}
-	else {
-		logger << "Mode " << mode_name << " not found." << endl;
-		return;
-	}
-
-
-	num_modes -= 1;
-	conf.set("NUM_MODES", num_modes);
-
-	int num_tags;
-	conf.get("MODE_" + to_string(mode_id) + "_NUM_TAGS", num_tags);
-	conf.remove("MODE_" + to_string(mode_id) + "_NUM_TAGS");
-	for (auto i = 0; i < num_tags; i++)
-	{
-		conf.remove("MODE_" + to_string(mode_id) + "_TAG_" + to_string(i));
-	}
-
-	conf.remove("MODE_" + to_string(mode_id) + "_NAME");
-
-	int num_watch_folder, num_folder_tags;
-	conf.get("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS", num_watch_folder);
-	conf.remove("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS");
-	for (auto i = 0; i < num_watch_folder; i++) {
-		conf.get("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_NUM_TAGS", num_folder_tags);
-		conf.remove("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_NUM_TAGS");
-		conf.remove("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_PATH");
-
-		for (auto j = 0; j < num_folder_tags; j++)
-		{
-			conf.remove("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(i) + "_TAG_" + to_string(j));
-
-		}
-	}
-}
-
-
-
-void edit_mode(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, unordered_map<int, string>& mode_names, vector<string>& mode_tags, int& active_mode, vector<jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit)
-{
-	deactivate_mode(logger, conf, active_mode, mode_tags, file_watchers, hStopEvent);
-
-	string mode_name;
-	if (!iss)
-	{
-		logger << "Specify name of the mode that should be edited" << endl;
-		return;
-	}
-
-	iss >> mode_name;
-	boost::algorithm::to_lower(mode_name);
-
-	int mode_id = -1;
-	for (const auto& [id, name] : mode_names) // check if name already exists
-	{
-		if (mode_name == name)
-		{
-			mode_id = id;
-		}
-	}
-
-	if (mode_id == -1)
-	{
-		logger << "Mode " << mode_name << " could not be found! See available modes with the command: modes." << endl;
-		return;
-	}
-
-
-	get_mode_tags(conf, mode_id, mode_tags);
-
-	MODE_OPTIONS mode_options = MODE_OPTIONS();
-	get_mode_options(conf, mode_options, mode_id);
-	unordered_map<string, vector<string>> folder_watcher_tags;
-	get_folder_watcher(conf, mode_id, folder_watcher_tags);
-
-	enum EDIT_MODE { NONE, ADD_OPTIONS, REMOVE_OPTIONS, ADD_TAGS, REMOVE_TAGS, CHANGE_MODE_NAME, ADD_FOLDER_WATCHER, REMOVE_FOLDER_WATCHER };
-	EDIT_MODE mode = NONE;
-	FOLDER_WATCHER_MODE folder_mode = READ_NONE;
-	MODE_OPTIONS add_opt, remove_opt;
-	unordered_map<string, vector<string>> add_folder_watcher_tags, remove_folder_watcher_tags;
-	string current_folder;
-	string new_mode_name;
-	string argument;
-	while (iss >> argument)
-	{
-		if (argument == "-add_opt" || argument == "-add_option" || argument == "-add_options")
-		{
-			mode = ADD_OPTIONS;
-		}
-		else if (argument == "-remove_opt" || argument == "-remove_option" || argument == "-remove_options")
-		{
-			mode = REMOVE_OPTIONS;
-		}
-		else if (argument == "-add_t" || argument == "-add_tags" || argument == "-add_tag") {
-			mode = ADD_TAGS;
-		}
-		else if (argument == "-remove_t" || argument == "-remove_tags" || argument == "-remove_tag")
-		{
-			mode = REMOVE_TAGS;
-		}
-		else if (argument == "-change_name" || argument == "-change_mode_name") {
-			mode = CHANGE_MODE_NAME;
-		}
-		else if (argument == "-add_watch_folder" || argument == "-add_folder" || argument == "-add_watch") {
-			mode = ADD_FOLDER_WATCHER;
-			current_folder = "";
-			folder_mode = READ_NONE;
-		}
-		else if (argument == "-remove_watch_folder" || argument == "-remove_folder" || argument == "-remove_watch") {
-			mode = REMOVE_FOLDER_WATCHER;
-			current_folder = "";
-			folder_mode = READ_NONE;
-		}
-		else if (mode == ADD_OPTIONS) {
-			if (!parse_mode_option(argument, add_opt)) {
-				logger << "Did not recognize parameter " << argument << ".\n It should be one of the following options controlling the (s)how command:\n";
-				logger << "[-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] ";
-				logger << "[-(s)how_(d)ata] [-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] ";
-				logger << "[-(s)how_open_as_(pdf)] [-(s)how_open_as_(docx)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_la(tex)]\n";
-				logger << "And one of the following for controlling the (d)etails command:\n";
-				logger << "[-(d)etail_tags] [-(d)etail_(p)ath] [-(d)etail_(l)ong_(p)ath] [-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent]\n\n";
-			}
-
-		}
-		else if (mode == REMOVE_OPTIONS) {
-			if (!parse_mode_option(argument, remove_opt)) {
-				logger << "Did not recognize parameter " << argument << ".\n It should be one of the following options controlling the (s)how command:\n";
-				logger << "[-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] ";
-				logger << "[-(s)how_(d)ata] [-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] ";
-				logger << "[-(s)how_open_as_(pdf)] [-(s)how_open_as_(docx)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_la(tex)]\n";
-				logger << "And one of the following for controlling the (d)etails command:\n";
-				logger << "[-(d)etail_tags] [-(d)etail_(p)ath] [-(d)etail_(l)ong_(p)ath] [-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent]\n\n";
-			}
-		}
-		else if (mode == ADD_TAGS) {
-			argument = trim(argument);
-			boost::to_lower(argument);
-			if (find(mode_tags.begin(), mode_tags.end(), argument) == mode_tags.end()) {
-				mode_tags.push_back(argument);
-			}
-			else {
-				logger << "Tag " << argument << " already exists for mode " << mode_name << endl;
-			}
-		}
-		else if (mode == REMOVE_TAGS) {
-			argument = trim(argument);
-			boost::to_lower(argument);
-			if (find(mode_tags.begin(), mode_tags.end(), argument) != mode_tags.end()) {
-				mode_tags.erase(remove(mode_tags.begin(), mode_tags.end(), argument));
-			}
-			else {
-				logger << "Tag " << argument << " was not found in the existing tags list and can therefore not be removed." << endl;
-			}
-		}
-		else if (mode == CHANGE_MODE_NAME) {
-			new_mode_name = argument;
-		}
-		else if (mode == ADD_FOLDER_WATCHER) {
-			// if folder is already watched, add tags to watcher else add watcher
-			parse_folder_watcher(argument, folder_mode, current_folder, add_folder_watcher_tags);
-			for (const auto& [new_folder, new_folder_tags] : add_folder_watcher_tags)
-			{
-				if (folder_watcher_tags.contains(new_folder)) // add tags
-				{
-					// TODO: convert vector<string> tags to set<string>
-					for (const auto& new_tag : new_folder_tags) {
-						if (find(folder_watcher_tags[new_folder].begin(), folder_watcher_tags[new_folder].end(), new_tag) == mode_tags.end()) {
-							folder_watcher_tags[new_folder].push_back(new_tag);
-						}
-						else {
-							logger << "Tag " << new_tag << " already exists for folder watcher " << new_folder << endl;
-						}
-					}
-
-				}
-				else { // add new watcher
-					folder_watcher_tags[new_folder] = new_folder_tags;
-				}
-			}
-		}
-		else if (mode == REMOVE_FOLDER_WATCHER) {
-			// if folder is already watched and tags are specified, remove tags from watcher else remove watcher
-			parse_folder_watcher(argument, folder_mode, current_folder, remove_folder_watcher_tags);
-
-			for (const auto& [remove_folder, remove_folder_tags] : remove_folder_watcher_tags)
-			{
-				if (remove_folder_tags.size() > 0 && folder_watcher_tags.contains(remove_folder)) // remove tags
-				{
-					// TODO: convert vector<string> tags to set<string>
-					for (auto& old_tag : folder_watcher_tags[remove_folder]) {
-						folder_watcher_tags[remove_folder].erase(remove(folder_watcher_tags[remove_folder].begin(), folder_watcher_tags[remove_folder].end(), old_tag));
-					}
-				}
-				else { // add new watcher
-					folder_watcher_tags.erase(remove_folder);
-				}
-			}
-		}
-
-	}
-
-	if (!new_mode_name.empty()) {
-		mode_names[mode_id] = new_mode_name;
-		conf.set("MODE_" + to_string(mode_id) + "_NAME", new_mode_name);
-	}
-
-	add(mode_options, add_opt);
-	remove(mode_options, remove_opt);
-	set_mode_options(conf, mode_options, mode_id);
-	set_mode_tags(conf, mode_id, mode_tags);
-
-	conf.set("MODE_" + to_string(active_mode) + "_NUM_WATCH_FOLDERS", static_cast<int>(folder_watcher_tags.size()));
-	int folder_counter = 0; // not ideal, order in map can change but does not matter because all entries are treated equal
-	for (const auto& [folder_path, tags] : folder_watcher_tags) {
-		conf.set("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_NUM_TAGS", static_cast<int>(tags.size()));
-		conf.set("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_PATH", folder_path);
-
-		for (auto j = 0; j < tags.size(); j++)
-		{
-			conf.set("MODE_" + to_string(active_mode) + "_WATCH_FOLDERS_" + to_string(folder_counter) + "_TAG_" + to_string(j), tags.at(j));
-
-		}
-		folder_counter++;
-	}
-
-	activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files, hStopEvent, open_files, hExit);
-}
-
-void show_modes(Log& logger, std::istringstream& iss, Config& conf, std::unordered_map<int, std::string>& mode_names, int& active_mode)
-{
-
-	int con_col, con_row;
-	get_console_size(con_row, con_col);
-
-	string mode_name{ "Mode name:" }, mode_tags{ "Mode tags: ..." }, mode_options{ "Options: ..." }, watch_folder{ "Watch folders: ..." }, folder_tags{ " with tags: ..." }, filler{};
-	pad(mode_name, 26, ' ');
-	pad(mode_tags, con_col - 26, ' '); //46
-
-	pad(mode_options, con_col, ' ');
-	pad(watch_folder, 30, ' ');
-	pad(folder_tags, con_col - 30, ' ');
-	pad(filler, con_col, '-');
-	logger << filler << '\n';
-	logger << mode_name << mode_tags << '\n' << mode_options << '\n' << watch_folder << folder_tags << '\n';
-	logger << filler << "\n";
-	for (const auto& [id, name] : mode_names)
-	{
-		// show name
-		string display_name = name;
-		pad(display_name, 25, ' ');
-		logger << display_name << " ";
-
-		// show tags
-		int num_tags;
-		conf.get("MODE_" + to_string(id) + "_NUM_TAGS", num_tags);
-		ostringstream tags;
-		int tag_width = 0;
-		if (num_tags > 0) {
-			tag_width = ((con_col - 26 - 1) / num_tags) - 1;
-		}
-
-
-		if (tag_width < 8) {
-			tag_width = 7;
-		}
-
-		int extra_tag_width = 0;
-		string tag;
-		for (auto i = 0; i < num_tags; i++) {
-			conf.get("MODE_" + to_string(id) + "_TAG_" + to_string(i), tag);
-
-			if (tag.size() < tag_width) {
-				extra_tag_width += tag_width - tag.size();
-			}
-			else if (extra_tag_width > 0) {
-				int dif = tag.size() - tag_width;
-				if (dif >= extra_tag_width) {
-					pad(tag, tag_width + extra_tag_width, ' ');
-					extra_tag_width = 0;
-				}
-				else {
-					pad(tag, tag_width + dif, ' ');
-					extra_tag_width -= dif;
-				}
-			}
-			else {
-				pad(tag, tag_width, ' ');
-			}
-
-
-			tags << tag << ' ';
-		}
-		string tags_str = tags.str();
-		if (tags_str.size() > 0)
-			tags_str.erase(tags_str.end() - 1);
-		pad(tags_str, (con_col - 26 - 1), ' ');
-		logger << tags_str << " ";
-
-
-		// show options
-		MODE_OPTIONS mode_options;
-		get_mode_options(conf, mode_options, active_mode);
-
-		ostringstream opt;
-		if (mode_options.show_options.show_tags)
-			opt << "-st ";
-		if (mode_options.show_options.show_metadata)
-			opt << "-sm ";
-		if (mode_options.show_options.show_table_of_content)
-			opt << "-sc ";
-		if (mode_options.show_options.show_data)
-			opt << "-sd ";
-		if (mode_options.show_options.hide_date)
-			opt << "-hd ";
-		if (mode_options.show_options.open_image_data)
-			opt << "-si ";
-		if (mode_options.format_options.html)
-			opt << "-shtml ";
-		if (mode_options.format_options.tex)
-			opt << "stex ";
-		if (mode_options.format_options.pdf)
-			opt << "spdf ";
-		if (mode_options.format_options.docx)
-			opt << "sdocx ";
-		if (mode_options.format_options.markdown)
-			opt << "smd ";
-		if (mode_options.detail_options.detail_tags)
-			opt << "dt ";
-		if (mode_options.detail_options.detail_path)
-			opt << "dp ";
-		if (mode_options.detail_options.detail_long_path)
-			opt << "dlp ";
-		if (mode_options.detail_options.detail_last_modified)
-			opt << "dlm ";
-		if (mode_options.detail_options.detail_content)
-			opt << "dc ";
-
-		string options = opt.str();
-		if (options.size() > 0)
-			options.erase(options.end() - 1);
-
-		pad(options, con_col, ' ');
-		logger << options << '\n';
-
-		// show watched folders and tags
-		int num_folders;
-		string folder_path_str;
-		conf.get("MODE_" + to_string(id) + "_NUM_WATCH_FOLDERS", num_folders);
-		for (auto i = 0; i < num_folders; i++)
-		{
-			int num_folder_tags;
-			int folder_tag_width = 0;
-			if (num_tags > 0) {
-				folder_tag_width = ((con_col - 28 - 1) / num_tags) - 1;
-			}
-			if (folder_tag_width < 8) {
-				folder_tag_width = 7;
-			}
-
-			string folder_tags_str;
-			ostringstream folder_tags;
-			conf.get("MODE_" + to_string(id) + "_WATCH_FOLDERS_" + to_string(i) + "_NUM_TAGS", num_folder_tags);
-			conf.get("MODE_" + to_string(id) + "_WATCH_FOLDERS_" + to_string(i) + "_PATH", folder_path_str);
-
-			string folder_tag;
-			int extra_folder_tag_width = 0;
-			for (auto j = 0; j < num_folder_tags; j++)
-			{
-				conf.get("MODE_" + to_string(id) + "_WATCH_FOLDERS_" + to_string(i) + "_TAG_" + to_string(j), folder_tag);
-				// left bound padding of tags
-				if (folder_tag.size() < folder_tag_width) {
-					extra_folder_tag_width += folder_tag_width - folder_tag.size();
-				}
-				else if (extra_folder_tag_width > 0) {
-					int dif = folder_tag.size() - folder_tag_width;
-					if (dif >= extra_folder_tag_width) {
-						pad(folder_tag, folder_tag_width + extra_folder_tag_width, ' ');
-						extra_folder_tag_width = 0;
-					}
-					else {
-						pad(folder_tag, folder_tag_width + dif, ' ');
-						extra_folder_tag_width -= dif;
-					}
-				}
-				else {
-					pad(folder_tag, folder_tag_width, ' ');
-				}
-
-				folder_tags << folder_tag << " ";
-
-			}
-			folder_tags_str = folder_tags.str();
-			folder_tags_str.erase(folder_tags_str.end() - 1);
-			pad(folder_path_str, 29, ' ', false);
-			pad(folder_tags_str, con_col - 30, ' ');
-			logger << folder_path_str << " " << folder_tags_str << '\n';
-		}
-
-		logger << filler << '\n';
-	}
-}
-
-void show_todos(Log& logger, const PATHS& paths, vector<jthread>& open_files, HANDLE& hExit)
-{
-	update_todos(logger, paths);
-	// maybe do a convert to first
-	open_file(logger, paths, paths.base_path / paths.tmp_path / "todos.md", open_files, hExit);
-
-}
-
-void filter_notes(Log& logger, istringstream& iss, const PATHS& paths, vector<string>& filter_selection, map<string, time_t>& file_map, map<string, vector<string>> tag_map, vector<string> mode_tags)
-{
-
-	vector<string> _filter_selection;
-
-	bool data_only = false;
-	vector<time_t> date_args;
-	vector<string> ctags_args;
-	vector<string> catags_args;
-	vector<string> ntags_args;
-	vector<char> vers_args;
-	string regex_pattern{}, regex_content_pattern{};
-
-	parse_find_args(logger, iss, data_only, date_args, ctags_args, catags_args, ntags_args, regex_pattern, regex_content_pattern, vers_args);
-	catags_args.insert(catags_args.begin(), mode_tags.begin(), mode_tags.end());
-
-	for (const auto& path : filter_selection)
-	{
-		// filter for date
-		if (date_args.size() > 0)
-		{
-			time_t note_date;
-			str2date_short(note_date, filesystem::path(path).stem().string());
-			if (note_date < date_args.at(0) || note_date > date_args.at(1)) {
-				continue;
-			}
-		}
-
-		// filter for version
-		if (vers_args.size() > 0)
-		{
-			char note_version = filesystem::path(path).stem().string()[8];
-			if (find(vers_args.begin(), vers_args.end(), note_version) == vers_args.end())
-			{
-				continue;
-			}
-
-		}
-
-		// filter for having a data folder
-		if (data_only)
-		{
-			if (!filesystem::exists(paths.base_path / paths.data_path / filesystem::path(path).stem())) {
-				continue;
-			}
-		}
-
-		// filter for tags where only one of the tags needs to match
-		if (ctags_args.size() > 0)
-		{
-			bool has_tag = false;
-			vector<string> tags = tag_map[path];
-			for (auto& tag : ctags_args)
-			{
-				tag = trim(tag);
-				boost::algorithm::to_lower(tag);
-				if (find(tags.begin(), tags.end(), tag) != tags.end()) {
-					has_tag = true;
-					break;
-				}
-			}
-
-			if (!has_tag)
-			{
-				continue;
-			}
-		}
-
-		// filter for tags where all tags need to match
-		if (catags_args.size() > 0)
-		{
-			bool all_match = true;
-			vector<string> tags = tag_map[path];
-			for (auto& tag : catags_args)
-			{
-				tag = trim(tag);
-				boost::algorithm::to_lower(tag);
-				if (find(tags.begin(), tags.end(), tag) == tags.end()) {
-					all_match = false;
-					break;
-				}
-			}
-			if (!all_match)
-			{
-				continue;
-			}
-
-		}
-
-		// filter for tags that can not be in the tag list of the note
-		if (ntags_args.size() > 0)
-		{
-			bool has_tag = false;
-			string tag_copy;
-			for (const auto& tag : ntags_args)
-			{
-				tag_copy = trim(tag);
-				boost::algorithm::to_lower(tag_copy);
-				if (find(tag_map[path].begin(), tag_map[path].end(), tag_copy) != tag_map[path].end()) {
-					has_tag = true;
-					break;
-				}
-			}
-
-			if (has_tag)
-			{
-				continue;
-			}
-		}
-
-		// filtering for regex in the tags
-		if (!regex_pattern.empty())
-		{
-			regex pat(regex_pattern);
-			bool found_match = false;
-			string tag_copy;
-			for (const auto& tag : tag_map[path])
-			{
-				// found match
-				tag_copy = trim(tag);
-				boost::to_lower(tag_copy);
-				if (regex_match(tag_copy, pat)) {
-					found_match = true;
-					break;
-				}
-			}
-
-			if (!found_match) {
-				continue;
-			}
-		}
-
-		// filtering for regex in the file content
-		if (!regex_content_pattern.empty())
-		{
-			regex pat(regex_content_pattern);
-			ifstream file(paths.base_path / filesystem::path(path));
-			const string content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
-			file.close();
-
-			if (!regex_match(content, pat)) {
-				continue;
-			}
-		}
-
-
-		_filter_selection.push_back(path);
-	}
-	filter_selection = _filter_selection;
-}
-
-void find_notes(Log& logger, istringstream& iss, const PATHS& paths, vector<string>& filter_selection, map<string, time_t>& file_map, map<string, vector<string>> tag_map, vector<string> mode_tags)
-{
-	filter_selection = vector<string>();
-	filter_selection.reserve(tag_map.size());
-
-	for (const auto& [path, tag] : tag_map)
-	{
-		filter_selection.push_back(path);
-	}
-
-	filter_notes(logger, iss, paths, filter_selection, file_map, tag_map, mode_tags);
-}
-
-void add_note(Log& logger, std::istringstream& iss, const PATHS& paths, const std::string& file_ending, std::map<std::string, time_t>& file_map, std::map<std::string, std::vector<std::string>>& tag_map, vector<string>& mode_tags, vector<string>& filter_selection, vector<jthread>& open_files, HANDLE& hExit)
-{
-	string filename;
-	vector<string> tags;
-	bool add_data;
-	time_t date;
-	parse_add_note(logger, iss, paths, file_ending, filename, date, tags, add_data);
-	tags.insert(tags.end(), mode_tags.begin(), mode_tags.end());
-
-	write_file(logger, paths, filename, date, tags, file_ending, add_data);
-
-
-	// open new file
-	open_file(logger, paths, (paths.base_path / paths.file_path / filesystem::path(filename)), open_files, hExit);
-	//open_md_editor(logger, (paths.base_path / paths.file_path / filesystem::path(filename)));
-	
-	// update file_map, tag_map, tag_count and filter selection
-	string path = (paths.file_path / filesystem::path(filename)).string();
-	file_map[path] = time_t(NULL);
-	tag_map[path] = tags;
-	filter_selection.push_back(path);
-	get_tag_count(tag_map, filter_selection);
-}
-
-void add_data(Log& logger, std::istringstream& iss, const PATHS& paths, std::vector<std::string> filter_selection)
-{
-	filesystem::path data_dir = paths.base_path / paths.data_path;
-	if (filter_selection.size() > 1)
-	{
-		string choice;
-		logger << filter_selection.size() << " found in the selection. Add data folders for all of them? (y/n)" << endl;
-		cin >> choice;
-		cin.clear();
-		cin.ignore(10000, '\n');
-		logger.input(choice);
-		if (choice == "y" || choice == "Y") {
-
-			for (const string& path : filter_selection)
-			{
-				filesystem::create_directories(data_dir / filesystem::path(path).stem());
-				logger << "Added data directory for " << filesystem::path(path).stem() << endl;
-			}
-		}
-	}
-	else if (filter_selection.size() == 1)
-	{
-		filesystem::create_directories(data_dir / filesystem::path(filter_selection.at(0)).stem());
-		logger << "Added data directory for " << filesystem::path(filter_selection.at(0)).stem() << endl;
-	}
-	else {
-		logger << "No file found in the selection. Use the find command to specify which note should have a data folder added." << endl;
-		return;
-	}
-}
-
-void show_details(Log& logger, std::istringstream& iss, const PATHS& paths, Config& conf, int& active_mode, vector<string> filter_selection, std::map<std::string, time_t> file_map, std::map<std::string, std::vector<std::string>> tag_map)
-{
-	DETAIL_OPTIONS detail_options;
-	parse_details_args(logger, iss, conf, active_mode, detail_options);
-
-	time_t note_date;
-	string date_str, modified_date_str;
-	for (const string& path : filter_selection)
-	{
-		string filename = filesystem::path(path).stem().string();
-		str2date_short(note_date, filename.substr(0, 8));
-		date2str(date_str, note_date);
-		logger << date_str;
-		if (filename[8] != 'a')
-		{
-			logger << " Version " << filename[8];
-		}
-		if (detail_options.detail_long_path)
-		{
-			logger << " at " << paths.base_path / filesystem::path(path);
-		}
-		else if (detail_options.detail_path)
-		{
-			logger << " at " << path;
-		}
-		if (detail_options.detail_tags)
-		{
-			logger << " with tags: ";
-			for (const auto& tag : tag_map[path])
-			{
-				logger << tag << " ";
-			}
-		}
-		if (detail_options.detail_last_modified)
-		{
-			date2str_long(modified_date_str, file_map[path]);
-			logger << " last modified at " << modified_date_str;
-		}
-		if (detail_options.detail_content)
-		{
-			ifstream file(paths.base_path / filesystem::path(path));
-			string str((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
-			file.close();
-
-			logger << " with note text:\n" << str;
-		}
-		logger << endl;
-	}
-}
-
-void open_selection(Log& logger, const PATHS& paths, std::vector<std::string> filter_selection, std::vector<std::jthread>& open_files, HANDLE& hExit)
-{
-	if (filter_selection.size() == 1)
-	{
-		//const wstring exec_filename = (paths.base_path / filesystem::path(filter_selection.at(0))).wstring();
-		//ShellExecute(0, L"open", exec_filename.c_str(), 0, 0, SW_SHOW);
-		open_file(logger, paths, paths.base_path / filesystem::path(filter_selection.at(0)), open_files, hExit);
-	}
-	else if (filter_selection.size() > 1)
-	{
-		string choice;
-		logger << filter_selection.size() << " found in the selection. Open all of them? (y/n)" << endl;
-		cin >> choice;
-		cin.clear();
-		cin.ignore(10000, '\n');
-		logger.input(choice);
-		if (choice == "y" || choice == "Y") {
-
-			for (const string& path : filter_selection)
-			{
-				//const wstring exec_filename = (paths.base_path / filesystem::path(path)).wstring();
-				//ShellExecute(0, L"open", exec_filename.c_str(), 0, 0, SW_SHOW);
-				open_file(logger, paths, paths.base_path / filesystem::path(path), open_files, hExit);
-			}
-		}
-	}
-	else {
-		logger << "Found no file to open in the current selection. Use (f)ind to set selection." << endl;
-	}
-}
-*/
+#ifdef _WIN32
 void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit)
+#else
+void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mode, vector<string>& mode_tags, const string& file_ending)
+#endif
 {
 
 	// read in mode tags
@@ -1026,7 +29,7 @@ void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mo
 		conf.get("MODE_" + to_string(active_mode) + "_TAG_" + to_string(i), tag);
 		mode_tags.push_back(tag);
 	}
-
+#ifdef _WIN32
 	// read in folders to watch and their tags and start watching
 	int num_folders = 0;
 	string folder_path_str;
@@ -1045,51 +48,26 @@ void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mo
 		}
 		file_watchers.push_back(jthread(file_change_watcher, ref(logger), filesystem::path(folder_path_str), paths, file_ending, folder_tags, ref(update_files), ref(hStopEvent), ref(open_files), ref(hExit)));
 	}
+#endif
 }
 
+#ifdef _WIN32
 void deactivate_mode(Log& logger, Config& conf, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, HANDLE& hStopEvent) {
+#else
+void deactivate_mode(Log& logger, Config& conf, int& active_mode, vector<string>& mode_tags) {
+#endif
 	active_mode = -1;
 	mode_tags = vector<string>();
 
+#ifdef _WIN32
 	SetEvent(hStopEvent);
 	for (jthread& watcher : file_watchers) {
 		watcher.request_stop();
 	}
 
 	file_watchers = vector<jthread>();
+#endif
 }
-/*
-void activate_mode_command(Log& logger, std::istringstream& iss, Config& conf, const PATHS& paths, std::unordered_map<int, std::string>& mode_names, int& active_mode, vector<string>& mode_tags, std::vector<std::jthread>& file_watchers, const string& file_ending, bool& update_files, HANDLE& hStopEvent, std::vector<std::jthread>& open_files, HANDLE& hExit)
-{
-	mode_tags = vector<string>();
-	active_mode = -1;
-
-	string mode_name;
-	if (!iss)
-	{
-		logger << "Specify the name of the mode you want to activate" << endl;
-		return;
-	}
-
-	iss >> mode_name;
-	for (const auto& [id, name] : mode_names)
-	{
-		if (name == mode_name)
-		{
-			active_mode = id;
-		}
-	}
-
-	if (active_mode != -1)
-	{
-		activate_mode(logger, conf, paths, active_mode, mode_tags, file_watchers, file_ending, update_files, hStopEvent, open_files, hExit);
-	}
-	else {
-		logger << "Mode " << mode_name << " not found." << endl;
-	}
-
-}
-*/
 
 void get_mode_tags(Config& conf, const int& mode_id, vector<string>& mode_tags) {
 	int num_tags;
@@ -1132,23 +110,29 @@ void Show_modes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<
 	tabulate::Table modes_table;
 	//modes_table.format().width(con_col-1);
 	tabulate::Table name_tags_table;
-	tabulate::Table wf_table;
-
 	name_tags_table.add_row({ "Mode name", "Mode tags" });
-	wf_table.add_row({ "Watch folders", "with tags" });
 	name_tags_table.format()
 		.padding_top(0)
 		.padding_bottom(0)
 		.hide_border();
-
+#ifdef _WIN32
+	tabulate::Table wf_table;
+	wf_table.add_row({ "Watch folders", "with tags" });
 	wf_table.format()
 		.padding_top(0)
 		.padding_bottom(0)
 		.hide_border();
+#endif
 
 	modes_table.add_row({ name_tags_table });
 	modes_table.add_row({ "Options" });
+
+#ifdef _WIN32
 	modes_table.add_row({ wf_table });
+	modes_table[2].format().padding_bottom(1);
+#else
+	modes_table[1].format().padding_bottom(1);
+#endif
 
 	modes_table.format()
 		.font_style({ tabulate::FontStyle::italic })
@@ -1159,7 +143,7 @@ void Show_modes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<
 		.corner(" ")
 		.font_align({ tabulate::FontAlign::center });
 
-	modes_table[2].format().padding_bottom(1);
+	
 
 
 	/*
@@ -1297,6 +281,7 @@ void Show_modes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<
 		pad(options, con_col, ' ');
 		*logger << options << '\n';
 		*/
+#ifdef _WIN32
 		unordered_map<string, vector<string>> folder_watcher;
 		get_folder_watcher(*conf, id, folder_watcher);
 		for (const auto& [folder_path, fw_tags] : folder_watcher) {
@@ -1317,7 +302,7 @@ void Show_modes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<
 			modes_table.add_row({ fw_table });
 		}
 
-		
+#endif
 		// show watched folders and tags
 		/*
 		int num_folders;
@@ -1404,7 +389,11 @@ void Activate_mode_command::run(std::map<PA, std::vector<std::string>>& pargs, s
 
 	if (*active_mode != -1)
 	{
+#ifdef _WIN32
 		activate_mode(*logger, *conf, *paths, *active_mode, *mode_tags, *file_watchers, *file_ending, *update_files, *hStopEvent, *open_files, *hExit);
+#else
+		activate_mode(*logger, *conf, *paths, *active_mode, *mode_tags, *file_ending);
+#endif
 	}
 	else {
 		*logger << "Mode " << mode_name << " not found." << endl;
@@ -1415,19 +404,24 @@ void Deactivate_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::ve
 {
 	*active_mode = -1;
 	*mode_tags = vector<string>();
-
+#ifdef _WIN32
 	SetEvent(*hStopEvent);
 	for (jthread& watcher : *file_watchers) {
 		watcher.request_stop();
 	}
 
 	*file_watchers = vector<jthread>();
+#endif
 }
 
 void Edit_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
-	deactivate_mode(*logger, (*conf), *active_mode, *mode_tags, *file_watchers, *hStopEvent);
 
+#ifdef _WIN32
+	deactivate_mode(*logger, (*conf), *active_mode, *mode_tags, *file_watchers, *hStopEvent);
+#else
+	deactivate_mode(*logger, (*conf), *active_mode, *mode_tags);
+#endif
 	string mode_name;
 	if (pargs.size() == 0)
 	{
@@ -1487,6 +481,7 @@ void Edit_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<O
 	}
 	set_mode_options((*conf), mode_options, mode_id);
 
+#ifdef _WIN32
 	// Add or remove file watchers
 	unordered_map<string, vector<string>> folder_watcher_tags;
 	get_folder_watcher((*conf), mode_id, folder_watcher_tags);
@@ -1518,21 +513,27 @@ void Edit_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<O
 		}
 	}
 	set_folder_watcher((*conf), mode_id, folder_watcher_tags);
-
+#endif
 	// Change mode name
 	if (oastrargs.contains(OA::CHANAME)) {
 		string new_mode_name = oastrargs.at(OA::CHANAME).at(0);
 		mode_names->at(mode_id) = new_mode_name;
 		(*conf).set("MODE_" + to_string(mode_id) + "_NAME", new_mode_name);
 	}
-
+#ifdef _WIN32
 	activate_mode(*logger, *conf, *paths, *active_mode, *mode_tags, *file_watchers, *file_ending, *update_files, *hStopEvent, *open_files, *hExit);
+#else
+	activate_mode(*logger, *conf, *paths, *active_mode, *mode_tags,*file_ending);
+#endif
 }
 
 void Delete_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
+#ifdef _WIN32
 	deactivate_mode(*logger, (*conf), *active_mode, *mode_tags, *file_watchers, *hStopEvent);
-
+#else
+	deactivate_mode(*logger, (*conf), *active_mode, *mode_tags);
+#endif
 	if (pargs.size() == 0)
 	{
 		*logger << "Specify name of the mode that should be deleted" << endl;
@@ -1575,6 +576,7 @@ void Delete_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector
 
 	(*conf).remove("MODE_" + to_string(mode_id) + "_NAME");
 
+#ifdef _WIN32
 	int num_watch_folder, num_folder_tags;
 	(*conf).get("MODE_" + to_string(*active_mode) + "_NUM_WATCH_FOLDERS", num_watch_folder);
 	(*conf).remove("MODE_" + to_string(*active_mode) + "_NUM_WATCH_FOLDERS");
@@ -1589,12 +591,16 @@ void Delete_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector
 
 		}
 	}
+#endif
 }
 
 void Create_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
+#ifdef _WIN32
 	deactivate_mode(*logger, *conf, *active_mode, *mode_tags, *file_watchers, *hStopEvent);
-
+#else
+	deactivate_mode(*logger, *conf, *active_mode, *mode_tags);
+#endif
 	string mode_name;
 	if (pargs.size() == 0) {
 		*logger << "You need to specify a mode name" << endl;
@@ -1612,11 +618,12 @@ void Create_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector
 	}
 
 	*mode_tags = pargs.at(PA::TAGS);
+#ifdef _WIN32
 	unordered_map<string, vector<string>> folder_watcher_tags;
 	if (oastrargs.contains(OA::ADDWF)) {
 		folder_watcher_tags.at(oastrargs.at(OA::ADDWF).at(0)) = vector<string>(oastrargs.at(OA::ADDWF).begin() + 1, oastrargs.at(OA::ADDWF).end());
 	}
-
+#endif
 	//MODE_OPTIONS mode_options;
 	//parse_create_mode(logger, iss, conf, mode_name, mode_tags, folder_watcher_tags, mode_options);
 
@@ -1643,7 +650,7 @@ void Create_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector
 		(*conf).set("MODE_" + to_string(*active_mode) + "_TAG_" + to_string(i), mode_tags->at(i));
 	}
 
-
+#ifdef _WIN32
 	(*conf).set("MODE_" + to_string(*active_mode) + "_NUM_WATCH_FOLDERS", static_cast<int>(folder_watcher_tags.size()));
 	int folder_counter = 0; // not ideal, order in map can change but does not matter because all entries are treated equal
 	for (const auto& [folder_path, tags] : folder_watcher_tags) {
@@ -1658,8 +665,10 @@ void Create_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector
 		folder_counter++;
 	}
 
-
 	activate_mode(*logger, (*conf), *paths, *active_mode, *mode_tags, *file_watchers, *file_ending, *update_files, *hStopEvent, *open_files, *hExit);
+#else
+	activate_mode(*logger, (*conf), *paths, *active_mode, *mode_tags, *file_ending);
+#endif
 }
 
 void Open_selection::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
@@ -1668,7 +677,11 @@ void Open_selection::run(std::map<PA, std::vector<std::string>>& pargs, std::vec
 	{
 		//const wstring exec_filename = (paths.base_path / filesystem::path(filter_selection.at(0))).wstring();
 		//ShellExecute(0, L"open", exec_filename.c_str(), 0, 0, SW_SHOW);
+#ifdef _WIN32
 		open_file(*logger, *paths, paths->base_path / filesystem::path(filter_selection->at(0)), *open_files, *hStopEvent);
+#else
+		open_file(*logger, *paths, paths->base_path / filesystem::path(filter_selection->at(0)));
+#endif
 	}
 	else if (filter_selection->size() > 1)
 	{
@@ -1684,7 +697,11 @@ void Open_selection::run(std::map<PA, std::vector<std::string>>& pargs, std::vec
 			{
 				//const wstring exec_filename = (paths.base_path / filesystem::path(path)).wstring();
 				//ShellExecute(0, L"open", exec_filename.c_str(), 0, 0, SW_SHOW);
+#ifdef _WIN32
 				open_file(*logger, *paths, paths->base_path / filesystem::path(path), *open_files, *hStopEvent);
+#else
+				open_file(*logger, *paths, paths->base_path / filesystem::path(path));
+#endif
 			}
 		}
 	}
@@ -1713,15 +730,15 @@ void Show_details::run(std::map<PA, std::vector<std::string>>& pargs, std::vecto
 		{
 			*logger << " Version " << filename[8];
 		}
-		if (mode_options.contains(OA::LPATH))
+		if (mode_options.at(OA::LPATH))
 		{
 			*logger << " at " << paths->base_path / filesystem::path(path);
 		}
-		else if (mode_options.contains(OA::PATH))
+		else if (mode_options.at(OA::PATH))
 		{
 			*logger << " at " << path;
 		}
-		if (mode_options.contains(OA::TAGS))
+		if (mode_options.at(OA::TAGS))
 		{
 			*logger << " with tags: ";
 			for (const auto& tag : tag_map->at(path))
@@ -1729,12 +746,12 @@ void Show_details::run(std::map<PA, std::vector<std::string>>& pargs, std::vecto
 				*logger << tag << " ";
 			}
 		}
-		if (mode_options.contains(OA::LMOD))
+		if (mode_options.at(OA::LMOD))
 		{
 			date2str_long(modified_date_str, file_map->at(path));
 			*logger << " last modified at " << modified_date_str;
 		}
-		if (mode_options.contains(OA::CONTENT))
+		if (mode_options.at(OA::CONTENT))
 		{
 			ifstream file(paths->base_path / filesystem::path(path));
 			string str((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
@@ -1806,7 +823,7 @@ void Add_note::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA
 	}
 	tags.insert(tags.end(), mode_tags->begin(), mode_tags->end());
 
-	write_file(*logger, *paths, filename, date, tags, *file_ending, mode_options.contains(OA::DATA));
+	write_file(*logger, *paths, filename, date, tags, *file_ending, mode_options.at(OA::DATA));
 
 
 	// open new file
@@ -1837,7 +854,7 @@ void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std
 	time_t date_t;
 	CONV_ERROR ret;
 	string line;
-	if (mode_options.contains(OA::TOC) && !mode_options.contains(OA::NODATE))
+	if (mode_options.at(OA::TOC) && !mode_options.at(OA::NODATE))
 	{
 		show_file << "# Table of Contents" << '\n';
 
@@ -1888,7 +905,7 @@ void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std
 	{
 
 		// add date to the output
-		if (!mode_options.contains(OA::NODATE)) {
+		if (!mode_options.at(OA::NODATE)) {
 			ret = str2date_short(date_t, filesystem::path(path).stem().string().substr(0, 8));
 			if (ret != CONV_SUCCESS) {
 				*logger << "Error opening file " << path << ". Invalid filename." << endl;
@@ -1910,14 +927,14 @@ void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std
 		size_t line_count;
 		read_metadata_tags_content(*logger, paths->base_path / paths->file_path / filesystem::path(path).filename(), metadata, tags, content, line_count);
 		// show metadata
-		if (mode_options.contains(OA::MDATA)) {
+		if (mode_options.at(OA::MDATA)) {
 			for (const auto& [name, value] : metadata) {
 				show_file << name << ": " << value << "; ";
 			}
 			show_file << endl;
 		}
 		// show tags
-		if (mode_options.contains(OA::STAGS)) 
+		if (mode_options.at(OA::STAGS)) 
 		{
 			for (const auto& tag : tags) {
 				show_file << tag << ", ";
@@ -1940,14 +957,14 @@ void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std
 	show_file.close();
 
 	// open showfile and data folders
-	if (mode_options.contains(OA::DATA))
+	if (mode_options.at(OA::DATA))
 	{
 		for (const string& path : *filter_selection)
 		{
 			//const wstring datapath = (paths.base_path / paths.data_path / filesystem::path(path).stem()).wstring();
 			//ShellExecute(NULL, L"open", datapath.c_str(), NULL, NULL, SW_SHOWNORMAL);
 			open_file(*logger, *paths, paths->base_path / paths->data_path / filesystem::path(path).stem(), *open_files, *hExit);
-			if (mode_options.contains(OA::IMG))
+			if (mode_options.at(OA::IMG))
 			{
 				// search for image data in the folder
 				for (const auto& entry : filesystem::directory_iterator(paths->base_path / paths->data_path / filesystem::path(path).stem()))
@@ -1967,7 +984,7 @@ void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std
 	// pandoc -f markdown 28062022a.md -t latex -o test.tex
 	if (has_pandoc)
 	{
-		if (mode_options.contains(OA::HTML))
+		if (mode_options.at(OA::HTML))
 		{
 			if (int returnCode = convert_document_to("html", "html", *paths, *tmp_filename, "show") != 0) {
 				*logger << "Error " << returnCode << " while converting markdown to html using pandoc" << endl;
@@ -1978,14 +995,14 @@ void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std
 
 		}
 
-		if (mode_options.contains(OA::MD))
+		if (mode_options.at(OA::MD))
 		{
 
 			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.md")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
 			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.md"), *open_files, *hExit);
 		}
 
-		if (mode_options.contains(OA::DOCX))
+		if (mode_options.at(OA::DOCX))
 		{
 			if (int returnCode = convert_document_to("docx", "docx", *paths, *tmp_filename, "show") != 0) {
 				*logger << "Error " << returnCode << " while converting markdown to docx using pandoc" << endl;
@@ -1996,7 +1013,7 @@ void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std
 
 		}
 
-		if (mode_options.contains(OA::TEX))
+		if (mode_options.at(OA::TEX))
 		{
 			if (int returnCode = convert_document_to("latex", "tex", *paths, *tmp_filename, "show") != 0) {
 				*logger << "Error " << returnCode << " while converting markdown to latex (tex) using pandoc" << endl;
@@ -2007,7 +1024,7 @@ void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std
 
 		}
 
-		if (mode_options.contains(OA::PDF))
+		if (mode_options.at(OA::PDF))
 		{
 			if (int returnCode = convert_document_to("pdf", "pdf", *paths, *tmp_filename, "show") != 0) {
 				*logger << "Error " << returnCode << " while converting markdown to pdf using pandoc" << endl;
@@ -2038,11 +1055,36 @@ void Find_notes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<
 	}
 
 	filter_notes(logger, paths, conf, active_mode, mode_tags, tag_map, filter_selection, oaflags, oastrargs);
+
+	logger->setColor(GREEN, WHITE);
+	*logger << "  Found " << filter_selection->size() << " notes matching the filter.\n";
+	if (*active_mode != -1) {
+		*logger << "  Tags ";
+		for (const auto& tag : *mode_tags) {
+			*logger << tag << " ";
+		}
+		*logger << "from Mode " << mode_names->at(*active_mode) << " were added to the filter.\n";
+	}
+	logger->setColor(BLUE, WHITE);
+	*logger << "  Run (s)how, (d)etails, (a)dd_data, (t)ags or (f)ilter for more.\n" << endl;
+	logger->setColor(BLACK, WHITE);
 }
 
 void Filter_notes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
 	filter_notes(logger, paths, conf, active_mode, mode_tags, tag_map, filter_selection, oaflags, oastrargs);
+	logger->setColor(GREEN, WHITE);
+	*logger << "  Found " << filter_selection->size() << " notes matching the filter.\n";
+	if (*active_mode != -1) {
+		*logger << "  Tags ";
+		for (const auto& tag : *mode_tags) {
+			*logger << tag << " ";
+		}
+		*logger << "from Mode " << mode_names->at(*active_mode) << " were added to the filter.\n";
+	}
+	logger->setColor(BLUE, WHITE);
+	*logger << "  Run (s)how, (d)etails, (a)dd_data, (t)ags or (f)ilter for more.\n" << endl;
+	logger->setColor(BLACK, WHITE);
 }
 
 void filter_notes(Log* logger, PATHS* paths, Config* conf, int *active_mode, std::vector<std::string>* mode_tags, std::map<std::string, std::vector<std::string>>* tag_map, std::vector<std::string>* filter_selection, std::vector<OA>& oaflags, std::map<OA, std::vector<string>>& oastrargs) {
@@ -2053,8 +1095,10 @@ void filter_notes(Log* logger, PATHS* paths, Config* conf, int *active_mode, std
 	}
 
 	vector<string> _filter_selection;
-
-	vector<string> catags_args = oastrargs.at(OA::CATAGS);
+	vector<string> catags_args;
+	if (oastrargs.contains(OA::CATAGS)) {
+		catags_args = oastrargs.at(OA::CATAGS);
+	}
 	catags_args.insert(catags_args.begin(), mode_tags->begin(), mode_tags->end());
 
 	for (const auto& path : *filter_selection)
@@ -2066,10 +1110,22 @@ void filter_notes(Log* logger, PATHS* paths, Config* conf, int *active_mode, std
 			str2date_short(note_date, filesystem::path(path).stem().string());
 			if (oastrargs.at(OA::DATE_R).size() == 1)
 			{
-				time_t filter_date;
-				str2date(filter_date, oastrargs.at(OA::DATE_R).at(0));
-				if (filter_date != note_date)
-					continue;
+				size_t del_pos = oastrargs.at(OA::DATE_R).at(0).find_first_of("-:");
+				if (del_pos == string::npos) {
+					time_t filter_date;
+					str2date(filter_date, oastrargs.at(OA::DATE_R).at(0));
+					if (filter_date != note_date)
+						continue;
+				}
+				else {
+					time_t filter_begin, filter_end;
+					str2date(filter_begin, oastrargs.at(OA::DATE_R).at(0).substr(0, del_pos));
+					str2date(filter_end, oastrargs.at(OA::DATE_R).at(0).substr(del_pos+1));
+					if (note_date < filter_begin || note_date > filter_end) {
+						continue;
+					}
+				}
+				
 			}
 			else if (oastrargs.at(OA::DATE_R).size() == 2) {
 				time_t filter_begin, filter_end;
@@ -2097,7 +1153,7 @@ void filter_notes(Log* logger, PATHS* paths, Config* conf, int *active_mode, std
 		}
 
 		// filter for having a data folder
-		if (mode_options.contains(OA::DATA))
+		if (mode_options.at(OA::DATA))
 		{
 			if (!filesystem::exists(paths->base_path / paths->data_path / filesystem::path(path).stem())) {
 				continue;
@@ -2210,5 +1266,168 @@ void filter_notes(Log* logger, PATHS* paths, Config* conf, int *active_mode, std
 
 void Update_tags::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
-	update_tags(*logger, *paths, *file_map, *tag_map, *tag_count, *filter_selection, *add_new_to_filter_selection);
+	update_tags(*logger, *paths, *file_map, *tag_map, *tag_count, *filter_selection, true);
 }
+
+void Show_tags::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+	//TODO add option to sort by amount of tags and not alphabetic
+	if (filter_selection->size() == 0) {
+		filter_selection->reserve(tag_map->size());
+		for (const auto& [path, tag] : *tag_map)
+		{
+			filter_selection->push_back(path);
+		}
+	}
+
+	logger->setColor(GREEN, WHITE);
+	*logger << "  Tags";
+	if (*active_mode != -1) {
+		*logger << " (Mode Tags:";
+		string tag_copy;
+		for (const auto& tag : *mode_tags) {
+			tag_copy = trim(tag);
+			boost::to_lower(tag_copy);
+			*logger << " " << tag_copy;
+		}
+		*logger << ")";
+	}
+	*logger << "\n";
+
+	auto tag_count = get_tag_count(*tag_map, *filter_selection);
+	for (const auto& [tag, count] : tag_count)
+	{
+		*logger << "  " << tag << ": " << count << '\n';
+	}
+	logger->setColor(BLACK, WHITE);
+}
+
+void Quit::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+	SetEvent(*hExit);
+	*running = false;
+}
+
+void Help::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+	if (pargs.contains(PA::CMD)) {
+		string argument = pargs.at(PA::CMD).at(0);
+
+		if (argument == "n" || argument == "new")
+		{
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << "  (n)ew: date tag1 tag2 ... [-d]\n";
+			(*logger).setColor(BLACK, WHITE);
+			(*logger) << wrap("Creates a new note file and the optional parameter -d indicates that a data folder will be created. The given date can be in the format of dd or dd.mm or dd.mm.yyyy (where one digit numebers can be specified as one digit or two digits with leading zero) or the special format t for today and y for yesterday.", 3) << '\n' << '\n';
+
+		}
+		else if (argument == "f") {
+			(*logger) << wrap("The abbreviation f will be interpreted as find if no note is currently selected and as filter, if multiple (or one) note(s) are selected.", 2) << "\n";
+		}
+		else if (argument == "find") {
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << wrap("(f)ind: [-(d)ate start_date-end_date] [-(c)ontains_(t)ags tag1 ...] [-(c)ontains_(a)ll_(t)ags tag1 ...] [-(n)o_(t)ags tag1 ...] [-(r)eg_(t)ext text] [-(v)ersions start_version-end_version] [-(d)ata_(o)nly]", 2) << "\n";
+			(*logger).setColor(BLACK, WHITE);
+			(*logger) << wrap("Looks for notes that fall within the specified ranges (start and end dates are included in the interval). -ct describes a list of tags where one of them needs to be found in the note, while -cat describes a list of tags which all need to be find in the note. -nt describes a list of tags that are not allowed to be in matching notes and -rt stands for regular expression text, which will be used to search the content of the note. -v gives an interval of versions (a-...) that are considered and -do stands for data_only, meaning only notes with a data folder will be selected.", 3) << "\n\n";
+		}
+		else if (argument == "filter") {
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << wrap("(f)ilter: [-(d)ate start_date-end_date] [-(c)ontains_(t)ags tag1 ...] [-(c)ontains_(a)ll_(t)ags tag1 ...] [-(n)o_(t)ags tag1 ...] [-(r)eg_(t)ext text] [-(v)ersions start_version-end_version] [-(d)ata_(o)nly]", 2) << "\n";
+			(*logger).setColor(BLACK, WHITE);
+			(*logger) << wrap("Reduces the current selection of notes with parameter similar to find. Also, intevals contain the start and end values. -ct describes a list of tags where one of them needs to be found in the note, while -cat describes a list of tags which all need to be find in the note. -nt describes a list of tags that are not allowed to be in matching notes and -rt stands for regular expression text, which will be used to search the content of the note. -v gives an interval of versions (a-...) that are considered and -do stands for data_only, meaning only notes with a data folder will be selected.", 3) << "\n\n";
+		}
+		else if (argument == "s" || argument == "show") {
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << wrap("(s)how: [(t)ags] [(m)etadata] [table_of_(c)ontent] [(d)ata] [(h)ide_(d)ate] [open_(i)mages] [open_as_(html)] [open_as_(tex)] [open_as_(pdf)] [open_as_(docx)] [open_as_(m)ark(d)own]", 2) << "\n";
+			(*logger).setColor(BLACK, WHITE);
+			(*logger) << wrap("Shows the current note selection (created by find and filter) in various formats (specified by the open_as_... parameter), where by default only the date and content of the note are shown. The parameters (t)ags, (m)etadata and table_of_(c)ontent add additional information to the output and (d)ata opens the data folders in the explorer. The command open_(i)mages additionally opens .jpg, .jpeg and .png files inside the data folders directly.", 3) << "\n\n";
+		}
+		else if (argument == "a" || argument == "add_data") {
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << "  (a)dd_data:\n";
+			(*logger).setColor(BLACK, WHITE);
+			(*logger) << wrap("Adds a data folder for the notes that are currently in the selection.The selection is created by the find commandand it can be refined by the filter command.", 3) << "\n";
+		}
+		else if (argument == "d" || argument == "details" || argument == "show_details") {
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << wrap("(d)etails: [-(t)ags] [-(p)ath] [-(l)ong_(p)ath] [-last_(m)odified] [-(c)ontent]", 2) << '\n';
+			(*logger).setColor(BLACK, WHITE);
+			(*logger) << wrap("Shows details about the current selection of notes. The parameters controll what is shown.", 3) << "\n";
+		}
+		else if (argument == "t" || argument == "tags") {
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << "  (t)ags:\n";
+			(*logger).setColor(BLACK, WHITE);
+			(*logger) << wrap("Shows the statictics of tags of the current selection.If no selection was made, it shows the statistic of all tags of all notes.", 3) << "\n";
+		}
+		else if (argument == "q" || argument == "quit" || argument == "exit") {
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << "  (q)uit:\nEnds the programm.";
+			(*logger).setColor(BLACK, WHITE);
+		}
+		else if (argument == "c" || argument == "create" || argument == "create_mode") {
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << wrap("(c)reate_mode: mode_name tag1 tag2 ... [-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] [-(s)how_(d)ata] [-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_(docx)] [-(s)how_open_as_(pdf)] [-(s)how_open_as_la(tex)] [-(d)etail_(t)ags] [-(d)etail_(p)ath] [-(d)etail_(l)ong_(p)ath] [-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent] [-(w)atch_(f)older path_to_folder1 tag1 tag2 ...] [-(w)atch_(f)older path_to_folder2 tag1 tag2 ...]", 2) << "\n";
+			(*logger).setColor(BLACK, WHITE);
+			(*logger) << wrap("A mode allows you to set the standard behavior of the (s)how and (d)etail command, as well as influence the (n)ew, (f)ind and (f)ilter commands. Options starting with show in the name control the (s)how command and options starting with detail control the (d)etails command. All set options will always be added to the commands when the mode is active. The mode tags will be added to the tags that are manually specified in the (n)ew command and are also added to the (f)ind and (f)ilter command in the -(c)ontails_(a)ll_(t)ags parameter, meaning only notes contraining all mode tags are selected. In addition to setting default (s)how and (d)etail parameter, a path to a folder that should be observed can be added. This means that when a file inside the specified folder is created, the newly created file is automatically added to the data folder and a new note is created. Additionally, tags that will be added when this occures can be entered by the following structure of the command: [-(w)atch_(f)older path_to_folder tag1 tag2 ...]. Note that multiple folders can be specified by repeating the [-(w)atch_(f)older path_to_folder tag1 tag2 ...] command With different paths (and tags). Modes can be activated by the (act)ivate commandand and deactivated by the (deac)tivate command. Additionally, an existing mode can be edited by the (edit)_mode command and deleted by the (delete)_mode command. An overview over all modes is given by the (modes) command, which lists the name, open format, tags, all options and all observed folders with their tags of all modes.", 3) << "\n";
+		}
+		else if (argument == "del" || argument == "delete" || argument == "delete_mode") {
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << "  (del)ete_mode: mode_name\n";
+			(*logger).setColor(BLACK, WHITE);
+			(*logger) << wrap("Deletes the specified mode. More about modes can be found by running help create_mode.", 3) << "\n";
+		}
+		else if (argument == "act" || argument == "activate" || argument == "activate_mode") {
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << "  (act)ivate_mode: mode_name\n";
+			(*logger).setColor(BLACK, WHITE);
+			(*logger) << wrap("Activates the specified mode, such that all set options are now in effect. More about modes can be found by running help create_mode.", 3) << "\n";
+		}
+		else if (argument == "deac" || argument == "deactivate" || argument == "deactivate_mode") {
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << "  (deac)tivate_mode:\n";
+			(*logger).setColor(BLACK, WHITE);
+			(*logger) << wrap("Deactivate the current mode and uses standard options again. More about modes can be found by running help create_mode.", 3) << "\n";
+		}
+
+		else if (argument == "modes") {
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << "  (modes):\n";
+			(*logger).setColor(BLACK, WHITE);
+			(*logger) << wrap("Gives an overview over all existing modes and shows mode name, mode tags, default open format, mode options.", 3) << "\n";
+		}
+		else if (argument == "edit" || argument == "edit_mode") {
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << wrap("(edit)_mode: mode_name [-(add_opt)ion opt1 opt2 ...] [-(remove_opt)ion opt1 opt2 ...] [-(add_t)ags tag1 tag2 ...] [-(remove_t)ags tag1 tag2] [-change_name new_mode_name]", 2) << '\n';
+			(*logger).setColor(BLACK, WHITE);
+			(*logger) << wrap("Where opt are the options from the (c)reate_mode command. More about modes can be found by running help create_mode", 3) << "\n";
+		}
+		else if (argument == "u" || argument == "update") {
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << "  (u)pdate:\n";
+			(*logger).setColor(BLACK, WHITE);
+			(*logger) << wrap("Updates the tag list, tag statistics and finds externally added files. Restarting the programm does the same trick.", 3) << "\n";
+		}
+		else if (argument == "o" || argument == "open") {
+			(*logger).setColor(BLUE, WHITE);
+			(*logger) << "  (o)pen:\n";
+			(*logger).setColor(BLACK, WHITE);
+			(*logger) << wrap("Opens the current selection of notes as markdown files, which can be edited by the editor of choice.", 3) << "\n";
+		}
+		else {
+			(*logger) << "  command " << argument << " could not be found. It should be one of the following:\n";
+			(*logger) << wrap("(n)ew, (f)ind, (f)ilter, (s)how, (a)dd_data, (d)etails, (t)ags, (q)uit, (c)reate_mode, (del)ete_mode, (act)ivate_mode, (deac)tivate_mode, (modes), (edit)_mode, (u)pdate and (o)pen.", 2) << '\n';
+			(*logger) << wrap("Detailed information about a command can be found by running: help command.", 2) << "\n";
+		}
+	}
+	else {
+		(*logger) << wrap("This programm can be used by typing one of the following commands, where (...) indicates that the expression inside the parenthesis can be used as an abbreviation of the command or parameter. (n)ew, (f)ind, (f)ilter, (s)how, (a)dd_data, (d)etails, (t)ags, (q)uit, (c)reate_mode, (del)ete_mode, (act)ivate_mode, (deac)tivate_mode, (modes), (edit)_mode, (u)pdate and (o)pen. Detailed information about a command can be found by running: help command.", 2) << "\n";
+	}
+}
+
+/*
+void Command::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
+{
+	throw std::invalid_argument("Do not instanciate the run of this base class! Overwrite for custom command");
+}
+*/
