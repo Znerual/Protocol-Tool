@@ -1,5 +1,11 @@
 #include "autocomplete.h"
 
+#ifndef _WIN32
+#include <readline/readline.h>
+#include <readline/history.h>
+#else
+#include <functional>
+#endif
 using namespace std;
 
 void read_cmd_structure(const filesystem::path filepath, CMD_STRUCTURE& cmds)
@@ -422,3 +428,46 @@ void cicle_suggestions(Log& logger, COMMAND_INPUT& auto_input, AUTOCOMPLETE& aut
 
 	length_last_suggestion = auto_suggestions.auto_sug.size();
 }
+#ifndef _WIN32
+char* completion_generator(const char* text, int state, COMMAND_INPUT& auto_input, std::map<std::string, int>& tag_count, std::unordered_map<int, std::string>& mode_names) {
+	// This function is called with state=0 the first time; subsequent calls are
+	// with a nonzero state. state=0 can be used to perform one-time
+	// initialization for this completion session.
+	static vector<string> matches;
+	static size_t match_index = 0;
+
+	if (state == 0) {
+		// During initialization, compute the actual matches for 'text' and keep
+		// them in a static vector.
+		matches.clear();
+		match_index = 0;
+		AUTOCOMPLETE auto_comp(auto_input.cmd_names, tag_count, mode_names); // update trietrees when tags and/or modes are added/changed
+		AUTO_SUGGESTIONS auto_suggestions = AUTO_SUGGESTIONS();
+		auto_input.input = rl_line_buffer;
+		// Collect a vector of matches: vocabulary words that begin with text.
+		find_cmd_suggestion(auto_input, auto_comp, auto_suggestions);
+		for (const auto& sug : auto_suggestions.auto_sugs) {
+			matches.push_back(text + sug);
+		}
+
+	}
+
+	if (match_index >= matches.size()) {
+		// We return nullptr to notify the caller no more matches are available.
+		return nullptr;
+	}
+	else {
+		// Return a malloc'd char* for the match. The caller frees it.
+		return strdup(matches[match_index++].c_str());
+	}
+}
+
+char** completer(const char* text, int start, int end, COMMAND_INPUT& auto_input, std::map<std::string, int>& tag_count, std::unordered_map<int, std::string>& mode_names) {
+	// Don't do filename completion even if our generator finds no matches.
+	rl_attempted_completion_over = 1;
+	// Note: returning nullptr here will make readline use the default filename
+	// completer.
+	auto completion_generator_bound = std::bind(completion_generator, std::placeholders::_1, std::placeholders::_2, auto_input, tag_count, mode_names);
+	return rl_completion_matches(text, completion_generator_bound);
+}
+#endif
