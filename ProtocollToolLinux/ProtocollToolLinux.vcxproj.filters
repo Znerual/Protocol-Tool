@@ -33,13 +33,13 @@
     <ClInclude Include="..\ProtocollTool\exceptions.h">
       <Filter>Headdateien</Filter>
     </ClInclude>
-    <ClInclude Include="commands_linux.h">
-      <Filter>Headdateien</Filter>
-    </ClInclude>
     <ClInclude Include="file_manager_linux.h">
       <Filter>Headdateien</Filter>
     </ClInclude>
     <ClInclude Include="..\ProtocollTool\autocomplete.h">
+      <Filter>Headdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="commands_linux.h">
       <Filter>Headdateien</Filter>
     </ClInclude>
   </ItemGroup>
@@ -59,16 +59,16 @@
     <ClCompile Include="..\ProtocollTool\Config.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="ProtocollTool_linux.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="commands_linux.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="file_manager_linux.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="..\ProtocollTool\autocomplete.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ProtocollTool\ProtocollTool.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ProtocollTool\commands.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

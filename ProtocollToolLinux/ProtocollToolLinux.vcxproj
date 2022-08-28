@@ -89,14 +89,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ProtocollTool\autocomplete.cpp" />
+    <ClCompile Include="..\ProtocollTool\commands.cpp" />
     <ClCompile Include="..\ProtocollTool\Config.cpp" />
     <ClCompile Include="..\ProtocollTool\conversions.cpp" />
     <ClCompile Include="..\ProtocollTool\log.cpp" />
+    <ClCompile Include="..\ProtocollTool\ProtocollTool.cpp" />
     <ClCompile Include="..\ProtocollTool\trietree.cpp" />
     <ClCompile Include="..\ProtocollTool\utils.cpp" />
-    <ClCompile Include="commands_linux.cpp" />
     <ClCompile Include="file_manager_linux.cpp" />
-    <ClCompile Include="ProtocollTool_linux.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ProtocollTool\cmd.dat">
