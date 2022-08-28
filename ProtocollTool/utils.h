@@ -38,35 +38,7 @@ typedef boost::bimap<std::string, OA> oa_map;
 typedef std::unordered_map<CMD, std::pair<std::list<PA>, std::unordered_map<OA, std::list<OA>>>> CMD_STRUCTURE;
 typedef std::unordered_map<OA, bool> MODE_OPTIONS;
 
-/*
-struct SHOW_OPTIONS {
-	bool show_tags = false;
-	bool show_metadata = false;
-	bool show_table_of_content = false;
-	bool show_data = false;
-	bool hide_date = false;
-	bool open_image_data = false;
-};
-struct DETAIL_OPTIONS {
-	bool detail_tags = false;
-	bool detail_path = false;
-	bool detail_long_path = false;
-	bool detail_last_modified = false;
-	bool detail_content = false;
-};
-struct FORMAT_OPTIONS {
-	bool html = false;
-	bool tex = false;
-	bool pdf = false;
-	bool docx = false;
-	bool markdown = false;
-};
-struct MODE_OPTIONS {
-	SHOW_OPTIONS show_options;
-	FORMAT_OPTIONS format_options;
-	DETAIL_OPTIONS detail_options;
-};
-*/
+
 struct PATHS {
 	std::filesystem::path base_path;
 	std::filesystem::path file_path;

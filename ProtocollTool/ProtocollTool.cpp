@@ -3,18 +3,27 @@
 
 //TODO https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
 // Manipulate conosole screen buffer to remove printout from started editor with ShellExecute
-
+#ifdef _WIN32
 #pragma comment(lib, "Shlwapi.lib")
+#endif
 
 #include "log.h"
 #include "utils.h"
 #include "Config.h"
 #include "conversions.h"
 #include "output.h"
+#include "autocomplete.h"
+
+#ifdef _WIN32
 #include "commands.h"
 #include "watcher_windows.h"
 #include "file_manager.h"
-#include "autocomplete.h"
+#else
+#include "../ProtocollToolLinux/commands_linux.h"
+#include "../ProtocollToolLinux/file_manager_linux.h"
+#include <readline/readline.h>
+#include <readline/history.h>
+#endif 
 
 #include <iostream>
 #include <filesystem>
@@ -39,6 +48,12 @@
 
 using namespace std;
 
+#ifndef _WIN32
+COMMAND_INPUT auto_input;
+map<string, int> tag_count;
+unordered_map<int, string> mode_names;
+#endif
+
 int main()
 {
     #ifdef _WIN32
@@ -61,7 +76,9 @@ int main()
     // read in config arguments and setup paths
     bool ask_pandoc, has_pandoc, write_log;
     int  num_modes;
+#ifdef _WIN32
     unordered_map<int, string> mode_names;
+#endif
     PATHS paths;
     filesystem::path log_path;
     string file_ending, tmp_filename;
@@ -109,7 +126,6 @@ int main()
         conf.get("FILE_ENDING", file_ending);
 
         conf.get("NUM_MODES", num_modes);
-        int num_watch_folders = 0;
         for (auto i = 0; i < num_modes; i++)
         {
             conf.get("MODE_" + to_string(i) + "_NAME", tmp_mode_name);
@@ -118,6 +134,7 @@ int main()
 
         }
 #ifdef _WIN32
+        
         // find default applications for opening markdown files
         get_default_applications(paths);
 #endif
@@ -143,8 +160,12 @@ int main()
     {
         filter_selection.push_back(path);
     }
-    map<string, int> tag_count = get_tag_count(tag_map, filter_selection);
 
+#ifdef _WIN32
+    map<string, int> tag_count = get_tag_count(tag_map, filter_selection);
+#else
+    tag_count = get_tag_count(tag_map, filter_selection);
+#endif
     // mode tag variables
     vector<string> mode_tags;
 
@@ -160,23 +181,25 @@ int main()
     hExit = CreateEvent(NULL, TRUE, FALSE, L"Exit");
     jthread monitor_file_changes(note_change_watcher, ref(logger), paths, ref(update_files), ref(hExit));
 
+    COMMAND_INPUT auto_input;
 #endif
     logger.setColor(BLACK, WHITE);
     
-    COMMAND_INPUT auto_input;
     read_cmd_structure(filesystem::path("cmd.dat"), auto_input.cmd_structure);
     read_cmd_names(filesystem::path("cmd_names.dat"), auto_input.cmd_names);
 
 #ifdef _WIN32
     AUTOCOMPLETE auto_comp(auto_input.cmd_names, tag_count, mode_names); // update trietrees when tags and/or modes are added/changed
 #else
-    auto completer_bound = std::bind(completer, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, auto_input, tag_count, mode_names);
-    rl_attempted_completion_function = completer_bound;
+    //auto completer_func = [&](const char* text, int start, int end) {return completer(text, start, end, auto_input, tag_count, mode_names)};
+    //auto completer_bound = std::bind(completer, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, auto_input, tag_count, mode_names);
+    rl_attempted_completion_function = completer;
     rl_bind_key('\t', rl_complete);
 #endif
     // mainloop for reading commands
     bool running = true;
 
+#ifdef _WIN32
     map<CMD, Command*> command_fn = { {CMD::NEW , new Add_note(&logger, &paths, &conf, &active_mode, &file_ending, &file_map, &tag_map, &mode_tags, &filter_selection, &open_files, &hExit)},
            {CMD::FIND, new Find_notes(&logger, &paths, &conf, &active_mode, &filter_selection, &file_map, &tag_map, &mode_tags, &mode_names)},
            {CMD::FILTER, new Filter_notes(&logger, &paths, &conf, &active_mode, &filter_selection, &file_map, &tag_map, &mode_tags, &mode_names)},
@@ -196,15 +219,44 @@ int main()
            {CMD::HELP, new Help(&logger, &paths, &conf)},
            {CMD::TODOS, new Show_todos(&logger, &paths, &conf, &open_files, &hExit)}
     };
+#else
+    map<CMD, Command*> command_fn = { {CMD::NEW , new Add_note(&logger, &paths, &conf, &active_mode, &file_ending, &file_map, &tag_map, &mode_tags, &filter_selection)},
+           {CMD::FIND, new Find_notes(&logger, &paths, &conf, &active_mode, &filter_selection, &file_map, &tag_map, &mode_tags, &mode_names)},
+           {CMD::FILTER, new Filter_notes(&logger, &paths, &conf, &active_mode, &filter_selection, &file_map, &tag_map, &mode_tags, &mode_names)},
+           {CMD::SHOW, new Show_filtered_notes(&logger, &paths, &conf, &active_mode, &tmp_filename, &filter_selection, &has_pandoc)},
+           {CMD::ADD_DATA, new Add_data(&logger, &paths, &conf, &filter_selection)},
+           {CMD::DETAILS, new Show_details(&logger, &paths, &conf, &active_mode, &filter_selection, &file_map, &tag_map)},
+           {CMD::TAGS, new Show_tags(&logger, &paths, &conf, &active_mode, &mode_tags, &filter_selection, &tag_map)},
+           {CMD::QUIT, new Quit(&logger, &paths, &conf, &running)},
+           {CMD::CREATE_MODE, new Create_mode(&logger, &paths, &conf, &num_modes, &mode_names, &mode_tags, &active_mode,&file_ending)},
+           {CMD::DELETE_MODE, new Delete_mode(&logger, &paths, &conf, &num_modes, &mode_names, &mode_tags, &active_mode)},
+           {CMD::EDIT_MODE, new Edit_mode(&logger, &paths, &conf, &mode_names, &mode_tags, &active_mode, &file_ending)},
+           {CMD::ACTIVATE, new Activate_mode_command(&logger, &paths, &conf, &mode_names, &active_mode, &mode_tags, &file_ending)},
+           {CMD::DEACTIVATE, new Deactivate_mode(&logger, &paths, &conf, &active_mode, &mode_tags)},
+           {CMD::MODES, new Show_modes(&logger, &paths, &conf, &mode_names, &active_mode, &auto_input.cmd_names)},
+           {CMD::UPDATE, new Update_tags(&logger, &paths, &conf, &file_map, &tag_map, &tag_count, &filter_selection, true)},
+           {CMD::OPEN, new Show_filtered_notes(&logger, &paths, &conf, &active_mode, &tmp_filename, &filter_selection, &has_pandoc)},
+           {CMD::HELP, new Help(&logger, &paths, &conf)},
+           {CMD::TODOS, new Show_todos(&logger, &paths, &conf)} 
+    };
+#endif
+
     CMD cmd;
     map<PA, vector<string>> pa = map<PA, vector<string>>();
     vector<OA> flags = vector<OA>();
     map<OA, vector<OA>> oaoa = map<OA, vector<OA>>();
     map<OA, vector<string>> oastr = map<OA, vector<string>>();
 
+    string command;//, input;
+#ifndef _WIN32
+    string prompt;
+    char* input;
+#endif
+
     while (running)
     {
         
+#ifdef _WIN32
         logger.setColor(BLACK, WHITE);
         logger << " Input";
         logger.setColor(YELLOW, WHITE);
@@ -214,10 +266,28 @@ int main()
         }
         logger.setColor(BLACK, WHITE);
         logger << ":";
+#else
+        logger.setColor(BLACK, WHITE);
+        prompt = logger.color;
+        //logger << " Input";
+        prompt += " Input";
+        logger.setColor(YELLOW, WHITE);
+        prompt += logger.color;
+        if (active_mode != -1)
+        {
+            prompt += " (" + mode_names[active_mode] + ")";
+
+        }
+        logger.setColor(BLACK, WHITE);
+        prompt += logger.color;
+        prompt += ":";
+#endif
+        
 
         // parse user input and allow for autocomplete
         AUTO_SUGGESTIONS auto_suggestions;
-        string last_input, command;
+#ifdef _WIN32
+        string last_input;
         size_t length_last_suggestion = 0;
         while (true) {
             int return_key;
@@ -247,7 +317,14 @@ int main()
                 logger << "Error in find_cmd_suggestion, invalid return " << return_key << endl;
             }
         }
-        
+#else
+        input = readline(prompt.c_str());
+        //getline(cin, input);
+        if (strlen(input) > 0) {
+            add_history(input);
+        }
+
+#endif  
         // parse input to get command and arguments
         pa = map<PA, vector<string>>();
         flags = vector<OA>();
@@ -263,17 +340,21 @@ int main()
         // clean up after command
         auto_input.input = "";
         logger << endl;
+#ifdef _WIN32
         if (update_files)
         {
             update_tags(logger, paths, file_map, tag_map, tag_count, filter_selection, true);
             update_files = false;
             // TODO update now
         }
+#endif
     }
-    
+
+#ifdef _WIN32
     CloseHandle(hStopEvent);
     CloseHandle(hExit);
-   
+#endif
+
     // clean up allocated memory for command map
     for (auto& [cmd, fn_ptr] : command_fn) {
         delete fn_ptr;

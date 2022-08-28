@@ -1,6 +1,11 @@
+#ifdef _WIN32
 #include "commands.h"
 #include "file_manager.h"
 #include "watcher_windows.h"
+#else
+#include "../ProtocollToolLinux/file_manager_linux.h"
+#include "../ProtocollToolLinux/commands_linux.h"
+#endif
 //#include "autocomplete.h"
 
 
@@ -87,7 +92,7 @@ void get_mode_tags(Config& conf, const int& mode_id, vector<string>& mode_tags) 
 void set_mode_tags(Config& conf, const int& mode_id, vector<string>& mode_tags) {
 	conf.set("MODE_" + to_string(mode_id) + "_NUM_TAGS", static_cast<int>(mode_tags.size()));
 
-	for (auto i = 0; i < mode_tags.size(); i++)
+	for (size_t i = 0; i < mode_tags.size(); i++)
 	{
 		conf.set("MODE_" + to_string(mode_id) + "_TAG_" + to_string(i), mode_tags.at(i));
 	}
@@ -99,7 +104,11 @@ void Show_todos::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<
 {
 	update_todos(*(this->logger), *(this->paths));
 	// maybe do a convert to first
+#ifdef _WIN32
 	open_file(*logger, *paths, paths->base_path / paths->tmp_path / "todos.md", *open_files, *hExit);
+#else
+	open_file(*logger, *paths, paths->base_path / paths->tmp_path / "todos.md");
+#endif
 }
 
 void Show_modes::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
@@ -645,7 +654,7 @@ void Create_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector
 	}
 	set_mode_options((*conf), mode_options, *active_mode);
 
-	for (auto i = 0; i < mode_tags->size(); i++)
+	for (size_t i = 0; i < mode_tags->size(); i++)
 	{
 		(*conf).set("MODE_" + to_string(*active_mode) + "_TAG_" + to_string(i), mode_tags->at(i));
 	}
@@ -738,7 +747,7 @@ void Show_details::run(std::map<PA, std::vector<std::string>>& pargs, std::vecto
 		{
 			*logger << " at " << path;
 		}
-		if (mode_options.at(OA::TAGS))
+		if (mode_options.at(OA::STAGS))
 		{
 			*logger << " with tags: ";
 			for (const auto& tag : tag_map->at(path))
@@ -827,7 +836,11 @@ void Add_note::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA
 
 
 	// open new file
+#ifdef _WIN32
 	open_file(*logger, *paths, (paths->base_path / paths->file_path / filesystem::path(filename)), *open_files, *hExit);
+#else
+	open_file(*logger, *paths, (paths->base_path / paths->file_path / filesystem::path(filename)));
+#endif
 	//open_md_editor(logger, (paths.base_path / paths.file_path / filesystem::path(filename)));
 
 	// update file_map, tag_map, tag_count and filter selection
@@ -963,7 +976,11 @@ void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std
 		{
 			//const wstring datapath = (paths.base_path / paths.data_path / filesystem::path(path).stem()).wstring();
 			//ShellExecute(NULL, L"open", datapath.c_str(), NULL, NULL, SW_SHOWNORMAL);
+#ifdef _WIN32
 			open_file(*logger, *paths, paths->base_path / paths->data_path / filesystem::path(path).stem(), *open_files, *hExit);
+#else
+			open_file(*logger, *paths, paths->base_path / paths->data_path / filesystem::path(path).stem());
+#endif
 			if (mode_options.at(OA::IMG))
 			{
 				// search for image data in the folder
@@ -972,7 +989,11 @@ void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std
 					const string ext = entry.path().extension().string();
 					if (ext == "jpg" || ext == "png" || ext == "jpeg" || ext == "gif")
 					{
+#ifdef _WIN32
 						open_file(*logger, *paths, entry.path(), *open_files, *hExit);
+#else
+						open_file(*logger, *paths, entry.path());
+#endif
 						//ShellExecute(NULL, L"open", entry.path().wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
 					}
 				}
@@ -989,8 +1010,11 @@ void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std
 			if (int returnCode = convert_document_to("html", "html", *paths, *tmp_filename, "show") != 0) {
 				*logger << "Error " << returnCode << " while converting markdown to html using pandoc" << endl;
 			}
-
+#ifdef _WIN32
 			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.html"), *open_files, *hExit);
+#else
+			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.html"));
+#endif
 			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.html")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
 
 		}
@@ -999,7 +1023,11 @@ void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std
 		{
 
 			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.md")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+#ifdef _WIN32
 			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.md"), *open_files, *hExit);
+#else
+			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.md"));
+#endif
 		}
 
 		if (mode_options.at(OA::DOCX))
@@ -1009,7 +1037,11 @@ void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std
 			}
 
 			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.docx")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+#ifdef _WIN32
 			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.docx"), *open_files, *hExit);
+#else
+			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.docx"));
+#endif
 
 		}
 
@@ -1020,7 +1052,11 @@ void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std
 			}
 
 			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.tex")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+#ifdef _WIN32
 			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.tex"), *open_files, *hExit);
+#else
+			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.tex"));
+#endif
 
 		}
 
@@ -1031,14 +1067,22 @@ void Show_filtered_notes::run(std::map<PA, std::vector<std::string>>& pargs, std
 			}
 
 			//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path("show.pdf")).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+#ifdef _WIN32
 			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.pdf"), *open_files, *hExit);
+#else
+			open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path("show.pdf"));
+#endif
 
 		}
 
 	}
 	else {
 		//ShellExecute(NULL, L"open", (paths.base_path / paths.tmp_path / filesystem::path(tmp_filename)).wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+#ifdef _WIN32
 		open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path(*tmp_filename), *open_files, *hExit);
+#else
+		open_file(*logger, *paths, paths->base_path / paths->tmp_path / filesystem::path(*tmp_filename));
+#endif
 	}
 
 
@@ -1304,12 +1348,15 @@ void Show_tags::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<O
 
 void Quit::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
+#ifdef _WIN32
 	SetEvent(*hExit);
+#endif
 	*running = false;
 }
 
 void Help::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
+	//TODO: rework to use commands from the cmd.dat and cmd_names.dat, maybe add cmd_help.dat
 	if (pargs.contains(PA::CMD)) {
 		string argument = pargs.at(PA::CMD).at(0);
 

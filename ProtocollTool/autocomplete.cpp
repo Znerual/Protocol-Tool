@@ -429,7 +429,8 @@ void cicle_suggestions(Log& logger, COMMAND_INPUT& auto_input, AUTOCOMPLETE& aut
 	length_last_suggestion = auto_suggestions.auto_sug.size();
 }
 #ifndef _WIN32
-char* completion_generator(const char* text, int state, COMMAND_INPUT& auto_input, std::map<std::string, int>& tag_count, std::unordered_map<int, std::string>& mode_names) {
+
+char* completion_generator(const char* text, int state) {
 	// This function is called with state=0 the first time; subsequent calls are
 	// with a nonzero state. state=0 can be used to perform one-time
 	// initialization for this completion session.
@@ -462,12 +463,13 @@ char* completion_generator(const char* text, int state, COMMAND_INPUT& auto_inpu
 	}
 }
 
-char** completer(const char* text, int start, int end, COMMAND_INPUT& auto_input, std::map<std::string, int>& tag_count, std::unordered_map<int, std::string>& mode_names) {
+char** completer(const char* text, int start, int end) {
 	// Don't do filename completion even if our generator finds no matches.
 	rl_attempted_completion_over = 1;
 	// Note: returning nullptr here will make readline use the default filename
 	// completer.
-	auto completion_generator_bound = std::bind(completion_generator, std::placeholders::_1, std::placeholders::_2, auto_input, tag_count, mode_names);
-	return rl_completion_matches(text, completion_generator_bound);
+	
+	return rl_completion_matches(text, completion_generator);
 }
+
 #endif

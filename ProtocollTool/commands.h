@@ -10,6 +10,7 @@
 class Command {
 public:
 	Command(Log* logger, PATHS* paths, Config* conf) : logger(logger), paths(paths), conf(conf) {};
+	virtual ~Command() {};
 	virtual void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs) = 0;
 
 protected:

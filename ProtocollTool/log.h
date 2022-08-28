@@ -41,7 +41,7 @@ const char* colorize(int font, int back = -1, int style = -1);
 class Log
 {
 public:
-	Log(std::filesystem::path path, bool log_to_file = true) : my_fstream(path, std::fstream::in | std::fstream::out | std::fstream::app), write_to_file(log_to_file), color(colorize(BLACK, WHITE))
+	Log(std::filesystem::path path, bool log_to_file = true) : my_fstream(path, std::fstream::in | std::fstream::out | std::fstream::app), color(colorize(BLACK, WHITE)), write_to_file(log_to_file)
 	{
 		if (!my_fstream) {
 			std::cerr << "Error opening the log file " << path.string() << std::endl;
