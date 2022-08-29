@@ -23,8 +23,10 @@ protected:
 
 class Help : public Command {
 public:
-	Help(Log* logger, PATHS* paths, Config* conf) : Command(logger, paths, conf) {};
+	Help(Log* logger, PATHS* paths, Config* conf, CMD_NAMES* cmd_names ) : Command(logger, paths, conf), cmd_names(cmd_names) {};
 	void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
+private:
+	CMD_NAMES* cmd_names;
 };
 
 class Quit : public Command {
