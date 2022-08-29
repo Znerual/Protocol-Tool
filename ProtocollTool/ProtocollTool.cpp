@@ -23,6 +23,9 @@
 #include "../ProtocollToolLinux/file_manager_linux.h"
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 #endif 
 
 #include <iostream>
@@ -109,7 +112,11 @@ int main()
                 cout << colorize(RED, WHITE) << "SHGetKnownFolderPath() failed." << endl;
             }
 #else
-            paths.base_path = filesystem::path("/usr/Notes");
+            const char* homedir;
+            if ((homedir = getenv("HOME")) == NULL) {
+                homedir = getpwuid(getuid())->pw_dir;
+            }
+            paths.base_path = filesystem::path(homedir) / filesystem::path("Notes");
             conf.set("BASE_PATH", paths.base_path.string());
 #endif
         }

@@ -465,7 +465,7 @@ char* completion_generator(const char* text, int state) {
 
 char** completer(const char* text, int start, int end) {
 	// Don't do filename completion even if our generator finds no matches.
-	rl_attempted_completion_over = 1;
+	//rl_attempted_completion_over = 1;
 	// Note: returning nullptr here will make readline use the default filename
 	// completer.
 	
