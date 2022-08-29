@@ -526,7 +526,7 @@ void Edit_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<O
 	// Change mode name
 	if (oastrargs.contains(OA::CHANAME)) {
 		string new_mode_name = oastrargs.at(OA::CHANAME).at(0);
-		mode_names->at(mode_id) = new_mode_name;
+		(*mode_names)[mode_id] = new_mode_name;
 		(*conf).set("MODE_" + to_string(mode_id) + "_NAME", new_mode_name);
 	}
 #ifdef _WIN32
@@ -640,7 +640,7 @@ void Create_mode::run(std::map<PA, std::vector<std::string>>& pargs, std::vector
 	
 
 	*active_mode = static_cast<int>(mode_names->size()); // set id to next free number
-	mode_names->at(*active_mode) = mode_name;
+	(*mode_names)[*active_mode] = mode_name;
 
 	num_modes += 1;
 	(*conf).set("NUM_MODES", num_modes);
@@ -845,8 +845,8 @@ void Add_note::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA
 
 	// update file_map, tag_map, tag_count and filter selection
 	string path = (paths->file_path / filesystem::path(filename)).string();
-	file_map->at(path) = time_t(NULL);
-	tag_map->at(path) = tags;
+	(*file_map)[path] = time_t(NULL);
+	(*tag_map)[path] = tags;
 	filter_selection->push_back(path);
 	get_tag_count(*tag_map, *filter_selection);
 }
@@ -1468,7 +1468,19 @@ void Help::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& o
 		}
 	}
 	else {
-		(*logger) << wrap("This programm can be used by typing one of the following commands, where (...) indicates that the expression inside the parenthesis can be used as an abbreviation of the command or parameter. (n)ew, (f)ind, (f)ilter, (s)how, (a)dd_data, (d)etails, (t)ags, (q)uit, (c)reate_mode, (del)ete_mode, (act)ivate_mode, (deac)tivate_mode, (modes), (edit)_mode, (u)pdate and (o)pen. Detailed information about a command can be found by running: help command.", 2) << "\n";
+		string help_string = "This program can be used by typing one of the following commands:\n";
+		for (const auto& [cmd_name, cmd] : cmd_names->cmd_names.left) {
+			help_string += cmd_name;
+			if (cmd_names->cmd_abbreviations.right.count(cmd) == 1) {
+				help_string += " (" + cmd_names->cmd_abbreviations.right.at(cmd) + ")";
+			}
+			help_string += ", ";
+		}
+		help_string.erase(help_string.size() - 2, 2);
+		*logger << wrap(help_string) << endl;
+		logger->setColor(COLORS::BLUE);
+		*logger << wrap("Run help [CMD_NAME] for more information.\n");
+		logger->setColor(COLORS::BLACK);
 	}
 }
 
