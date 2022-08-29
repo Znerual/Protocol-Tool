@@ -1249,8 +1249,10 @@ int getinput(string& c)
 							}
 						}
 						else {
-							cout << irInBuf[i].Event.KeyEvent.uChar.AsciiChar;
-							c += irInBuf[i].Event.KeyEvent.uChar.AsciiChar; // input new character
+							if (irInBuf[i].Event.KeyEvent.uChar.AsciiChar != 0) {
+								cout << irInBuf[i].Event.KeyEvent.uChar.AsciiChar;
+								c += irInBuf[i].Event.KeyEvent.uChar.AsciiChar; // input new character
+							}
 						}
 						
 					}
@@ -1353,6 +1355,9 @@ AUTOCOMPLETE::AUTOCOMPLETE(const CMD_NAMES& cmd_names, const std::list<std::stri
 	for (const auto& [name, cmd] : cmd_names.cmd_names) {
 		this->cmd_names.insert(name);
 	}
+	for (const auto& [name, cmd] : cmd_names.cmd_abbreviations) {
+		this->cmd_names.insert(name);
+	}
 }
 
 AUTOCOMPLETE::AUTOCOMPLETE(const CMD_NAMES& cmd_names, const std::map<std::string, int>& tag_count, const std::unordered_map<int, std::string>& mode_names)
@@ -1365,6 +1370,9 @@ AUTOCOMPLETE::AUTOCOMPLETE(const CMD_NAMES& cmd_names, const std::map<std::strin
 	for (const auto& [name, cmd] : cmd_names.cmd_names) {
 		this->cmd_names.insert(name);
 	}
+	for (const auto& [name, cmd] : cmd_names.cmd_abbreviations) {
+		this->cmd_names.insert(name);
+	}
 	this->tags = TrieTree();
 	for (const auto& [tag, _] : tag_count) {
 		this->tags.insert(tag);
@@ -1372,6 +1380,9 @@ AUTOCOMPLETE::AUTOCOMPLETE(const CMD_NAMES& cmd_names, const std::map<std::strin
 }
 
 void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA, vector<string>>& pargs, vector<OA>& oaflags, map<OA, vector<OA>>& oaoargs, map<OA, vector<string>>& oastrargs) {
+	if (command_input.input.size() == 0)
+		return;
+	
 	enum class CMD_STATE { CMD, PA, OA, OAOA };
 	CMD_STATE state = CMD_STATE::CMD;
 
@@ -1384,23 +1395,36 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 	}
 
 	// check if command exists
-	if (command_input.cmd_names.cmd_names.left.count(input_words.front()) != 1) {
-		logger << "No command with name " << input_words.front() << " found." << endl;
-		logger << "It should be one of the following commands:\n";
-		for (const auto& [cmd_name, cmd] : command_input.cmd_names.cmd_names.left) {
-			logger << cmd_name << ", ";
+	{
+		bool cmd_full_name, cmd_abbreviation;
+		cmd_full_name = command_input.cmd_names.cmd_names.left.count(input_words.front()) == 1;
+		cmd_abbreviation = command_input.cmd_names.cmd_abbreviations.left.count(input_words.front()) == 1;
+		if (!cmd_full_name && !cmd_abbreviation) {
+
+			string help_string ="No command with name " + input_words.front() + " found.\n";
+			help_string += "It should be one of the following commands:\n";
+			for (const auto& [cmd_name, cmd] : command_input.cmd_names.cmd_names.left) {
+				help_string += cmd_name;
+				if (command_input.cmd_names.cmd_abbreviations.right.count(cmd) == 1) {
+					help_string += " (" + command_input.cmd_names.cmd_abbreviations.right.at(cmd) + ")";
+				}
+				help_string += ", ";
+			}
+			help_string.erase(help_string.size() - 2, 2);
+			logger << wrap(help_string) << endl;
+			logger.setColor(COLORS::BLUE);
+			logger << wrap("Run help [CMD_NAME] for more information.\n");
+			logger.setColor(COLORS::BLACK);
+			return;
 		}
-		logger << "\nRun help [CMD_NAME] for more information." << endl;
-		return;
-	}
 
-	// find command
-	cmd = command_input.cmd_names.cmd_names.left.at(input_words.front());
-	if (input_words.size() == 1) {
-		return;
+		// find command
+		cmd = (cmd_full_name) ? command_input.cmd_names.cmd_names.left.at(input_words.front()) : command_input.cmd_names.cmd_abbreviations.left.at(input_words.front());
+		if (input_words.size() == 1) {
+			return;
+		}
+		input_words.pop_front();
 	}
-	input_words.pop_front();
-
 
 	// check for positional arguments
 	list<PA> pa_args = command_input.cmd_structure.at(cmd).first;
@@ -1436,14 +1460,19 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 	unordered_map<OA, list<OA>> oa_args = command_input.cmd_structure.at(cmd).second;
 	OA current_oa;
 	bool show_help = false;
+	bool oa_full_name, oa_abbreviation;
 	while (input_words.size() > 0) {
-		if (command_input.cmd_names.oa_names.left.count(input_words.front()) != 1) {
-			logger << "Optional parameter " << input_words.front() << " not recognized. Skipping option." << endl;
+		oa_full_name = command_input.cmd_names.oa_names.left.count(input_words.front()) == 1;
+		oa_abbreviation = command_input.cmd_names.oa_abbreviations.left.count(input_words.front()) == 1;
+		if (!oa_full_name && !oa_abbreviation) {
+			logger.setColor(COLORS::RED);
+			logger << wrap("Optional parameter " + input_words.front() + " not recognized. Skipping option.") << endl;
+			logger.setColor(COLORS::BLACK);
 			input_words.pop_front();
 			show_help = true;
 			continue;
 		}
-		current_oa = command_input.cmd_names.oa_names.left.at(input_words.front());
+		current_oa = (oa_full_name) ? command_input.cmd_names.oa_names.left.at(input_words.front()) : command_input.cmd_names.oa_abbreviations.left.at(input_words.front());
 		input_words.pop_front();
 
 		// flag arguments
@@ -1455,7 +1484,9 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 
 		// oa arguments with one parameter or more
 		if (input_words.front().starts_with("-")) {
-			logger << "No set parameter for optional argument " << command_input.cmd_names.oa_names.right.at(current_oa) << " found, it takes " << oa_args.at(current_oa).size() <<" parameter. Continuing with next argument " << input_words.front() << endl;
+			logger.setColor(COLORS::RED);
+			logger << wrap("No set parameter for optional argument " + command_input.cmd_names.oa_names.right.at(current_oa) + " found, it takes " + to_string(oa_args.at(current_oa).size()) + " parameter. Continuing with next argument " + input_words.front()) << endl;
+			logger.setColor(COLORS::BLACK);
 			show_help = true;
 			continue;
 		}
@@ -1470,7 +1501,9 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 			// tags is a special one that collects more than one words per oa
 			if (oa_parameter == OA::TAGS || oa_parameter == OA::PATHANDTAGS) {
 				if (input_words.size() == 0) {
-					logger << "Expecting more but found no further input." << endl;
+					logger.setColor(COLORS::RED);
+					logger << wrap("Expecting more but found no further input.") << endl;
+					logger.setColor(COLORS::BLACK);
 					show_help = true;
 				}
 				string tag;
@@ -1498,7 +1531,7 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 					}
 					// Flag value, does not need to be in data
 					else {
-						if (command_input.cmd_names.oa_names.right.at(oa_parameter) == input_words.front()) {
+						if (command_input.cmd_names.oa_names.right.at(oa_parameter) == input_words.front() || command_input.cmd_names.oa_abbreviations.right.at(oa_parameter) == input_words.front()) {
 							oaoargs[current_oa].push_back(oa_parameter);
 						}
 					}
@@ -1508,18 +1541,33 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 		}
 	}
 	if (show_help) {
-		logger << "During the parsing of the command, some options were not recognized. The command " << command_input.cmd_names.cmd_names.right.at(cmd);
-		logger << " can be used with the following options:\n";
-		logger << command_input.cmd_names.cmd_names.right.at(cmd) << " ";
+		logger << wrap("During the parsing of the command, some options were not recognized.");
+		logger.setColor(COLORS::YELLOW);
+		string info_string = "The command " + command_input.cmd_names.cmd_names.right.at(cmd);
+		if (command_input.cmd_names.cmd_abbreviations.right.count(cmd) == 1) {
+			info_string += " (" + command_input.cmd_names.cmd_abbreviations.right.at(cmd) + ")";
+		}
+		info_string += " can be used with the following options:\n";
+		info_string += command_input.cmd_names.cmd_names.right.at(cmd) + " ";
 		for (const PA& pai : command_input.cmd_structure.at(cmd).first) {
-			logger << command_input.cmd_names.pa_names.right.at(pai) << " ";
+			info_string += command_input.cmd_names.pa_names.right.at(pai) + " ";
 		}
 		for (const auto& [oai, oaoa_listi] : command_input.cmd_structure.at(cmd).second) {
-			logger << command_input.cmd_names.oa_names.right.at(oai) << " ";
+			info_string += command_input.cmd_names.oa_names.right.at(oai) + " ";
+			if (command_input.cmd_names.oa_abbreviations.right.count(oai) == 1) {
+				info_string += " (" + command_input.cmd_names.oa_abbreviations.right.at(oai) + ") ";
+			}
+
 			for (const OA& oaoa : oaoa_listi) {
-				logger << command_input.cmd_names.oa_names.right.at(oaoa) << " ";
+				info_string += command_input.cmd_names.oa_names.right.at(oaoa) + " ";
+				
+				// add abreviations
+				if (command_input.cmd_names.oa_abbreviations.right.count(oaoa) == 1) {
+					info_string += " (" + command_input.cmd_names.oa_abbreviations.right.at(oaoa) + ") ";
+				}
 			}
 		}
-		logger << endl;
+		logger << wrap(info_string) << endl;
+		logger.setColor(COLORS::BLACK);
 	}	
 }

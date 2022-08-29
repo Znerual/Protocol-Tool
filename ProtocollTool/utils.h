@@ -52,9 +52,12 @@ struct PATHS {
 	std::filesystem::path tex_exe;
 };
 struct CMD_NAMES {
-	cmd_map cmd_names;
+	cmd_map cmd_names, cmd_abbreviations;
 	pa_map pa_names;
-	oa_map oa_names;
+	oa_map oa_names, oa_abbreviations;
+	std::map<CMD, std::string> cmd_help;
+	std::map<PA, std::string> pa_help;
+	std::map<OA, std::string> oa_help;
 };
 
 struct COMMAND_INPUT {
