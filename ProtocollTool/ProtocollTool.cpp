@@ -190,10 +190,12 @@ int main()
 
     COMMAND_INPUT auto_input;
 #endif
+
     logger.setColor(BLACK, WHITE);
     
     read_cmd_structure(filesystem::path("cmd.dat"), auto_input.cmd_structure);
     read_cmd_names(filesystem::path("cmd_names.dat"), auto_input.cmd_names);
+    read_cmd_help(filesystem::path("cmd_help.dat"), auto_input.cmd_names);
 
 #ifdef _WIN32
     AUTOCOMPLETE auto_comp(auto_input.cmd_names, tag_count, mode_names); // update trietrees when tags and/or modes are added/changed
@@ -223,7 +225,7 @@ int main()
            {CMD::MODES, new Show_modes(&logger, &paths, &conf, &mode_names, &active_mode, &auto_input.cmd_names)},
            {CMD::UPDATE, new Update_tags(&logger, &paths, &conf, &file_map, &tag_map, &tag_count, &filter_selection, true)},
            {CMD::OPEN, new Show_filtered_notes(&logger, &paths, &conf, &active_mode, &tmp_filename, &filter_selection, &has_pandoc, &open_files, &hExit)},
-           {CMD::HELP, new Help(&logger, &paths, &conf)},
+           {CMD::HELP, new Help(&logger, &paths, &conf, &auto_input.cmd_names)},
            {CMD::TODOS, new Show_todos(&logger, &paths, &conf, &open_files, &hExit)}
     };
 #else
@@ -243,7 +245,7 @@ int main()
            {CMD::MODES, new Show_modes(&logger, &paths, &conf, &mode_names, &active_mode, &auto_input.cmd_names)},
            {CMD::UPDATE, new Update_tags(&logger, &paths, &conf, &file_map, &tag_map, &tag_count, &filter_selection, true)},
            {CMD::OPEN, new Show_filtered_notes(&logger, &paths, &conf, &active_mode, &tmp_filename, &filter_selection, &has_pandoc)},
-           {CMD::HELP, new Help(&logger, &paths, &conf)},
+           {CMD::HELP, new Help(&logger, &paths, &conf, &auto_input.cmd_names)},
            {CMD::TODOS, new Show_todos(&logger, &paths, &conf)} 
     };
 #endif
@@ -330,7 +332,8 @@ int main()
         if (strlen(input) > 0) {
             add_history(input);
         }
-
+        auto_input.input = string(input);
+        free(input);
 #endif  
         // parse input to get command and arguments
         pa = map<PA, vector<string>>();

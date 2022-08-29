@@ -74,7 +74,7 @@ void read_cmd_names(filesystem::path filepath, CMD_NAMES& cmd_names) {
 	ifstream file(filepath);
 
 	PARSE_MODE mode = PARSE_MODE::CMD_LINE;
-	string line, arg1, arg2;
+	string line, arg1, arg2, oarg;
 	while (getline(file, line)) {
 #ifndef _WIN32
 		line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
@@ -92,6 +92,12 @@ void read_cmd_names(filesystem::path filepath, CMD_NAMES& cmd_names) {
 		else if (mode == PARSE_MODE::CMD_LINE) {
 			iss >> arg1 >> arg2;
 			cmd_names.cmd_names.insert(cmd_map::value_type(arg2, static_cast<CMD>(stoi(arg1))));
+
+			// read optional cmd abbreviation
+			if (iss.peek() != EOF) {
+				iss >> oarg;
+				cmd_names.cmd_abbreviations.insert(cmd_map::value_type(oarg, static_cast<CMD>(stoi(arg1))));
+			}
 		}
 		else if (mode == PARSE_MODE::PA_LINE) {
 			iss >> arg1 >> arg2;
@@ -100,6 +106,44 @@ void read_cmd_names(filesystem::path filepath, CMD_NAMES& cmd_names) {
 		else if (mode == PARSE_MODE::OA_LINE) {
 			iss >> arg1 >> arg2;
 			cmd_names.oa_names.insert(oa_map::value_type(arg2, static_cast<OA>(stoi(arg1))));
+			if (iss.peek() != EOF) {
+				iss >> oarg;
+				cmd_names.oa_abbreviations.insert(oa_map::value_type(oarg, static_cast<OA>(stoi(arg1))));
+			}
+		}
+	}
+}
+
+void read_cmd_help(filesystem::path filepath, CMD_NAMES& cmd_names) {
+	enum class PARSE_MODE { NONE, CMD_LINE, OA_LINE, PA_LINE };
+	ifstream file(filepath);
+
+	PARSE_MODE mode = PARSE_MODE::CMD_LINE;
+	string line;
+	while (getline(file, line)) {
+#ifndef _WIN32
+		line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+#endif // !_WIN32
+		if (line == "CMD") {
+			mode = PARSE_MODE::CMD_LINE;
+		}
+		else if (line == "OA") {
+			mode = PARSE_MODE::OA_LINE;
+		}
+		else if (line == "PA") {
+			mode = PARSE_MODE::PA_LINE;
+		}
+		else if (mode == PARSE_MODE::CMD_LINE) {
+			size_t del_pos = line.find(' ');
+			cmd_names.cmd_help[static_cast<CMD>(stoi(line.substr(0, del_pos)))] = line.substr(del_pos + 1);
+		}
+		else if (mode == PARSE_MODE::PA_LINE) {
+			size_t del_pos = line.find(' ');
+			cmd_names.pa_help[static_cast<PA>(stoi(line.substr(0, del_pos)))] = line.substr(del_pos + 1);
+		}
+		else if (mode == PARSE_MODE::OA_LINE) {
+			size_t del_pos = line.find(' ');
+			cmd_names.oa_help[static_cast<OA>(stoi(line.substr(0, del_pos)))] = line.substr(del_pos + 1);
 		}
 	}
 }
@@ -117,9 +161,12 @@ void find_cmd_suggestion(const COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_com
 	}
 
 	// split into command parts, CMD state or PA state
+	bool cmd_full_name, cmd_abbreviation;
+	cmd_full_name = auto_input.cmd_names.cmd_names.left.count(input_words.front()) == 1;
+	cmd_abbreviation = auto_input.cmd_names.cmd_abbreviations.left.count(input_words.front()) == 1;
 	auto_suggestions.auto_sug = {};
 	if (input_words.size() == 1) {// command state
-		if (auto_input.cmd_names.cmd_names.left.count(input_words.front()) != 1) { // command not completely typed
+		if ( !cmd_full_name && !cmd_abbreviation) { // command not completely typed
 			// find command suggestions
 			auto_comp.cmd_names.findAutoSuggestion(input_words.front(), auto_suggestions.auto_sug);
 			auto_comp.cmd_names.findAutoSuggestions(input_words.front(),auto_suggestions.auto_sugs);
@@ -135,12 +182,12 @@ void find_cmd_suggestion(const COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_com
 		return;
 	}
 	else { // further states
-		if (auto_input.cmd_names.cmd_names.left.count(input_words.front()) == 0) { // check whether command has typo
+		if (!cmd_full_name && !cmd_abbreviation) { // check whether command has typo
 			return;
 		}
 	}
 
-	const CMD command = auto_input.cmd_names.cmd_names.left.at(input_words.front());
+	const CMD command = (cmd_full_name) ? auto_input.cmd_names.cmd_names.left.at(input_words.front()): auto_input.cmd_names.cmd_abbreviations.left.at(input_words.front());
 	input_words.pop_front();
 
 	list<PA> pa_args = auto_input.cmd_structure.at(command).first;
@@ -244,9 +291,13 @@ void find_cmd_suggestion(const COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_com
 			for (const auto& [name, id] : auto_input.cmd_names.cmd_names) {
 				oa_strs.push_back(name);
 			}
+			for (const auto& [name, id] : auto_input.cmd_names.cmd_abbreviations) {
+				oa_strs.push_back(name);
+			}
 		}
 		else {
 			oa_strs.push_back(auto_input.cmd_names.oa_names.right.at(oa_arg));
+			oa_strs.push_back(auto_input.cmd_names.oa_abbreviations.right.at(oa_arg));
 		}
 	}
 
@@ -279,7 +330,12 @@ void find_cmd_suggestion(const COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_com
 		for (auto it = input_words.begin(); it != input_words.end(); ++it) {
 			auto oa_found = std::find(oa_strs.begin(), oa_strs.end(), *it);
 			if (oa_found != oa_strs.end()) {
-				active_oa = auto_input.cmd_names.oa_names.left.at(*it);
+				if (auto_input.cmd_names.oa_abbreviations.left.count(*it) == 1) {
+					active_oa = auto_input.cmd_names.oa_abbreviations.left.at(*it);
+				}
+				else if (auto_input.cmd_names.oa_names.left.count(*it) == 1) {
+					active_oa = auto_input.cmd_names.oa_names.left.at(*it);
+				}
 				active_oa_words_pos = it;
 				oa_strs.erase(oa_found); // delete oa name from the list of available names
 				//oa_args.erase(active_oa); // delete from the list of oa in the cmd structure
@@ -318,6 +374,7 @@ void find_cmd_suggestion(const COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_com
 			list<string> oaoa_strs;
 			for (const auto& oa_arg : oa_args[active_oa]) {
 				oaoa_strs.push_back(auto_input.cmd_names.oa_names.right.at(oa_arg));
+				oaoa_strs.push_back(auto_input.cmd_names.oa_abbreviations.right.at(oa_arg));
 			}
 
 			TrieTree oa_trietree = TrieTree(oaoa_strs);

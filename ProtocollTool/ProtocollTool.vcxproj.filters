@@ -97,5 +97,8 @@
     <None Include="cmd_names.dat">
       <Filter>Ressourcendateien</Filter>
     </None>
+    <None Include="cmd_help.dat">
+      <Filter>Ressourcendateien</Filter>
+    </None>
   </ItemGroup>
 </Project>

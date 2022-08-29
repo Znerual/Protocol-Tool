@@ -1,12 +1,12 @@
 CMD
-0 new
-1 find
+0 new n
+1 find f
 2 filter
 3 show
 4 add_data
-5 details
-6 tags
-7 quit
+5 details d
+6 tags t
+7 quit q
 8 create_mode
 9 delete_mode
 10 edit_mode
@@ -14,8 +14,8 @@ CMD
 12 deactivate
 13 modes
 14 update
-15 open
-16 help
+15 open o
+16 help h
 17 todos
 PA
 0 date

@@ -22,6 +22,7 @@ struct AUTO_SUGGESTIONS {
 
 void read_cmd_structure(const std::filesystem::path filepath, CMD_STRUCTURE& cmds);
 void read_cmd_names(std::filesystem::path filepath, CMD_NAMES& cmd_names);
+void read_cmd_help(std::filesystem::path filepath, CMD_NAMES& cmd_names);
 void find_cmd_suggestion(const COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_comp, AUTO_SUGGESTIONS& auto_suggestions);
 
 #ifdef _WIN32
