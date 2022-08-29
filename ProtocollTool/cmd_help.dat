@@ -1,0 +1,76 @@
+CMD
+0 Adds a new note to the system.
+1 Searches for notes that satisfy all specified filters. If none are provided, all notes are selected.
+2 Applies the given filters to the current selection. If the selection is empty when running the command, the result acts as a find command.
+3 Shows the content of the current filter, where all notes in the filter are combined to the output.
+4 Adds a data folder for the current selection.
+5 Shows details about the current selection.
+6 Shows the tags of the current selection (or all notes in the selection is empty).
+7 Ends the program.
+8 Creates a new mode, which controlls the default behaviour of the program.
+9 Deletes an existing mode.
+10 Edits an existing mode.
+11 Activate an existing mode.
+12 Deactivate an existing mode.
+13 Shows an overview of all existing modes.
+14 Updates the statistics of the program, note that on Windows this is done automatically after a file inside the Files folder is edited. 
+15 Open all notes in the selection.
+16 Show the help.
+17 Show all todos that are defined in the notes by the TODO marking.
+PA
+0 Date argument, can be in the format of DD.MM.YYYY or DD.MM, where the year is the current year, or DD, where the month and the year are the current years. Additionally, the characters t (for today) and y (for yesterday) can be used.
+1 Tags argument. This can be a list of tags, which are separated by whitespaces.
+2 The name of a mode.
+3 The name of a command.
+OA
+0 Option that controlls whether only notes with data folders should be considered.
+1 Dates are expected.
+2 -with_tags
+3 -with_all_tags
+4 -with_no_tags
+5 -tag_regex
+6 -content_regex
+7 -versions
+8 -show_tags
+9 -metadata
+10 -table_of_content
+11 -hide_date
+12 -open_images
+13 -html
+14 -tex
+15 -pdf
+16 -docx
+17 -md
+18 -path
+19 -long_path
+20 -last_modified
+21 -content
+22 -add_options
+23 -remove_options
+24 -add_tags
+25 -remove_tags
+26 -change_name
+27 TAGS
+28 DATES_RANGE
+29 REGTEXT
+30 VERSIONS
+31 NAME
+32 CMD
+33 show_tags
+34 metadata
+35 table_of_content
+36 hide_date
+37 open_images
+38 html
+39 tex
+40 pdf
+41 docx
+42 md
+43 path
+44 long_path
+45 last_modified
+46 content
+47 -add_watch_folder
+48 -remove_watch_folder
+49 PATHANDTAGS
+50 PATH
