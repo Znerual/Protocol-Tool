@@ -159,10 +159,12 @@ void check_base_path(Config& conf, PATHS& paths)
 		while (!found_base_path)
 		{
 			//string base_path_str;
-			char* base_path_c;
 			string base_path_str;
 			std::cout << colorize(RED, WHITE) << "  No path for the note files was set. Set to an existing directory to include those notes or chose a new, empty directory\n" << endl;
 			std::cout << colorize(BLACK, WHITE);
+
+#ifndef _WIN32
+			char* base_path_c;
 			base_path_c = readline("Base Path: ");
 
 			for (size_t i = 0; i < strlen(base_path_c); i++) {
@@ -182,10 +184,11 @@ void check_base_path(Config& conf, PATHS& paths)
 				break;
 			}
 			free(base_path_c);
-			//cin >> base_path_str;
-			//cin.clear();
-			//cin.ignore(10000, '\n');
-
+#else
+			cin >> base_path_str;
+			cin.clear();
+			cin.ignore(10000, '\n');
+#endif
 
 			if (filesystem::create_directories(base_path_str)) // created new folder
 			{
