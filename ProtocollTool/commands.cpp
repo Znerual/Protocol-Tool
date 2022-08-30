@@ -1357,131 +1357,186 @@ void Quit::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& o
 void Help::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
 	//TODO: rework to use commands from the cmd.dat and cmd_names.dat, maybe add cmd_help.dat
-	if (pargs.contains(PA::CMD)) {
-		string argument = pargs.at(PA::CMD).at(0);
-
-		if (argument == "n" || argument == "new")
-		{
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << "  (n)ew: date tag1 tag2 ... [-d]\n";
-			(*logger).setColor(BLACK, WHITE);
-			(*logger) << wrap("Creates a new note file and the optional parameter -d indicates that a data folder will be created. The given date can be in the format of dd or dd.mm or dd.mm.yyyy (where one digit numebers can be specified as one digit or two digits with leading zero) or the special format t for today and y for yesterday.", 3) << '\n' << '\n';
-
+	// create string for showing cmd info
+	string help_string = "This program can be used by typing one of the following commands:\n";
+	for (const auto& [cmd_name, cmd] : cmd_names->cmd_names.left) {
+		help_string += cmd_name;
+		if (cmd_names->cmd_abbreviations.right.count(cmd) == 1) {
+			help_string += " (" + cmd_names->cmd_abbreviations.right.at(cmd) + ")";
 		}
-		else if (argument == "f") {
-			(*logger) << wrap("The abbreviation f will be interpreted as find if no note is currently selected and as filter, if multiple (or one) note(s) are selected.", 2) << "\n";
-		}
-		else if (argument == "find") {
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << wrap("(f)ind: [-(d)ate start_date-end_date] [-(c)ontains_(t)ags tag1 ...] [-(c)ontains_(a)ll_(t)ags tag1 ...] [-(n)o_(t)ags tag1 ...] [-(r)eg_(t)ext text] [-(v)ersions start_version-end_version] [-(d)ata_(o)nly]", 2) << "\n";
-			(*logger).setColor(BLACK, WHITE);
-			(*logger) << wrap("Looks for notes that fall within the specified ranges (start and end dates are included in the interval). -ct describes a list of tags where one of them needs to be found in the note, while -cat describes a list of tags which all need to be find in the note. -nt describes a list of tags that are not allowed to be in matching notes and -rt stands for regular expression text, which will be used to search the content of the note. -v gives an interval of versions (a-...) that are considered and -do stands for data_only, meaning only notes with a data folder will be selected.", 3) << "\n\n";
-		}
-		else if (argument == "filter") {
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << wrap("(f)ilter: [-(d)ate start_date-end_date] [-(c)ontains_(t)ags tag1 ...] [-(c)ontains_(a)ll_(t)ags tag1 ...] [-(n)o_(t)ags tag1 ...] [-(r)eg_(t)ext text] [-(v)ersions start_version-end_version] [-(d)ata_(o)nly]", 2) << "\n";
-			(*logger).setColor(BLACK, WHITE);
-			(*logger) << wrap("Reduces the current selection of notes with parameter similar to find. Also, intevals contain the start and end values. -ct describes a list of tags where one of them needs to be found in the note, while -cat describes a list of tags which all need to be find in the note. -nt describes a list of tags that are not allowed to be in matching notes and -rt stands for regular expression text, which will be used to search the content of the note. -v gives an interval of versions (a-...) that are considered and -do stands for data_only, meaning only notes with a data folder will be selected.", 3) << "\n\n";
-		}
-		else if (argument == "s" || argument == "show") {
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << wrap("(s)how: [(t)ags] [(m)etadata] [table_of_(c)ontent] [(d)ata] [(h)ide_(d)ate] [open_(i)mages] [open_as_(html)] [open_as_(tex)] [open_as_(pdf)] [open_as_(docx)] [open_as_(m)ark(d)own]", 2) << "\n";
-			(*logger).setColor(BLACK, WHITE);
-			(*logger) << wrap("Shows the current note selection (created by find and filter) in various formats (specified by the open_as_... parameter), where by default only the date and content of the note are shown. The parameters (t)ags, (m)etadata and table_of_(c)ontent add additional information to the output and (d)ata opens the data folders in the explorer. The command open_(i)mages additionally opens .jpg, .jpeg and .png files inside the data folders directly.", 3) << "\n\n";
-		}
-		else if (argument == "a" || argument == "add_data") {
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << "  (a)dd_data:\n";
-			(*logger).setColor(BLACK, WHITE);
-			(*logger) << wrap("Adds a data folder for the notes that are currently in the selection.The selection is created by the find commandand it can be refined by the filter command.", 3) << "\n";
-		}
-		else if (argument == "d" || argument == "details" || argument == "show_details") {
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << wrap("(d)etails: [-(t)ags] [-(p)ath] [-(l)ong_(p)ath] [-last_(m)odified] [-(c)ontent]", 2) << '\n';
-			(*logger).setColor(BLACK, WHITE);
-			(*logger) << wrap("Shows details about the current selection of notes. The parameters controll what is shown.", 3) << "\n";
-		}
-		else if (argument == "t" || argument == "tags") {
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << "  (t)ags:\n";
-			(*logger).setColor(BLACK, WHITE);
-			(*logger) << wrap("Shows the statictics of tags of the current selection.If no selection was made, it shows the statistic of all tags of all notes.", 3) << "\n";
-		}
-		else if (argument == "q" || argument == "quit" || argument == "exit") {
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << "  (q)uit:\nEnds the programm.";
-			(*logger).setColor(BLACK, WHITE);
-		}
-		else if (argument == "c" || argument == "create" || argument == "create_mode") {
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << wrap("(c)reate_mode: mode_name tag1 tag2 ... [-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] [-(s)how_(d)ata] [-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_(docx)] [-(s)how_open_as_(pdf)] [-(s)how_open_as_la(tex)] [-(d)etail_(t)ags] [-(d)etail_(p)ath] [-(d)etail_(l)ong_(p)ath] [-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent] [-(w)atch_(f)older path_to_folder1 tag1 tag2 ...] [-(w)atch_(f)older path_to_folder2 tag1 tag2 ...]", 2) << "\n";
-			(*logger).setColor(BLACK, WHITE);
-			(*logger) << wrap("A mode allows you to set the standard behavior of the (s)how and (d)etail command, as well as influence the (n)ew, (f)ind and (f)ilter commands. Options starting with show in the name control the (s)how command and options starting with detail control the (d)etails command. All set options will always be added to the commands when the mode is active. The mode tags will be added to the tags that are manually specified in the (n)ew command and are also added to the (f)ind and (f)ilter command in the -(c)ontails_(a)ll_(t)ags parameter, meaning only notes contraining all mode tags are selected. In addition to setting default (s)how and (d)etail parameter, a path to a folder that should be observed can be added. This means that when a file inside the specified folder is created, the newly created file is automatically added to the data folder and a new note is created. Additionally, tags that will be added when this occures can be entered by the following structure of the command: [-(w)atch_(f)older path_to_folder tag1 tag2 ...]. Note that multiple folders can be specified by repeating the [-(w)atch_(f)older path_to_folder tag1 tag2 ...] command With different paths (and tags). Modes can be activated by the (act)ivate commandand and deactivated by the (deac)tivate command. Additionally, an existing mode can be edited by the (edit)_mode command and deleted by the (delete)_mode command. An overview over all modes is given by the (modes) command, which lists the name, open format, tags, all options and all observed folders with their tags of all modes.", 3) << "\n";
-		}
-		else if (argument == "del" || argument == "delete" || argument == "delete_mode") {
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << "  (del)ete_mode: mode_name\n";
-			(*logger).setColor(BLACK, WHITE);
-			(*logger) << wrap("Deletes the specified mode. More about modes can be found by running help create_mode.", 3) << "\n";
-		}
-		else if (argument == "act" || argument == "activate" || argument == "activate_mode") {
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << "  (act)ivate_mode: mode_name\n";
-			(*logger).setColor(BLACK, WHITE);
-			(*logger) << wrap("Activates the specified mode, such that all set options are now in effect. More about modes can be found by running help create_mode.", 3) << "\n";
-		}
-		else if (argument == "deac" || argument == "deactivate" || argument == "deactivate_mode") {
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << "  (deac)tivate_mode:\n";
-			(*logger).setColor(BLACK, WHITE);
-			(*logger) << wrap("Deactivate the current mode and uses standard options again. More about modes can be found by running help create_mode.", 3) << "\n";
-		}
-
-		else if (argument == "modes") {
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << "  (modes):\n";
-			(*logger).setColor(BLACK, WHITE);
-			(*logger) << wrap("Gives an overview over all existing modes and shows mode name, mode tags, default open format, mode options.", 3) << "\n";
-		}
-		else if (argument == "edit" || argument == "edit_mode") {
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << wrap("(edit)_mode: mode_name [-(add_opt)ion opt1 opt2 ...] [-(remove_opt)ion opt1 opt2 ...] [-(add_t)ags tag1 tag2 ...] [-(remove_t)ags tag1 tag2] [-change_name new_mode_name]", 2) << '\n';
-			(*logger).setColor(BLACK, WHITE);
-			(*logger) << wrap("Where opt are the options from the (c)reate_mode command. More about modes can be found by running help create_mode", 3) << "\n";
-		}
-		else if (argument == "u" || argument == "update") {
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << "  (u)pdate:\n";
-			(*logger).setColor(BLACK, WHITE);
-			(*logger) << wrap("Updates the tag list, tag statistics and finds externally added files. Restarting the programm does the same trick.", 3) << "\n";
-		}
-		else if (argument == "o" || argument == "open") {
-			(*logger).setColor(BLUE, WHITE);
-			(*logger) << "  (o)pen:\n";
-			(*logger).setColor(BLACK, WHITE);
-			(*logger) << wrap("Opens the current selection of notes as markdown files, which can be edited by the editor of choice.", 3) << "\n";
-		}
-		else {
-			(*logger) << "  command " << argument << " could not be found. It should be one of the following:\n";
-			(*logger) << wrap("(n)ew, (f)ind, (f)ilter, (s)how, (a)dd_data, (d)etails, (t)ags, (q)uit, (c)reate_mode, (del)ete_mode, (act)ivate_mode, (deac)tivate_mode, (modes), (edit)_mode, (u)pdate and (o)pen.", 2) << '\n';
-			(*logger) << wrap("Detailed information about a command can be found by running: help command.", 2) << "\n";
-		}
+		help_string += ", ";
 	}
-	else {
-		string help_string = "This program can be used by typing one of the following commands:\n";
-		for (const auto& [cmd_name, cmd] : cmd_names->cmd_names.left) {
-			help_string += cmd_name;
-			if (cmd_names->cmd_abbreviations.right.count(cmd) == 1) {
-				help_string += " (" + cmd_names->cmd_abbreviations.right.at(cmd) + ")";
-			}
-			help_string += ", ";
-		}
-		help_string.erase(help_string.size() - 2, 2);
-		*logger << wrap(help_string) << endl;
+	help_string.erase(help_string.size() - 2, 2);
+
+	// check if command is specified, if not, show general cmd info
+	if (!pargs.contains(PA::CMD)) {
+		*logger << wrap(help_string);
 		logger->setColor(COLORS::BLUE);
 		*logger << wrap("Run help [CMD_NAME] for more information.\n");
 		logger->setColor(COLORS::BLACK);
+		return;
 	}
+
+	string argument = pargs.at(PA::CMD).at(0);
+	bool cmd_full_name = cmd_names->cmd_names.left.count(argument) == 1;
+	bool cmd_abbreviation = cmd_names->cmd_abbreviations.left.count(argument) == 1;
+	CMD cmd;
+
+	// check if cmd can be recognized, if not show general cmd info
+	if (cmd_full_name) {
+		cmd = cmd_names->cmd_names.left.at(argument);
+	}
+	else if (cmd_abbreviation) {
+		cmd = cmd_names->cmd_abbreviations.left.at(argument);
+	}
+	else {
+		*logger << wrap(help_string);
+		logger->setColor(COLORS::BLUE);
+		*logger << wrap("Run help [CMD_NAME] for more information.\n");
+		logger->setColor(COLORS::BLACK);
+		return;
+	}
+
+	string cmd_structure_string1 = "The command " + cmd_names->cmd_names.right.at(cmd);
+	if (cmd_names->cmd_abbreviations.right.count(cmd) == 1) 
+		cmd_structure_string1 += " (" + cmd_names->cmd_abbreviations.right.at(cmd) + ")";
+	cmd_structure_string1 += " has the following structure:";
+
+	string cmd_structure_string2 = cmd_names->cmd_names.right.at(cmd) + " ";
+	string pa_help = "";
+	for (const auto& pa : cmd_structure->at(cmd).first) {
+		cmd_structure_string2 += cmd_names->pa_names.right.at(pa) + " ";
+		pa_help += wrap(cmd_names->pa_names.right.at(pa) + ": " + cmd_names->pa_help.at(pa)) + "\n";
+	}
+
+	string oa_help = "";
+	for (const auto& [oa, oa_para] : cmd_structure->at(cmd).second) {
+		cmd_structure_string2 += cmd_names->oa_names.right.at(oa) + " ";
+		oa_help += wrap(cmd_names->oa_names.right.at(oa) + ": " + cmd_names->oa_help.at(oa)) + "\n";
+		for (const auto& oaoa : oa_para) {
+			cmd_structure_string2 += cmd_names->oa_names.right.at(oaoa) + " ";
+			oa_help += wrap(cmd_names->oa_names.right.at(oaoa) + ": " + cmd_names->oa_help.at(oaoa), 6) + "\n";
+		}
+	}
+
+	*logger << wrap(cmd_structure_string1) << '\n';
+	logger->setColor(COLORS::BLUE);
+	*logger << wrap(cmd_structure_string2, 2, ALIGN::LEFT) << "\n\n";
+	logger->setColor(COLORS::BLACK);
+	*logger << wrap(cmd_names->cmd_help.at(cmd)) << "\n";
+	*logger << pa_help << '\n';
+	*logger << oa_help << endl;
+
+	/*
+	if (argument == "n" || argument == "new")
+	{
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << "  (n)ew: date tag1 tag2 ... [-d]\n";
+		(*logger).setColor(BLACK, WHITE);
+		(*logger) << wrap("Creates a new note file and the optional parameter -d indicates that a data folder will be created. The given date can be in the format of dd or dd.mm or dd.mm.yyyy (where one digit numebers can be specified as one digit or two digits with leading zero) or the special format t for today and y for yesterday.", 3) << '\n' << '\n';
+
+	}
+	else if (argument == "f") {
+		(*logger) << wrap("The abbreviation f will be interpreted as find if no note is currently selected and as filter, if multiple (or one) note(s) are selected.", 2) << "\n";
+	}
+	else if (argument == "find") {
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << wrap("(f)ind: [-(d)ate start_date-end_date] [-(c)ontains_(t)ags tag1 ...] [-(c)ontains_(a)ll_(t)ags tag1 ...] [-(n)o_(t)ags tag1 ...] [-(r)eg_(t)ext text] [-(v)ersions start_version-end_version] [-(d)ata_(o)nly]", 2) << "\n";
+		(*logger).setColor(BLACK, WHITE);
+		(*logger) << wrap("Looks for notes that fall within the specified ranges (start and end dates are included in the interval). -ct describes a list of tags where one of them needs to be found in the note, while -cat describes a list of tags which all need to be find in the note. -nt describes a list of tags that are not allowed to be in matching notes and -rt stands for regular expression text, which will be used to search the content of the note. -v gives an interval of versions (a-...) that are considered and -do stands for data_only, meaning only notes with a data folder will be selected.", 3) << "\n\n";
+	}
+	else if (argument == "filter") {
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << wrap("(f)ilter: [-(d)ate start_date-end_date] [-(c)ontains_(t)ags tag1 ...] [-(c)ontains_(a)ll_(t)ags tag1 ...] [-(n)o_(t)ags tag1 ...] [-(r)eg_(t)ext text] [-(v)ersions start_version-end_version] [-(d)ata_(o)nly]", 2) << "\n";
+		(*logger).setColor(BLACK, WHITE);
+		(*logger) << wrap("Reduces the current selection of notes with parameter similar to find. Also, intevals contain the start and end values. -ct describes a list of tags where one of them needs to be found in the note, while -cat describes a list of tags which all need to be find in the note. -nt describes a list of tags that are not allowed to be in matching notes and -rt stands for regular expression text, which will be used to search the content of the note. -v gives an interval of versions (a-...) that are considered and -do stands for data_only, meaning only notes with a data folder will be selected.", 3) << "\n\n";
+	}
+	else if (argument == "s" || argument == "show") {
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << wrap("(s)how: [(t)ags] [(m)etadata] [table_of_(c)ontent] [(d)ata] [(h)ide_(d)ate] [open_(i)mages] [open_as_(html)] [open_as_(tex)] [open_as_(pdf)] [open_as_(docx)] [open_as_(m)ark(d)own]", 2) << "\n";
+		(*logger).setColor(BLACK, WHITE);
+		(*logger) << wrap("Shows the current note selection (created by find and filter) in various formats (specified by the open_as_... parameter), where by default only the date and content of the note are shown. The parameters (t)ags, (m)etadata and table_of_(c)ontent add additional information to the output and (d)ata opens the data folders in the explorer. The command open_(i)mages additionally opens .jpg, .jpeg and .png files inside the data folders directly.", 3) << "\n\n";
+	}
+	else if (argument == "a" || argument == "add_data") {
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << "  (a)dd_data:\n";
+		(*logger).setColor(BLACK, WHITE);
+		(*logger) << wrap("Adds a data folder for the notes that are currently in the selection.The selection is created by the find commandand it can be refined by the filter command.", 3) << "\n";
+	}
+	else if (argument == "d" || argument == "details" || argument == "show_details") {
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << wrap("(d)etails: [-(t)ags] [-(p)ath] [-(l)ong_(p)ath] [-last_(m)odified] [-(c)ontent]", 2) << '\n';
+		(*logger).setColor(BLACK, WHITE);
+		(*logger) << wrap("Shows details about the current selection of notes. The parameters controll what is shown.", 3) << "\n";
+	}
+	else if (argument == "t" || argument == "tags") {
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << "  (t)ags:\n";
+		(*logger).setColor(BLACK, WHITE);
+		(*logger) << wrap("Shows the statictics of tags of the current selection.If no selection was made, it shows the statistic of all tags of all notes.", 3) << "\n";
+	}
+	else if (argument == "q" || argument == "quit" || argument == "exit") {
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << "  (q)uit:\nEnds the programm.";
+		(*logger).setColor(BLACK, WHITE);
+	}
+	else if (argument == "c" || argument == "create" || argument == "create_mode") {
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << wrap("(c)reate_mode: mode_name tag1 tag2 ... [-(s)how_(t)ags] [-(s)how_(m)etadata] [-(s)how_table_of_(c)ontent] [-(s)how_(d)ata] [-(s)how_(h)ide_(d)ate] [-(s)how_open_(i)mages] [-(s)how_open_as_(html)] [-(s)how_open_as_(m)ark(d)own] [-(s)how_open_as_(docx)] [-(s)how_open_as_(pdf)] [-(s)how_open_as_la(tex)] [-(d)etail_(t)ags] [-(d)etail_(p)ath] [-(d)etail_(l)ong_(p)ath] [-(d)etail_(l)ast_(m)odified] [-(d)etail_(c)ontent] [-(w)atch_(f)older path_to_folder1 tag1 tag2 ...] [-(w)atch_(f)older path_to_folder2 tag1 tag2 ...]", 2) << "\n";
+		(*logger).setColor(BLACK, WHITE);
+		(*logger) << wrap("A mode allows you to set the standard behavior of the (s)how and (d)etail command, as well as influence the (n)ew, (f)ind and (f)ilter commands. Options starting with show in the name control the (s)how command and options starting with detail control the (d)etails command. All set options will always be added to the commands when the mode is active. The mode tags will be added to the tags that are manually specified in the (n)ew command and are also added to the (f)ind and (f)ilter command in the -(c)ontails_(a)ll_(t)ags parameter, meaning only notes contraining all mode tags are selected. In addition to setting default (s)how and (d)etail parameter, a path to a folder that should be observed can be added. This means that when a file inside the specified folder is created, the newly created file is automatically added to the data folder and a new note is created. Additionally, tags that will be added when this occures can be entered by the following structure of the command: [-(w)atch_(f)older path_to_folder tag1 tag2 ...]. Note that multiple folders can be specified by repeating the [-(w)atch_(f)older path_to_folder tag1 tag2 ...] command With different paths (and tags). Modes can be activated by the (act)ivate commandand and deactivated by the (deac)tivate command. Additionally, an existing mode can be edited by the (edit)_mode command and deleted by the (delete)_mode command. An overview over all modes is given by the (modes) command, which lists the name, open format, tags, all options and all observed folders with their tags of all modes.", 3) << "\n";
+	}
+	else if (argument == "del" || argument == "delete" || argument == "delete_mode") {
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << "  (del)ete_mode: mode_name\n";
+		(*logger).setColor(BLACK, WHITE);
+		(*logger) << wrap("Deletes the specified mode. More about modes can be found by running help create_mode.", 3) << "\n";
+	}
+	else if (argument == "act" || argument == "activate" || argument == "activate_mode") {
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << "  (act)ivate_mode: mode_name\n";
+		(*logger).setColor(BLACK, WHITE);
+		(*logger) << wrap("Activates the specified mode, such that all set options are now in effect. More about modes can be found by running help create_mode.", 3) << "\n";
+	}
+	else if (argument == "deac" || argument == "deactivate" || argument == "deactivate_mode") {
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << "  (deac)tivate_mode:\n";
+		(*logger).setColor(BLACK, WHITE);
+		(*logger) << wrap("Deactivate the current mode and uses standard options again. More about modes can be found by running help create_mode.", 3) << "\n";
+	}
+
+	else if (argument == "modes") {
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << "  (modes):\n";
+		(*logger).setColor(BLACK, WHITE);
+		(*logger) << wrap("Gives an overview over all existing modes and shows mode name, mode tags, default open format, mode options.", 3) << "\n";
+	}
+	else if (argument == "edit" || argument == "edit_mode") {
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << wrap("(edit)_mode: mode_name [-(add_opt)ion opt1 opt2 ...] [-(remove_opt)ion opt1 opt2 ...] [-(add_t)ags tag1 tag2 ...] [-(remove_t)ags tag1 tag2] [-change_name new_mode_name]", 2) << '\n';
+		(*logger).setColor(BLACK, WHITE);
+		(*logger) << wrap("Where opt are the options from the (c)reate_mode command. More about modes can be found by running help create_mode", 3) << "\n";
+	}
+	else if (argument == "u" || argument == "update") {
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << "  (u)pdate:\n";
+		(*logger).setColor(BLACK, WHITE);
+		(*logger) << wrap("Updates the tag list, tag statistics and finds externally added files. Restarting the programm does the same trick.", 3) << "\n";
+	}
+	else if (argument == "o" || argument == "open") {
+		(*logger).setColor(BLUE, WHITE);
+		(*logger) << "  (o)pen:\n";
+		(*logger).setColor(BLACK, WHITE);
+		(*logger) << wrap("Opens the current selection of notes as markdown files, which can be edited by the editor of choice.", 3) << "\n";
+	}
+	else {
+		(*logger) << "  command " << argument << " could not be found. It should be one of the following:\n";
+		(*logger) << wrap("(n)ew, (f)ind, (f)ilter, (s)how, (a)dd_data, (d)etails, (t)ags, (q)uit, (c)reate_mode, (del)ete_mode, (act)ivate_mode, (deac)tivate_mode, (modes), (edit)_mode, (u)pdate and (o)pen.", 2) << '\n';
+		(*logger) << wrap("Detailed information about a command can be found by running: help command.", 2) << "\n";
+	}
+
+	*/
+	
 }
 
 /*
