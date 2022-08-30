@@ -7,9 +7,9 @@
 #include "conversions.h"
 
 
-
+#ifdef _WIN32
 void activateVirtualTerminal();
-
+#endif
 
 enum COLORS {
 	NC = -1,
