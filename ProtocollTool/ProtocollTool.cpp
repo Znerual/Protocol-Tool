@@ -225,7 +225,7 @@ int main()
            {CMD::MODES, new Show_modes(&logger, &paths, &conf, &mode_names, &active_mode, &auto_input.cmd_names)},
            {CMD::UPDATE, new Update_tags(&logger, &paths, &conf, &file_map, &tag_map, &tag_count, &filter_selection, true)},
            {CMD::OPEN, new Show_filtered_notes(&logger, &paths, &conf, &active_mode, &tmp_filename, &filter_selection, &has_pandoc, &open_files, &hExit)},
-           {CMD::HELP, new Help(&logger, &paths, &conf, &auto_input.cmd_names)},
+           {CMD::HELP, new Help(&logger, &paths, &conf, &auto_input.cmd_names, &auto_input.cmd_structure)},
            {CMD::TODOS, new Show_todos(&logger, &paths, &conf, &open_files, &hExit)}
     };
 #else
@@ -245,7 +245,7 @@ int main()
            {CMD::MODES, new Show_modes(&logger, &paths, &conf, &mode_names, &active_mode, &auto_input.cmd_names)},
            {CMD::UPDATE, new Update_tags(&logger, &paths, &conf, &file_map, &tag_map, &tag_count, &filter_selection, true)},
            {CMD::OPEN, new Show_filtered_notes(&logger, &paths, &conf, &active_mode, &tmp_filename, &filter_selection, &has_pandoc)},
-           {CMD::HELP, new Help(&logger, &paths, &conf, &auto_input.cmd_names)},
+           {CMD::HELP, new Help(&logger, &paths, &conf, &auto_input.cmd_names, &auto_input.cmd_structure)},
            {CMD::TODOS, new Show_todos(&logger, &paths, &conf)} 
     };
 #endif
