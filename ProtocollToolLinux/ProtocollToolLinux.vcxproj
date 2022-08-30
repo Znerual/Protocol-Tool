@@ -303,8 +303,8 @@
     <OutDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Build-Linux\$(Platform)\$(Configuration)\</IntDir>
     <EnableIncrementalBuild>WithNinja</EnableIncrementalBuild>
-    <RemoteIntRelDir>$(RemoteProjectRelDir)/Build-Linux/$(Platform)/$(Configuration)/</RemoteIntRelDir>
-    <RemoteOutRelDir>$(RemoteProjectRelDir)/Build-Linux/$(Platform)/$(Configuration)/</RemoteOutRelDir>
+    <RemoteIntRelDir>Build-Linux/$(Platform)/$(Configuration)</RemoteIntRelDir>
+    <RemoteOutRelDir>Build-Linux/$(Platform)/$(Configuration)</RemoteOutRelDir>
     <IncludePath>/usr/local/include/;/usr/include/c++/10/;$(IncludePath)</IncludePath>
     <LibraryPath>/usr/local/lib/;$(LibraryPath)</LibraryPath>
     <SourcePath>D:\Code\C++\VisualStudioProjects\ProtocollTool\ProtocollTool;/usr/local/include/;$(IncludePath);$(SourcePath)</SourcePath>
@@ -432,6 +432,10 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <CppLanguageStandard>c++20</CppLanguageStandard>
+      <UnrollLoops>true</UnrollLoops>
+      <LinkTimeOptimization>true</LinkTimeOptimization>
+      <NoCommonBlocks>true</NoCommonBlocks>
+      <CLanguageStandard>gnu11</CLanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
