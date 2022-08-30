@@ -23,54 +23,54 @@ PA
 2 The name of a mode.
 3 The name of a command.
 OA
-0 Option that controlls whether only notes with data folders should be considered.
+0 Option that controlls whether only notes with data folders should be considered or whether to create a data folder.
 1 Dates are expected.
-2 -with_tags
-3 -with_all_tags
-4 -with_no_tags
-5 -tag_regex
-6 -content_regex
-7 -versions
-8 -show_tags
-9 -metadata
-10 -table_of_content
-11 -hide_date
-12 -open_images
-13 -html
-14 -tex
-15 -pdf
-16 -docx
-17 -md
-18 -path
-19 -long_path
-20 -last_modified
-21 -content
-22 -add_options
-23 -remove_options
-24 -add_tags
-25 -remove_tags
-26 -change_name
-27 TAGS
-28 DATES_RANGE
-29 REGTEXT
-30 VERSIONS
-31 NAME
-32 CMD
-33 show_tags
-34 metadata
-35 table_of_content
-36 hide_date
-37 open_images
-38 html
-39 tex
-40 pdf
-41 docx
-42 md
-43 path
-44 long_path
-45 last_modified
-46 content
-47 -add_watch_folder
-48 -remove_watch_folder
-49 PATHANDTAGS
-50 PATH
+2 Filter for notes that contain at least one of the tags.
+3 Filter for notes that contain all of the given tags.
+4 Filter for notes that do not contain any of the given tags.
+5 Uses a regular expression to filter for notes where at least one of the tags matches the regular expression.
+6 Uses a regular expression to filter for notes where the regular expression matches the note's content.
+7 Filters for notes with the given versions
+8 Option to show tags.
+9 Option to show the metadata (tags, filename, ...)
+10 Option to create and show a table-of-content. 
+11 Option to hide the note date in the output.
+12 Option to automatically open image data.
+13 Use the html format to show the result (only if pandoc is installed). 
+14 Use latexs tex format to show the result (only if pandoc is installed).
+15 Use the pdf format to show the result (only if pandoc is installed and latex is installed and working)
+16 Use words docx format to show the result (only if pandoc is installed).
+17 Use markdown format to show the result.
+18 Show the relative file path.
+19 Show the absolute file path.
+20 Show the last modified information.
+21 Show the note content.
+22 Add options to the specified mode.
+23 Remove options from the specified mode.
+24 Add tags to the specified mode.
+25 Remove tags from the specified mode.
+26 Change the mode name.
+27 Whitespace separated list of tags, which will be stripped of access whitespaces, commas and converted to lower case characters.
+28 A range of dates, given as start_date end_date or start_date-end_date, where the dates can be in the format DD.MM.YYYY, DD.MM or DD. Additionally, t (today) and y (yesterday) can be used.
+29 A regular expression given as text.
+30 A list of versions, where each version is separated by a whitespace.
+31 A mode name as text.
+32 The name of a command.
+33 Mode option to show tags.
+34 Mode option to show metadata for the show command.
+35 Mode option to create and show a table of content for the show command.
+36 Mode option to hide the date in the show command.
+37 Mode option to open image data in the show command.
+38 Mode option to use html format.
+39 Mode option to use tex format.
+40 Mode option to use pdf format.
+41 Mode option to use docx format.
+42 Mode option to use md format.
+43 Mode option to show the relative note path.
+44 Mode option to show the absolute note path.
+45 Mode option to show the last modified information.
+46 Mode option to show the note content.
+47 Adds a folder watcher.
+48 Removes a folder watcher.
+49 Specify a path to the folder that should be watched, followed by the corresponding tags for that folder, separated by whitespaces (the list of tags separated with whitespaces as well).
+50 Specifies a path to a watch folder.
