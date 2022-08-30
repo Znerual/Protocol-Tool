@@ -159,7 +159,8 @@ void find_cmd_suggestion(const COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_com
 	while (iss >> word) {
 		input_words.push_back(word);
 	}
-
+	if (input_words.size() == 0)
+		return;
 	// split into command parts, CMD state or PA state
 	bool cmd_full_name, cmd_abbreviation;
 	cmd_full_name = auto_input.cmd_names.cmd_names.left.count(input_words.front()) == 1;
