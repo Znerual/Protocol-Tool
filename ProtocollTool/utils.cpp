@@ -125,7 +125,7 @@ void load_config(const std::string init_path, Config& conf)
 	}
 	catch (IOException& e) {
 		string config_path;
-		std::cout << colorize(RED, WHITE) << "  Error " << e.what() << " while loading the configuration file from " << "D:\\Code\\C++\\VisualStudioProjects\\ProtocollTool\\ProtocollTool\\para.conf" << '\n';
+		std::cout << colorize(RED, WHITE) << "  Error " << e.what() << " while loading the configuration file from " << std::filesystem::current_path().string() << '\n';
 		std::cout << colorize(BLACK, WHITE) << "  Please specify the path where the configuration file (para.conf) can be found:" << endl;
 		std::cout << colorize(BLACK, WHITE) << "  Path to para.conf: ";
 
@@ -189,6 +189,8 @@ void check_base_path(Config& conf, PATHS& paths)
 			cin.clear();
 			cin.ignore(10000, '\n');
 #endif
+			if (base_path_str == "")
+				continue;
 
 			if (filesystem::create_directories(base_path_str)) // created new folder
 			{
@@ -1449,7 +1451,7 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 			}
 		}
 		else {
-			if (input_words.front().starts_with("-")) {
+			if (input_words.size() > 0 && input_words.front().starts_with("-")) {
 				break;
 			}
 			pargs[pa_arg].push_back(input_words.front());
@@ -1483,7 +1485,7 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 
 
 		// oa arguments with one parameter or more
-		if (input_words.front().starts_with("-")) {
+		if (input_words.size() > 0 && input_words.front().starts_with("-")) {
 			logger.setColor(COLORS::RED);
 			logger << wrap("No set parameter for optional argument " + command_input.cmd_names.oa_names.right.at(current_oa) + " found, it takes " + to_string(oa_args.at(current_oa).size()) + " parameter. Continuing with next argument " + input_words.front()) << endl;
 			logger.setColor(COLORS::BLACK);
