@@ -416,7 +416,9 @@
     <None Include="cmd.dat">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="cmd_help.dat" />
+    <None Include="cmd_help.dat">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="cmd_names.dat">
       <DeploymentContent>true</DeploymentContent>
     </None>
