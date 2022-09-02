@@ -45,3 +45,9 @@ packages/
 
 # Visual Studio files
 .vs/
+/Files
+/Files
+/readme
+/Tmp
+/ProtocollTool/External_Software/tabulate
+*.deb

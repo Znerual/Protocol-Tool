@@ -99,6 +99,9 @@
     <ClCompile Include="file_manager_linux.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\icon.xpm">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="..\ProtocollTool\cmd.dat">
       <RemoteCopyFile Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</RemoteCopyFile>
       <RemoteCopyToOutputDir Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</RemoteCopyToOutputDir>
@@ -124,6 +127,9 @@
       <RemoteCopyToOutputDir Condition="'$(Configuration)|$(Platform)'=='Test|x64'">true</RemoteCopyToOutputDir>
       <RemoteCopyFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</RemoteCopyFile>
       <RemoteCopyToOutputDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</RemoteCopyToOutputDir>
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="..\ProtocollTool\cmd_help.dat">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="..\ProtocollTool\cmd_names.dat">
@@ -179,7 +185,13 @@
       <RemoteCopyFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</RemoteCopyFile>
       <RemoteCopyToOutputDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</RemoteCopyToOutputDir>
       <FileType>Document</FileType>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\icon.ico">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{59ce7cae-adab-4974-b51e-df84a4ef0a55}</ProjectGuid>

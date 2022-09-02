@@ -82,5 +82,16 @@
     <None Include="..\ProtocollTool\para.conf">
       <Filter>Ressourcendateien</Filter>
     </None>
+    <None Include="..\ProtocollTool\cmd_help.dat">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="..\icon.xpm">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\icon.ico">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
   </ItemGroup>
 </Project>
