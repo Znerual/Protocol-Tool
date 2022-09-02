@@ -74,8 +74,13 @@ int main()
     print_greetings(width);
 
     Config conf;
+
+#ifdef _WIN32
     load_config("para.conf", conf);
-    
+#else
+    load_config("/opt/protocol-tool/para.conf", conf);
+#endif
+
     // read in config arguments and setup paths
     bool ask_pandoc, has_pandoc, write_log;
     int  num_modes;
@@ -192,10 +197,15 @@ int main()
 #endif
 
     logger.setColor(BLACK, WHITE);
-    
+#ifdef _WIN32
     read_cmd_structure(filesystem::path("cmd.dat"), auto_input.cmd_structure);
     read_cmd_names(filesystem::path("cmd_names.dat"), auto_input.cmd_names);
     read_cmd_help(filesystem::path("cmd_help.dat"), auto_input.cmd_names);
+#else
+    read_cmd_structure(filesystem::path("/opt/protocol-tool/cmd.dat"), auto_input.cmd_structure);
+    read_cmd_names(filesystem::path("/opt/protocol-tool/cmd_names.dat"), auto_input.cmd_names);
+    read_cmd_help(filesystem::path("/opt/protocol-tool/cmd_help.dat"), auto_input.cmd_names);
+#endif
 
 #ifdef _WIN32
     AUTOCOMPLETE auto_comp(auto_input.cmd_names, tag_count, mode_names); // update trietrees when tags and/or modes are added/changed
