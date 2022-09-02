@@ -298,7 +298,8 @@ void find_cmd_suggestion(const COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_com
 		}
 		else {
 			oa_strs.push_back(auto_input.cmd_names.oa_names.right.at(oa_arg));
-			oa_strs.push_back(auto_input.cmd_names.oa_abbreviations.right.at(oa_arg));
+			if (auto_input.cmd_names.oa_abbreviations.right.count(oa_arg) == 1) 
+				oa_strs.push_back(auto_input.cmd_names.oa_abbreviations.right.at(oa_arg));
 		}
 	}
 
@@ -375,7 +376,8 @@ void find_cmd_suggestion(const COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_com
 			list<string> oaoa_strs;
 			for (const auto& oa_arg : oa_args[active_oa]) {
 				oaoa_strs.push_back(auto_input.cmd_names.oa_names.right.at(oa_arg));
-				oaoa_strs.push_back(auto_input.cmd_names.oa_abbreviations.right.at(oa_arg));
+				if (auto_input.cmd_names.oa_abbreviations.right.count(oa_arg) == 1)
+					oaoa_strs.push_back(auto_input.cmd_names.oa_abbreviations.right.at(oa_arg));
 			}
 
 			TrieTree oa_trietree = TrieTree(oaoa_strs);
