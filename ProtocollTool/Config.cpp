@@ -56,6 +56,9 @@ CONFIG_ERROR Config::set_file(const std::string& name, std::string& value)
 
 Config::Config(const string& filepath)
 {
+    if (filepath == "")
+        throw IOException();
+
     this->filepath = filepath;
     ifstream file(filepath);
     string line;
