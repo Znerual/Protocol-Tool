@@ -1,6 +1,7 @@
 #include "file_manager.h"
 #include "conversions.h"
 
+#include <regex>
 #include <boost/algorithm/string.hpp>
 
 using namespace std;
@@ -347,7 +348,7 @@ void write_file(Log& logger, const PATHS& paths, const string& filename, time_t 
 }
 
 /**
-* Searches for TODOs in a given file
+* Searches for TODOs, images, link and headers in a given file
 *
 * @param logger reference to logger instance
 * @param paths reference to PATHS instance
@@ -364,13 +365,21 @@ void parse_file(Log& logger, const PATHS& paths, const string& filename) {
 	if (!ofile.is_open()) {
 		logger << "Error writting in parse_file: File " << (paths.file_path / filesystem::path(ofile_name)).string() << " could not be openend." << '\n';
 	}
-
 	ofile << "! TODOS START" << '\n';
+
+	vector<string> images = vector<string>();
+	vector<string> links = vector<string>();
+	vector<string> headers = vector<string>();
+
 	// get note date
 	time_t date_t;
 	string date_str;
 	str2date_short(date_t, filename);
 	date2str(date_str, date_t);
+
+	// matcher for links and images
+	regex pat_link("(\\[\\w+\\])(\\([\\w\\.\\/]+\\))");
+	regex pat_image("!(\\[\w+\\])(\\([\\w\\.\\/]+\\))");
 
 	string line, last_section = "";
 	bool metadata = false;
@@ -401,6 +410,7 @@ void parse_file(Log& logger, const PATHS& paths, const string& filename) {
 		// find most recent section for jumping to
 		if (line.starts_with("#")) {
 			last_section = trim(line, " ,\n\r\t\f\v#");
+			headers.push_back(last_section);
 			for (auto i = 0; i < last_section.size(); i++) {
 				if (isspace(last_section[i])) {
 					last_section[i] = '-';
@@ -409,6 +419,19 @@ void parse_file(Log& logger, const PATHS& paths, const string& filename) {
 			last_section = "#" + last_section;
 			continue;
 		}
+
+		// search for graphics/links
+		smatch m_link, m_image;
+		regex_search(line, m_link, pat_link);
+		for (const auto& link_match : m_link) {
+			links.push_back(link_match.str());
+		}
+
+		regex_search(line, m_image, pat_image);
+		for (const auto& image_match : m_image) {
+			images.push_back(image_match.str());
+		}
+		
 
 		// search for TODO
 		size_t pos = line.find("TODO");
@@ -426,10 +449,28 @@ void parse_file(Log& logger, const PATHS& paths, const string& filename) {
 			ofile << (paths.file_path / filesystem::path(filename)).string() << last_section << ")" << ")\n";
 		}
 	}
+	file.close();
 
 	ofile << "! TODOS END" << endl;
 
-	file.close();
+	ofile << "! LINKS START\n";
+	for (const auto& link : links) {
+		ofile << link << '\n';
+	}
+	ofile << "! LINKS END\n";
+
+	ofile << "! HEADERS START\n";
+	for (const auto& header : headers) {
+		ofile << header << '\n';
+	}
+	ofile << "! HEADERS END\n";
+
+	ofile << "! IMAGES START\n";
+	for (const auto& image : images) {
+		ofile << image << '\n';
+	}
+	ofile << "! IMAGES END" << endl;
+
 	ofile.close();
 }
 
