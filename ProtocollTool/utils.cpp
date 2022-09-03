@@ -306,6 +306,12 @@ void init_mode_options(MODE_OPTIONS& mode_options) {
 		mode_options[OA::LMOD] = false;
 	if (!mode_options.contains(OA::CONTENT))
 		mode_options[OA::CONTENT] = false;
+	if (!mode_options.contains(OA::SHEAD))
+		mode_options[OA::SHEAD] = false;
+	if (!mode_options.contains(OA::SIMG))
+		mode_options[OA::SIMG] = false;
+	if (!mode_options.contains(OA::SLINK))
+		mode_options[OA::SLINK] = false;
 }
 
 void set_mode_options(Config& conf, MODE_OPTIONS& mode_options, const int& active_mode)
@@ -328,6 +334,9 @@ void set_mode_options(Config& conf, MODE_OPTIONS& mode_options, const int& activ
 	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_LONG_PATH", mode_options.at(OA::LPATH));
 	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_LAST_MODIFIED", mode_options.at(OA::LMOD));
 	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_SHOW_CONTENT", mode_options.at(OA::CONTENT));
+	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_SHOW_HEADER", mode_options.at(OA::SHEAD));
+	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_SHOW_IMAGES", mode_options.at(OA::SIMG));
+	conf.set("MODE_" + to_string(active_mode) + "_DETAIL_SHOW_LINKS", mode_options.at(OA::SLINK));
 }
 
 void get_mode_options(Config& conf, MODE_OPTIONS& mode_options, const int& active_mode)
@@ -350,6 +359,9 @@ void get_mode_options(Config& conf, MODE_OPTIONS& mode_options, const int& activ
 	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_LONG_PATH", mode_options.at(OA::LPATH));
 	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_LAST_MODIFIED", mode_options.at(OA::LMOD));
 	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_SHOW_CONTENT", mode_options.at(OA::CONTENT));
+	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_SHOW_HEADER", mode_options.at(OA::SHEAD));
+	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_SHOW_IMAGES", mode_options.at(OA::SIMG));
+	conf.get("MODE_" + to_string(active_mode) + "_DETAIL_SHOW_LINKS", mode_options.at(OA::SLINK));
 }
 
 

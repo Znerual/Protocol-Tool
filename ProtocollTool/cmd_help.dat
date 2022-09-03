@@ -74,3 +74,6 @@ OA
 48 Removes a folder watcher.
 49 Specify a path to the folder that should be watched, followed by the corresponding tags for that folder, separated by whitespaces (the list of tags separated with whitespaces as well).
 50 Specifies a path to a watch folder.
+51 Show headers of the files.
+52 Show images in the files.
+53 Show links in the files.

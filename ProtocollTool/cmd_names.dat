@@ -74,3 +74,6 @@ OA
 48 -remove_watch_folder
 49 PATHANDTAGS
 50 PATH
+51 -show_headers
+52 -show_images
+53 -show_links

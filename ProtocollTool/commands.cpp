@@ -727,38 +727,89 @@ void Show_details::run(std::map<PA, std::vector<std::string>>& pargs, std::vecto
 		mode_options[flag] = true;
 	}
 
+	// check whether the header_images_links should be read in
+	std::unordered_map<std::string, std::tuple<std::list<std::string>, std::list<std::string>, std::list<std::string>>> headers_images_links;
+	if (mode_options.at(OA::SHEAD) || mode_options.at(OA::SIMG) || mode_options.at(OA::SLINK)) {
+		get_headers_images_links(*logger, *paths, *filter_selection, headers_images_links);
+	}
+
 	time_t note_date;
 	string date_str, modified_date_str;
+	string output;
 	for (const string& path : *filter_selection)
 	{
+		//*logger << path << endl;
+		//continue;
 		string filename = filesystem::path(path).stem().string();
 		str2date_short(note_date, filename.substr(0, 8));
 		date2str(date_str, note_date);
-		*logger << date_str;
+		output = date_str;
+		//*logger << "  " << date_str;
 		if (filename[8] != 'a')
 		{
-			*logger << " Version " << filename[8];
+			output = output+ " Version " + filename[8];
 		}
 		if (mode_options.at(OA::LPATH))
 		{
-			*logger << " at " << paths->base_path / filesystem::path(path);
+			output = output + " at " + (paths->base_path / filesystem::path(path)).string();
 		}
 		else if (mode_options.at(OA::PATH))
 		{
-			*logger << " at " << path;
-		}
-		if (mode_options.at(OA::STAGS))
-		{
-			*logger << " with tags: ";
-			for (const auto& tag : tag_map->at(path))
-			{
-				*logger << tag << " ";
-			}
+			output = output + " at " + path;
 		}
 		if (mode_options.at(OA::LMOD))
 		{
 			date2str_long(modified_date_str, file_map->at(path));
-			*logger << " last modified at " << modified_date_str;
+			output = output + " last modified at " + modified_date_str;
+		}
+		if (mode_options.at(OA::STAGS))
+		{
+			output = output + " with tags: ";
+			for (const auto& tag : tag_map->at(path))
+			{
+				output = output + tag + " ";
+			}
+		}
+		if (mode_options.at(OA::SIMG))
+		{
+			output = output + ", with " + to_string(get<1>(headers_images_links[filename]).size()) + " images";
+		}
+		if (mode_options.at(OA::SLINK)) {
+			output = output + ", with " + to_string(get<2>(headers_images_links[filename]).size()) + " links";
+		}
+		if (mode_options.at(OA::SHEAD)) {
+			output = output + ", with " + to_string(get<0>(headers_images_links[filename]).size()) + " headers";
+		}
+		*logger << wrap(output);
+
+		if (mode_options.at(OA::SIMG))
+		{
+			if (get<1>(headers_images_links[filename]).size() > 0) {
+				logger->setColor(COLORS::GREEN);
+				for (const auto& img : get<1>(headers_images_links[filename])) {
+					*logger << "\t" << img << '\n';
+				}
+				logger->setColor(COLORS::BLACK);
+			}
+		}
+		if (mode_options.at(OA::SLINK)) {
+			if (std::get<2>(headers_images_links[filename]).size() > 0) {
+				logger->setColor(COLORS::GREEN);
+				for (const auto& link : get<2>(headers_images_links[filename])) {
+					*logger << "\t" << link << '\n';
+				}
+				logger->setColor(COLORS::BLACK);
+			}
+		}
+		if (mode_options.at(OA::SHEAD)) {
+			if (std::get<0>(headers_images_links[filename]).size() > 0) {
+				logger->setColor(COLORS::GREEN);
+				for (const auto& link : get<0>(headers_images_links[filename])) {
+					*logger << link << '\n';
+				}
+				logger->setColor(COLORS::BLACK);
+
+			}
 		}
 		if (mode_options.at(OA::CONTENT))
 		{
@@ -1311,6 +1362,14 @@ void filter_notes(Log* logger, PATHS* paths, Config* conf, int *active_mode, std
 void Update_tags::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
 	update_tags(*logger, *paths, *file_map, *tag_map, *tag_count, *filter_selection, true);
+
+	// parse all files
+	for (const auto& entry : filesystem::directory_iterator(paths->base_path / paths->file_path))
+	{
+		string filename = entry.path().stem().string() + ".md";
+		parse_file(*logger, *paths, filename);
+		
+	}
 }
 
 void Show_tags::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)

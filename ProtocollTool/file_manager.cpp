@@ -6,6 +6,16 @@
 
 using namespace std;
 
+#ifndef _WIN32
+template <typename TP>
+std::time_t to_time_t(TP tp)
+{
+	using namespace std::chrono;
+	auto sctp = time_point_cast<system_clock::duration>(tp - TP::clock::now()
+		+ system_clock::now());
+	return system_clock::to_time_t(sctp);
+}
+#endif
 map<string, int> get_tag_count(map<string, vector<string>>& tag_map, vector<string> filter_selection)
 {
 	map<string, int> tag_count;
@@ -21,7 +31,7 @@ map<string, int> get_tag_count(map<string, vector<string>>& tag_map, vector<stri
 	return tag_count;
 }
 
-
+#ifdef _WIN32
 void open_file(Log& logger, const PATHS paths, const filesystem::path file, vector<jthread>& open_files, HANDLE& hExit) {
 
 	if (file.extension().string() == ".md") {
@@ -44,13 +54,24 @@ void open_file(Log& logger, const PATHS paths, const filesystem::path file, vect
 	}
 
 }
+#else
+void open_file(Log& logger, const PATHS paths, const filesystem::path file) {
 
+	system(("xdg-open " + file.string()).c_str());
+
+}
+#endif
 
 int convert_document_to(const std::string& format, const std::string& ending, const PATHS& paths, const std::string& filename, const std::string& output_filename)
 {
 	const string command_html = "pandoc -f markdown " + (paths.base_path / paths.tmp_path / filesystem::path(filename)).string() + " -t " + format + " -o " + (paths.base_path / paths.tmp_path / filesystem::path(output_filename + "." + ending)).string();
+#ifdef _WIN32
 	FILE* pipe = _popen(command_html.c_str(), "r");
 	int returnCode = _pclose(pipe);
+#else
+	FILE* pipe = popen(command_html.c_str(), "r");
+	int returnCode = pclose(pipe);
+#endif
 	return returnCode;
 }
 
@@ -64,7 +85,11 @@ map<string, time_t> list_all_files(const PATHS& paths)
 
 	for (const auto& entry : filesystem::directory_iterator(paths.base_path / paths.file_path))
 	{
+#ifdef _WIN32
 		file_map[(paths.file_path / entry.path().filename()).string()] = chrono::system_clock::to_time_t(clock_cast<chrono::system_clock>(entry.last_write_time()));
+#else
+		file_map[(paths.file_path / entry.path().filename()).string()] = to_time_t(entry.last_write_time());
+#endif
 	}
 
 	return file_map;
@@ -97,6 +122,9 @@ vector<string> read_tags(Log& logger, const string& path) {
 	string line, tag;
 	while (getline(file, line))
 	{
+#ifndef _WIN32
+		line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+#endif
 		if (line == "tags:") {
 			reading_tags = true;
 		}
@@ -409,8 +437,17 @@ void parse_file(Log& logger, const PATHS& paths, const string& filename) {
 
 		// find most recent section for jumping to
 		if (line.starts_with("#")) {
+			string header_indent= "";
+			for (size_t i = 0; i < line.size(); i++) {
+				if (line[i] == '#')
+					header_indent += '\t';
+				else if (!isspace(line[i])) {
+					break;
+				}
+			}
+
 			last_section = trim(line, " ,\n\r\t\f\v#");
-			headers.push_back(last_section);
+			headers.push_back(header_indent + last_section);
 			for (auto i = 0; i < last_section.size(); i++) {
 				if (isspace(last_section[i])) {
 					last_section[i] = '-';
@@ -479,7 +516,11 @@ void update_parsed_file(Log& logger, const PATHS& paths, list<string>& parsed_fi
 
 	for (const auto& entry : filesystem::directory_iterator(paths.base_path / paths.file_path))
 	{
+#ifdef _WIN32
 		files_map[entry.path().stem().string()] = chrono::system_clock::to_time_t(clock_cast<chrono::system_clock>(entry.last_write_time()));
+#else
+		files_map[entry.path().stem().string()] = to_time_t(entry.last_write_time());
+#endif
 	}
 
 	// remove files that have recent parsed files
@@ -490,7 +531,11 @@ void update_parsed_file(Log& logger, const PATHS& paths, list<string>& parsed_fi
 		if (files_map.contains(parsed_fname)) {
 
 			// compare last modified values
+#ifdef _WIN32
 			if (files_map[parsed_fname] < chrono::system_clock::to_time_t(clock_cast<chrono::system_clock>(entry.last_write_time()))) {
+#else
+			if (files_map[parsed_fname] < to_time_t(entry.last_write_time())) {
+#endif
 				files_map.erase(parsed_fname);
 				parsed_files.push_back(entry.path().filename().string());
 			}
@@ -554,11 +599,54 @@ void update_todos(Log& logger, const PATHS& paths) {
 	output.close();
 }
 
-void get_headers(Log& logger, const PATHS& paths, const std::vector<std::string>& filter_selection) {
+void get_headers_images_links(Log& logger, const PATHS& paths, const std::vector<std::string>& filter_selection, std::unordered_map<std::string, std::tuple<std::list<std::string>, std::list<std::string>, std::list<std::string>>>& headers_images_links) {
 	list<string> parsed_files;
 	update_parsed_file(logger, paths, parsed_files);
 
 	for (const auto& pth : filter_selection) {
 		string name = "." + filesystem::path(pth).stem().string();
+		if (filesystem::exists(paths.base_path / paths.tmp_path / filesystem::path(name))) {
+			ifstream file(paths.base_path / paths.tmp_path / filesystem::path(name));
+			if (!file.is_open()) {
+				logger.setColor(COLORS::RED);
+				logger << "Error: Can't open parsed file " << (paths.base_path / paths.tmp_path / filesystem::path(name)).string() << endl;
+				logger.setColor(COLORS::BLACK);
+			}
+
+			string line;
+			enum class RM { HEADERS, IMAGES, LINKS, NONE };
+			RM mode = RM::NONE;
+			while (getline(file, line)) {
+#ifndef _WIN32
+				line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+#endif
+				if (line == "! HEADERS START") {
+					mode = RM::HEADERS;
+				}
+				else if (line == "! HEADERS END" || line == "! LINKS END" || line == "! IMAGES END") {
+					mode = RM::NONE;
+				}
+				else if (line == "! IMAGES START") {
+					mode = RM::IMAGES;
+				}
+				else if (line == "! LINKS START") {
+					mode = RM::LINKS;
+				}
+				else if (mode == RM::HEADERS) {
+					get<0>(headers_images_links[filesystem::path(pth).stem().string()]).push_back(line);
+				}
+				else if (mode == RM::IMAGES) {
+					get<1>(headers_images_links[filesystem::path(pth).stem().string()]).push_back(line);
+				}
+				else if (mode == RM::LINKS) {
+					get<2>(headers_images_links[filesystem::path(pth).stem().string()]).push_back(line);
+				}
+			}
+		}
+		else {
+			logger.setColor(COLORS::RED);
+			logger << "Error: Can't find parsed file " << (paths.base_path / paths.tmp_path / filesystem::path(name)).string() << endl;
+			logger.setColor(COLORS::BLACK);
+		}
 	}
 }

@@ -8,10 +8,17 @@ std::vector<std::string> read_tags(Log& logger, const std::string& path);
 void update_tags(Log& logger, const PATHS& paths, std::map<std::string, time_t>& file_map, std::map<std::string, std::vector<std::string>>& tag_map, std::map<std::string, int>& tag_count, std::vector<std::string>& filter_selection, const bool add_new_to_filter_selection);
 
 std::string get_filename(const PATHS& paths, time_t date, const std::string& file_ending);
+#ifdef _WIN32
 void open_file(Log& logger, const PATHS paths, const std::filesystem::path file, std::vector<std::jthread>& open_files, HANDLE& hExit);
+#else
+void open_file(Log& logger, const PATHS paths, const std::filesystem::path file);
+template <typename TP>
+std::time_t to_time_t(TP tp);
+#endif
 void write_file(Log& logger, const PATHS& paths, const std::string& filename, time_t date, std::vector<std::string> tags, const std::string& file_ending, const bool create_data);
 int convert_document_to(const std::string& format, const std::string& ending, const PATHS& paths, const std::string& filename, const std::string& output_filename = "show");
 void update_todos(Log& logger, const PATHS& paths);
+void get_headers_images_links(Log& logger, const PATHS& paths, const std::vector<std::string>& filter_selection, std::unordered_map<std::string, std::tuple<std::list<std::string>, std::list<std::string>, std::list<std::string>>>& headers_images_links);
 void update_parsed_file(Log& logger, const PATHS& paths, std::list<std::string>& parsed_files);
 void parse_file(Log& logger, const PATHS& paths, const std::string& filename);
 void read_metadata_without_tags(Log& logger, const std::string& path, std::map<std::string, std::string>& metadata);
