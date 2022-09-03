@@ -333,8 +333,42 @@ void read_metadata_tags_content(Log& logger, const filesystem::path& path, map<s
 	file.close();
 }
 
+void update_parsed_file(Log& logger, const PATHS& paths, list<string>& parsed_files) {
+	map<string, time_t> files_map;
+
+	for (const auto& entry : filesystem::directory_iterator(paths.base_path / paths.file_path))
+	{
+		files_map[entry.path().stem().string()] = chrono::system_clock::to_time_t(clock_cast<chrono::system_clock>(entry.last_write_time()));
+	}
+
+	// remove files that have recent parsed files
+	for (const auto& entry : filesystem::directory_iterator(paths.base_path / paths.tmp_path))
+	{
+		// check if path is path to parsed file by skipping leading .
+		string parsed_fname = entry.path().filename().string().substr(1);
+		if (files_map.contains(parsed_fname)) {
+
+			// compare last modified values
+			if (files_map[parsed_fname] < chrono::system_clock::to_time_t(clock_cast<chrono::system_clock>(entry.last_write_time()))) {
+				files_map.erase(parsed_fname);
+				parsed_files.push_back(entry.path().filename().string());
+			}
+		}
+	}
+
+	// parse files when parsed files are old or missing
+	for (const auto& [name_stem, mod_date] : files_map) {
+		string filename = name_stem + ".md";
+		parse_file(logger, paths, filename);
+		parsed_files.push_back("." + name_stem);
+	}
+
+	parsed_files.sort();
+	parsed_files.reverse();
+}
+
 /**
-* Searches for TODOs in a given file
+* Searches for TODOs, headers, links and images in a given file
 *
 * @param logger reference to logger instance
 * @param paths reference to PATHS instance
@@ -468,38 +502,8 @@ void parse_file(Log& logger, const PATHS& paths, const string& filename) {
 * @param paths reference to PATHS instance
 **/
 void update_todos(Log& logger, const PATHS& paths) {
-	map<string, time_t> files_map;
 	list<string> parsed_files;
-
-	for (const auto& entry : filesystem::directory_iterator(paths.base_path / paths.file_path))
-	{
-		files_map[entry.path().stem().string()] = to_time_t(entry.last_write_time());
-	}
-
-	// remove files that have recent parsed files
-	for (const auto& entry : filesystem::directory_iterator(paths.base_path / paths.tmp_path))
-	{
-		// check if path is path to parsed file by skipping leading .
-		string parsed_fname = entry.path().string().substr(1);
-		if (files_map.contains(parsed_fname)) {
-
-			// compare last modified values
-			if (files_map[parsed_fname] < to_time_t(entry.last_write_time())) {
-				files_map.erase(parsed_fname);
-				parsed_files.push_back(entry.path().string());
-			}
-		}
-	}
-
-	// parse files when parsed files are old or missing
-	for (const auto& [name_stem, mod_date] : files_map) {
-		string filename = name_stem + ".md";
-		parse_file(logger, paths, filename);
-		parsed_files.push_back("." + name_stem);
-	}
-
-	parsed_files.sort();
-	parsed_files.reverse();
+	update_parsed_file(logger, paths, parsed_files);
 
 	// combine results from parsed files to output file
 	ofstream output(paths.base_path / paths.tmp_path / "todos.md");

@@ -474,17 +474,8 @@ void parse_file(Log& logger, const PATHS& paths, const string& filename) {
 	ofile.close();
 }
 
-/**
-* Compares all files in the FILES directory to see whether they were modified after the last creation
-* of their corresponding parsed file. Afterwards, the Todo information from the todo files is collected
-* and written to the output file
-*
-* @param logger reference to logger instance
-* @param paths reference to PATHS instance
-**/
-void update_todos(Log& logger, const PATHS& paths) {
+void update_parsed_file(Log& logger, const PATHS& paths, list<string>& parsed_files) {
 	map<string, time_t> files_map;
-	list<string> parsed_files;
 
 	for (const auto& entry : filesystem::directory_iterator(paths.base_path / paths.file_path))
 	{
@@ -495,13 +486,13 @@ void update_todos(Log& logger, const PATHS& paths) {
 	for (const auto& entry : filesystem::directory_iterator(paths.base_path / paths.tmp_path))
 	{
 		// check if path is path to parsed file by skipping leading .
-		string parsed_fname = entry.path().string().substr(1);
+		string parsed_fname = entry.path().filename().string().substr(1);
 		if (files_map.contains(parsed_fname)) {
 
 			// compare last modified values
 			if (files_map[parsed_fname] < chrono::system_clock::to_time_t(clock_cast<chrono::system_clock>(entry.last_write_time()))) {
 				files_map.erase(parsed_fname);
-				parsed_files.push_back(entry.path().string());
+				parsed_files.push_back(entry.path().filename().string());
 			}
 		}
 	}
@@ -515,6 +506,19 @@ void update_todos(Log& logger, const PATHS& paths) {
 
 	parsed_files.sort();
 	parsed_files.reverse();
+}
+/**
+* Compares all files in the FILES directory to see whether they were modified after the last creation
+* of their corresponding parsed file. Afterwards, the Todo information from the todo files is collected
+* and written to the output file
+*
+* @param logger reference to logger instance
+* @param paths reference to PATHS instance
+**/
+void update_todos(Log& logger, const PATHS& paths) {
+	
+	list<string> parsed_files;
+	update_parsed_file(logger, paths, parsed_files);
 
 	// combine results from parsed files to output file
 	ofstream output(paths.base_path / paths.tmp_path / "todos.md");
@@ -548,4 +552,13 @@ void update_todos(Log& logger, const PATHS& paths) {
 		file.close();
 	}
 	output.close();
+}
+
+void get_headers(Log& logger, const PATHS& paths, const std::vector<std::string>& filter_selection) {
+	list<string> parsed_files;
+	update_parsed_file(logger, paths, parsed_files);
+
+	for (const auto& pth : filter_selection) {
+		string name = "." + filesystem::path(pth).stem().string();
+	}
 }
