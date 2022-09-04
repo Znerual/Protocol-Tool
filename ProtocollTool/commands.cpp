@@ -1,9 +1,8 @@
+#include "file_manager.h"
 #ifdef _WIN32
 #include "commands.h"
-#include "file_manager.h"
 #include "watcher_windows.h"
 #else
-#include "../ProtocollToolLinux/file_manager_linux.h"
 #include "../ProtocollToolLinux/commands_linux.h"
 #endif
 //#include "autocomplete.h"
