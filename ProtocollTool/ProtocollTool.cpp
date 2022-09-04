@@ -65,11 +65,13 @@ int main()
 
     int width, height;
     get_console_size(height, width);
-    
-    #ifdef _WIN32
+ 
+#ifdef _WIN32
     set_console_font();
     set_console_background(width, height);
-    #endif
+#else
+    cout << "\e[4" <<COLORS::WHITE <<"m \e[8] \e[H\e[J";
+#endif
 
     print_greetings(width);
 
