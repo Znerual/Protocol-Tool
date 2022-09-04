@@ -178,7 +178,7 @@ void read_metadata_without_tags(Log& logger, const string& path, map<string, str
 #ifndef _WIN32
 		line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
 #endif
-		if (line == "---" && reading_metadata || (deprecated && !line.starts_with("! "))) {
+		if ((line == "---" && reading_metadata) || (deprecated && !line.starts_with("! "))) {
 			return;
 		}
 		else if (line == "---" && !reading_metadata) {
@@ -224,7 +224,7 @@ void read_metadata_tags_content(Log& logger, const filesystem::path& path, map<s
 		line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
 #endif
 		
-		if (line == "---" && reading_metadata || (deprecated && !line.starts_with("! "))) {
+		if ((line == "---" && reading_metadata) || (deprecated && !line.starts_with("! "))) {
 			reading_metadata = false;
 			content_start++;
 		}

@@ -1396,9 +1396,6 @@ AUTOCOMPLETE::AUTOCOMPLETE(const CMD_NAMES& cmd_names, const std::map<std::strin
 void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA, vector<string>>& pargs, vector<OA>& oaflags, map<OA, vector<OA>>& oaoargs, map<OA, vector<string>>& oastrargs) {
 	if (command_input.input.size() == 0)
 		return;
-	
-	enum class CMD_STATE { CMD, PA, OA, OAOA };
-	CMD_STATE state = CMD_STATE::CMD;
 
 	// read whole input into vector
 	list<string> input_words{};
