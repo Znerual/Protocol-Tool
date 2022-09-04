@@ -55,6 +55,7 @@
     <ClInclude Include="..\ProtocollTool\Config.h" />
     <ClInclude Include="..\ProtocollTool\conversions.h" />
     <ClInclude Include="..\ProtocollTool\exceptions.h" />
+    <ClInclude Include="..\ProtocollTool\file_manager.h" />
     <ClInclude Include="..\ProtocollTool\log.h">
       <RemoteCopyFile Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</RemoteCopyFile>
       <RemoteCopyFile Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">true</RemoteCopyFile>
@@ -85,18 +86,17 @@
     <ClInclude Include="..\ProtocollTool\trietree.h" />
     <ClInclude Include="..\ProtocollTool\utils.h" />
     <ClInclude Include="commands_linux.h" />
-    <ClInclude Include="file_manager_linux.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ProtocollTool\autocomplete.cpp" />
     <ClCompile Include="..\ProtocollTool\commands.cpp" />
     <ClCompile Include="..\ProtocollTool\Config.cpp" />
     <ClCompile Include="..\ProtocollTool\conversions.cpp" />
+    <ClCompile Include="..\ProtocollTool\file_manager.cpp" />
     <ClCompile Include="..\ProtocollTool\log.cpp" />
     <ClCompile Include="..\ProtocollTool\ProtocollTool.cpp" />
     <ClCompile Include="..\ProtocollTool\trietree.cpp" />
     <ClCompile Include="..\ProtocollTool\utils.cpp" />
-    <ClCompile Include="file_manager_linux.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\icon.xpm">
