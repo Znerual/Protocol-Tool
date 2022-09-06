@@ -1475,6 +1475,19 @@ void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA
 	bool show_help = false;
 	bool oa_full_name, oa_abbreviation;
 	while (input_words.size() > 0) {
+
+		// parse help command
+		if (oa_args.contains(OA::CMD)) {
+			bool cmd_full_name = command_input.cmd_names.cmd_names.left.count(input_words.front()) == 1;
+			bool cmd_abbreviation = command_input.cmd_names.cmd_abbreviations.left.count(input_words.front()) == 1;
+			CMD cmd_help = (cmd_full_name) ? command_input.cmd_names.cmd_names.left.at(input_words.front()) : command_input.cmd_names.cmd_abbreviations.left.at(input_words.front());
+			if (cmd_full_name || cmd_abbreviation) {
+				oastrargs[OA::CMD].push_back(command_input.cmd_names.cmd_names.right.at(cmd_help));
+				input_words.pop_front();
+				continue;
+			}
+		}
+
 		oa_full_name = command_input.cmd_names.oa_names.left.count(input_words.front()) == 1;
 		oa_abbreviation = command_input.cmd_names.oa_abbreviations.left.count(input_words.front()) == 1;
 		if (!oa_full_name && !oa_abbreviation) {

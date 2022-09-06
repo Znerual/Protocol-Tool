@@ -1427,7 +1427,9 @@ void Help::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& o
 	help_string.erase(help_string.size() - 2, 2);
 
 	// check if command is specified, if not, show general cmd info
-	if (!pargs.contains(PA::CMD)) {
+	bool not_found = false;
+	
+	if (!oastrargs.contains(OA::CMD)) {
 		*logger << wrap(help_string);
 		logger->setColor(COLORS::BLUE);
 		*logger << wrap("Run help [CMD_NAME] for more information.\n");
@@ -1435,55 +1437,59 @@ void Help::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& o
 		return;
 	}
 
-	string argument = pargs.at(PA::CMD).at(0);
-	bool cmd_full_name = cmd_names->cmd_names.left.count(argument) == 1;
-	bool cmd_abbreviation = cmd_names->cmd_abbreviations.left.count(argument) == 1;
-	CMD cmd;
+	for (const auto& argument : oastrargs.at(OA::CMD)) {
+		bool cmd_full_name = cmd_names->cmd_names.left.count(argument) == 1;
+		bool cmd_abbreviation = cmd_names->cmd_abbreviations.left.count(argument) == 1;
+		if (cmd_full_name || cmd_abbreviation) {
+			CMD cmd = (cmd_full_name) ? cmd_names->cmd_names.left.at(argument) : cmd_names->cmd_abbreviations.left.at(argument);
 
-	// check if cmd can be recognized, if not show general cmd info
-	if (cmd_full_name) {
-		cmd = cmd_names->cmd_names.left.at(argument);
-	}
-	else if (cmd_abbreviation) {
-		cmd = cmd_names->cmd_abbreviations.left.at(argument);
-	}
-	else {
-		*logger << wrap(help_string);
-		logger->setColor(COLORS::BLUE);
-		*logger << wrap("Run help [CMD_NAME] for more information.\n");
-		logger->setColor(COLORS::BLACK);
-		return;
-	}
+			string cmd_structure_string1 = "The command " + cmd_names->cmd_names.right.at(cmd);
+			if (cmd_names->cmd_abbreviations.right.count(cmd) == 1)
+				cmd_structure_string1 += " (" + cmd_names->cmd_abbreviations.right.at(cmd) + ")";
+			cmd_structure_string1 += " has the following structure:";
 
-	string cmd_structure_string1 = "The command " + cmd_names->cmd_names.right.at(cmd);
-	if (cmd_names->cmd_abbreviations.right.count(cmd) == 1) 
-		cmd_structure_string1 += " (" + cmd_names->cmd_abbreviations.right.at(cmd) + ")";
-	cmd_structure_string1 += " has the following structure:";
+			string cmd_structure_string2 = cmd_names->cmd_names.right.at(cmd) + " ";
+			string pa_help = "";
+			for (const auto& pa : cmd_structure->at(cmd).first) {
+				cmd_structure_string2 += cmd_names->pa_names.right.at(pa) + " ";
+				pa_help += wrap(cmd_names->pa_names.right.at(pa) + ": " + cmd_names->pa_help.at(pa)) + "\n";
+			}
 
-	string cmd_structure_string2 = cmd_names->cmd_names.right.at(cmd) + " ";
-	string pa_help = "";
-	for (const auto& pa : cmd_structure->at(cmd).first) {
-		cmd_structure_string2 += cmd_names->pa_names.right.at(pa) + " ";
-		pa_help += wrap(cmd_names->pa_names.right.at(pa) + ": " + cmd_names->pa_help.at(pa)) + "\n";
-	}
+			string oa_help = "";
+			for (const auto& [oa, oa_para] : cmd_structure->at(cmd).second) {
+				cmd_structure_string2 += cmd_names->oa_names.right.at(oa) + " ";
+				oa_help += wrap(cmd_names->oa_names.right.at(oa) + ": " + cmd_names->oa_help.at(oa)) + "\n";
+				for (const auto& oaoa : oa_para) {
+					cmd_structure_string2 += cmd_names->oa_names.right.at(oaoa) + " ";
+					oa_help += wrap(cmd_names->oa_names.right.at(oaoa) + ": " + cmd_names->oa_help.at(oaoa), 6) + "\n";
+				}
+			}
 
-	string oa_help = "";
-	for (const auto& [oa, oa_para] : cmd_structure->at(cmd).second) {
-		cmd_structure_string2 += cmd_names->oa_names.right.at(oa) + " ";
-		oa_help += wrap(cmd_names->oa_names.right.at(oa) + ": " + cmd_names->oa_help.at(oa)) + "\n";
-		for (const auto& oaoa : oa_para) {
-			cmd_structure_string2 += cmd_names->oa_names.right.at(oaoa) + " ";
-			oa_help += wrap(cmd_names->oa_names.right.at(oaoa) + ": " + cmd_names->oa_help.at(oaoa), 6) + "\n";
+			*logger << wrap(cmd_structure_string1) << '\n';
+			logger->setColor(COLORS::BLUE);
+			*logger << wrap(cmd_structure_string2, 2, ALIGN::LEFT) << "\n\n";
+			logger->setColor(COLORS::BLACK);
+			*logger << wrap(cmd_names->cmd_help.at(cmd)) << "\n";
+			*logger << pa_help << '\n';
+			*logger << oa_help << endl;
+		}
+		else {
+			not_found = true;
 		}
 	}
-
-	*logger << wrap(cmd_structure_string1) << '\n';
-	logger->setColor(COLORS::BLUE);
-	*logger << wrap(cmd_structure_string2, 2, ALIGN::LEFT) << "\n\n";
-	logger->setColor(COLORS::BLACK);
-	*logger << wrap(cmd_names->cmd_help.at(cmd)) << "\n";
-	*logger << pa_help << '\n';
-	*logger << oa_help << endl;
+	
+	
+	if (not_found) {
+		*logger << wrap(help_string);
+		logger->setColor(COLORS::BLUE);
+		*logger << wrap("Run help [CMD_NAME] for more information.\n");
+		logger->setColor(COLORS::BLACK);
+		return;
+	}
+	// check if cmd can be recognized, if not show general cmd info
+	
+	
+	
 
 	/*
 	if (argument == "n" || argument == "new")
