@@ -185,9 +185,11 @@ void check_base_path(Config& conf, PATHS& paths)
 			}
 			free(base_path_c);
 #else
-			cin >> base_path_str;
-			cin.clear();
-			cin.ignore(10000, '\n');
+			cout << "Base path: ";
+			getline(cin, base_path_str);
+			//cin >> base_path_str;
+			//cin.clear();
+			//cin.ignore(10000, '\n');
 #endif
 			if (base_path_str == "")
 				continue;
@@ -238,17 +240,17 @@ void check_standard_paths(PATHS& paths)
 {
 	if (!filesystem::exists(paths.base_path / paths.file_path))
 	{
-		std::cout << colorize(YELLOW, WHITE) << "  No folder found at the file path " << paths.base_path / paths.file_path << ".\n  Creating a new folder..." << endl;
+		std::cout << colorize(YELLOW, WHITE) << "  No folder found at the file path " << (paths.base_path / paths.file_path).string() << ".\n  Creating a new folder..." << endl;
 		filesystem::create_directories(paths.base_path / paths.file_path);
 	}
 	if (!filesystem::exists(paths.base_path / paths.data_path))
 	{
-		std::cout << colorize(YELLOW, WHITE) << "  No folder found at the data path " << paths.base_path / paths.data_path << ".\n  Creating a new folder..." << endl;
+		std::cout << colorize(YELLOW, WHITE) << "  No folder found at the data path " << (paths.base_path / paths.data_path).string() << ".\n  Creating a new folder..." << endl;
 		filesystem::create_directories(paths.base_path / paths.data_path);
 	}
 	if (!filesystem::exists(paths.base_path / paths.tmp_path))
 	{
-		std::cout << colorize(YELLOW, WHITE) << "  No folder found at the tmp path " << paths.base_path / paths.tmp_path << ".\n  Creating a new folder..." << endl;
+		std::cout << colorize(YELLOW, WHITE) << "  No folder found at the tmp path " << (paths.base_path / paths.tmp_path).string() << ".\n  Creating a new folder..." << endl;
 		filesystem::create_directories(paths.base_path / paths.tmp_path);
 	}
 }

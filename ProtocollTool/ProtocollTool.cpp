@@ -1,8 +1,6 @@
-// ProtocollTool.cpp : Diese Datei enthält die Funktion "main". Hier beginnt und endet die Ausführung des Programms.
-//
+// Build the deb package with: dpkg-deb --build protocoltool_1.0.0.0_amd64/
 
-//TODO https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
-// Manipulate conosole screen buffer to remove printout from started editor with ShellExecute
+
 #ifdef _WIN32
 #pragma comment(lib, "Shlwapi.lib")
 #endif

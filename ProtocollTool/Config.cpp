@@ -23,8 +23,16 @@ CONFIG_ERROR Config::set_file(const std::string& name, std::string& value)
     bool found = false;
     while (getline(ifile, line))
     {
-        istringstream conf_pair(line);
-        conf_pair >> _name >> _value;
+        size_t pos_del = line.find(' ');
+        if (pos_del != string::npos) {
+            _name = line.substr(0, pos_del);
+            _value = line.substr(pos_del + 1);
+        }
+        else {
+            _name = line;
+            _value = "";
+        }
+       
         if (_name == name) // found value to edit
         {
             of << name << " " << value << '\n';
