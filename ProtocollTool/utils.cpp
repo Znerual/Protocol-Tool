@@ -31,7 +31,7 @@
 
 using namespace std;
 
-set<OA> OA_DATA = { OA::TAGS, OA::DATES, OA::DATE_R, OA::REGTEXT, OA::VERSIONS, OA::NAME, OA::PATHD, OA::PATHANDTAGS};
+set<OA> OA_DATA = { OA::TAGS, OA::DATES, OA::DATE_R, OA::REGTEXT, OA::VERSIONS, OA::NAME, OA::PATHD, OA::PATHANDTAGS, OA::TASKID, OA::PRIORITY, OA::DEMAND, OA::DURATION};
 
 template<typename T>
 void pad(basic_string<T>& s, typename basic_string<T>::size_type n, T c, const bool cap_right, const ALIGN align) {
@@ -252,6 +252,11 @@ void check_standard_paths(PATHS& paths)
 	{
 		std::cout << colorize(YELLOW, WHITE) << "  No folder found at the tmp path " << (paths.base_path / paths.tmp_path).string() << ".\n  Creating a new folder..." << endl;
 		filesystem::create_directories(paths.base_path / paths.tmp_path);
+	}
+	if (!filesystem::exists(paths.base_path / paths.task_path))
+	{
+		std::cout << colorize(YELLOW, WHITE) << "  No folder found at the task path " << (paths.base_path / paths.task_path).string() << ".\n  Creating a new folder..." << endl;
+		filesystem::create_directories(paths.base_path / paths.task_path);
 	}
 }
 
@@ -1374,6 +1379,11 @@ AUTOCOMPLETE::AUTOCOMPLETE(const CMD_NAMES& cmd_names, const std::list<std::stri
 	for (const auto& [name, cmd] : cmd_names.cmd_abbreviations) {
 		this->cmd_names.insert(name);
 	}
+	this->priorities = TrieTree();
+	for (const auto& [id, name] : cmd_names.priority_names) {
+		this->priorities.insert(name);
+	}
+	// TODO: Add task names and ids for autocompletion
 }
 
 AUTOCOMPLETE::AUTOCOMPLETE(const CMD_NAMES& cmd_names, const std::map<std::string, int>& tag_count, const std::unordered_map<int, std::string>& mode_names)
@@ -1393,6 +1403,11 @@ AUTOCOMPLETE::AUTOCOMPLETE(const CMD_NAMES& cmd_names, const std::map<std::strin
 	for (const auto& [tag, _] : tag_count) {
 		this->tags.insert(tag);
 	}
+	this->priorities = TrieTree();
+	for (const auto& [id, name] : cmd_names.priority_names) {
+		this->priorities.insert(name);
+	}
+	// TODO: Add task names and ids for autocompletion
 }
 
 void parse_cmd(Log& logger, const COMMAND_INPUT& command_input, CMD& cmd, map<PA, vector<string>>& pargs, vector<OA>& oaflags, map<OA, vector<OA>>& oaoargs, map<OA, vector<string>>& oastrargs) {

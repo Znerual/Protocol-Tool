@@ -17,11 +17,16 @@ CMD
 15 Open all notes in the selection.
 16 Show the help.
 17 Show all todos that are defined in the notes by the TODO marking.
+18 Add a task
+19 Removes a task
+20 Edits a task
+21 Shows all tasks
 PA
 0 Date argument, can be in the format of DD.MM.YYYY or DD.MM, where the year is the current year, or DD, where the month and the year are the current years. Additionally, the characters t (for today) and y (for yesterday) can be used.
 1 Tags argument. This can be a list of tags, which are separated by whitespaces.
 2 The name of a mode.
 3 The name of a command.
+4 The name of the task.
 OA
 0 Option that controlls whether only notes with data folders should be considered or whether to create a data folder.
 1 Dates are expected.
@@ -77,3 +82,12 @@ OA
 51 Show headers of the files.
 52 Show images in the files.
 53 Show links in the files.
+54 Specify the name of the task.
+55 Specifiy the id of the task.
+56 Task id.
+57 Set the task priority.
+58 Task priority, it can be high, normal or low.
+59 Set the mental demand of the task.
+60 Task demand, can be high, normal or low.
+61 Set the duration of the task in hours.
+62 Task duration.

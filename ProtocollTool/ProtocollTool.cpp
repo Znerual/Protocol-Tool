@@ -92,7 +92,7 @@ int main()
     string file_ending, tmp_filename;
     
     {
-        string base_path_str, file_path_str, data_path_str, tmp_path_str, tmp_mode_name, log_path_str;
+        string base_path_str, file_path_str, data_path_str, tmp_path_str, task_path_str, tmp_mode_name, log_path_str;
         conf.get("ASK_PANDOC", ask_pandoc);
         conf.get("HAS_PANDOC", has_pandoc);
         conf.get("WRITE_LOG", write_log);
@@ -101,6 +101,7 @@ int main()
         conf.get("FILE_PATH", file_path_str);
         conf.get("DATA_PATH", data_path_str);
         conf.get("TMP_PATH", tmp_path_str);
+        conf.get("TASK_PATH", task_path_str);
         conf.get("LOG_PATH", log_path_str);
 
         // no base path, search for setup files in the AppData/Roaming directory 
@@ -132,6 +133,7 @@ int main()
         paths.file_path = filesystem::path(file_path_str);
         paths.data_path = filesystem::path(data_path_str);
         paths.tmp_path = filesystem::path(tmp_path_str);
+        paths.task_path = filesystem::path(task_path_str);
         log_path = filesystem::path(log_path_str);
 
         conf.get("TMP_FILENAME", tmp_filename);

@@ -1412,6 +1412,10 @@ void Quit::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& o
 	*running = false;
 }
 
+void EditTask::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs) {
+	*logger << "Editing Tasks not implemented" << endl;
+}
+
 void Help::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
 {
 	//TODO: rework to use commands from the cmd.dat and cmd_names.dat, maybe add cmd_help.dat

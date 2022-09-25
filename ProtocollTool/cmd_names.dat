@@ -17,11 +17,16 @@ CMD
 15 open o
 16 help h
 17 todos
+18 add_task
+19 remove_task
+20 edit_task
+21 show_tasks
 PA
 0 date
 1 tags
 2 mode_name
 3 CMD
+4 task_name
 OA
 0 -data
 1 -dates
@@ -77,3 +82,14 @@ OA
 51 -show_headers
 52 -show_images
 53 -show_links
+54 -name
+55 -id
+56 TASK_ID
+57 -priority
+58 PRIORITY
+59 -demand
+60 TASK_DEMAND
+61 -duration
+62 DURATION
+PRIORITY
+low normal high

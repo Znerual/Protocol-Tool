@@ -25,9 +25,11 @@ enum OPEN_MODE { HTML, MARKDOWN, LATEX, PDF, DOCX };
 enum FOLDER_WATCHER_MODE { READ_NONE, READ_FOLDER, READ_TAGS};
 enum ALIGN {LEFT, MIDDLE, RIGHT};
 
-enum class CMD { NEW, FIND, FILTER, SHOW, ADD_DATA, DETAILS, TAGS, QUIT, CREATE_MODE, DELETE_MODE, EDIT_MODE, ACTIVATE, DEACTIVATE, MODES, UPDATE, OPEN, HELP, TODOS };
-enum class PA { DATE, TAGS, MODE_NAME, CMD };
-enum class OA { DATA, DATE_R, CTAGS, CATAGS, NTAGS, REGT, REGC, VERS_R, STAGS, MDATA, TOC, NODATE, IMG, HTML, TEX, PDF, DOCX, MD, PATH, LPATH, LMOD, CONTENT, ADDOPT, REMOPT, ADDTAG, REMTAG, CHANAME, TAGS, DATES, REGTEXT, VERSIONS, NAME, CMD, STAGS_ARG, MDATA_ARG, TOC_ARG, NODATE_ARG, IMG_ARG, HTML_ARG, TEX_ARG, PDF_ARG, DOCX_ARG, MD_ARG, PATH_ARG, LPATH_ARG, LMOD_ARG, CONTENT_ARG, ADDWF, REMWF, PATHANDTAGS, PATHD, SHEAD, SIMG, SLINK };
+enum class CMD { NEW, FIND, FILTER, SHOW, ADD_DATA, DETAILS, TAGS, QUIT, CREATE_MODE, DELETE_MODE, EDIT_MODE, ACTIVATE, DEACTIVATE, MODES, UPDATE, OPEN, HELP, TODOS, ADD_TASK, REMOVE_TASK, EDIT_TASK, SHOW_TASKS };
+enum class PA { DATE, TAGS, MODE_NAME, CMD, TASK_NAME };
+enum class PRIORITY {LOW, NORMAL, HIGH};
+// dont forget to add data fields to the OA_DATA set in utils.cpp
+enum class OA { DATA, DATE_R, CTAGS, CATAGS, NTAGS, REGT, REGC, VERS_R, STAGS, MDATA, TOC, NODATE, IMG, HTML, TEX, PDF, DOCX, MD, PATH, LPATH, LMOD, CONTENT, ADDOPT, REMOPT, ADDTAG, REMTAG, CHANAME, TAGS, DATES, REGTEXT, VERSIONS, NAME, CMD, STAGS_ARG, MDATA_ARG, TOC_ARG, NODATE_ARG, IMG_ARG, HTML_ARG, TEX_ARG, PDF_ARG, DOCX_ARG, MD_ARG, PATH_ARG, LPATH_ARG, LMOD_ARG, CONTENT_ARG, ADDWF, REMWF, PATHANDTAGS, PATHD, SHEAD, SIMG, SLINK, TASKNAME, TASKID_ARG, TASKID, TASKPRIORITIY_ARG, PRIORITY, TASKDEMAND_ARG, DEMAND, TASKDURATION_ARG, DURATION };
 extern std::set<OA> OA_DATA;
 
 
@@ -44,6 +46,7 @@ struct PATHS {
 	std::filesystem::path file_path;
 	std::filesystem::path data_path;
 	std::filesystem::path tmp_path;
+	std::filesystem::path task_path;
 
 	std::filesystem::path md_exe;
 	std::filesystem::path pdf_exe;
@@ -58,6 +61,7 @@ struct CMD_NAMES {
 	std::map<CMD, std::string> cmd_help;
 	std::map<PA, std::string> pa_help;
 	std::map<OA, std::string> oa_help;
+	std::map<PRIORITY, std::string> priority_names;
 };
 
 struct COMMAND_INPUT {
@@ -71,6 +75,7 @@ public:
 	TrieTree cmd_names;
 	TrieTree tags;
 	TrieTree mode_names;
+	TrieTree priorities;
 
 	AUTOCOMPLETE(const CMD_NAMES& cmd_names, const std::list<std::string>& tags, const std::list<std::string>& mode_names);
 	AUTOCOMPLETE(const CMD_NAMES& cmd_names, const std::map<std::string, int>& tag_count, const std::unordered_map<int, std::string>& mode_names);

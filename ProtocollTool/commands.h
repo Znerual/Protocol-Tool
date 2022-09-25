@@ -21,6 +21,12 @@ protected:
 	
 };
 
+class EditTask : public Command {
+public:
+	EditTask(Log* logger, PATHS* paths, Config* conf) : Command(logger, paths, conf) {};
+	void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
+};
+
 class Help : public Command {
 public:
 	Help(Log* logger, PATHS* paths, Config* conf, CMD_NAMES* cmd_names, CMD_STRUCTURE* cmd_structure ) : Command(logger, paths, conf), cmd_names(cmd_names), cmd_structure(cmd_structure) {};

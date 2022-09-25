@@ -70,7 +70,7 @@ void read_cmd_structure(const filesystem::path filepath, CMD_STRUCTURE& cmds)
 }
 
 void read_cmd_names(filesystem::path filepath, CMD_NAMES& cmd_names) {
-	enum class PARSE_MODE { NONE, CMD_LINE, OA_LINE, PA_LINE };
+	enum class PARSE_MODE { NONE, CMD_LINE, OA_LINE, PA_LINE, PRIO_LINE };
 	ifstream file(filepath);
 
 	PARSE_MODE mode = PARSE_MODE::CMD_LINE;
@@ -88,6 +88,9 @@ void read_cmd_names(filesystem::path filepath, CMD_NAMES& cmd_names) {
 		}
 		else if (line == "PA") {
 			mode = PARSE_MODE::PA_LINE;
+		}
+		else if (line == "PRIORITY") {
+			mode = PARSE_MODE::PRIO_LINE;
 		}
 		else if (mode == PARSE_MODE::CMD_LINE) {
 			iss >> arg1 >> arg2;
@@ -110,6 +113,13 @@ void read_cmd_names(filesystem::path filepath, CMD_NAMES& cmd_names) {
 				iss >> oarg;
 				cmd_names.oa_abbreviations.insert(oa_map::value_type(oarg, static_cast<OA>(stoi(arg1))));
 			}
+		}
+		else if (mode == PARSE_MODE::PRIO_LINE) {
+			string arg3;
+			iss >> arg1 >> arg2 >> arg3;
+			cmd_names.priority_names[PRIORITY::LOW] = arg1;
+			cmd_names.priority_names[PRIORITY::NORMAL] = arg2;
+			cmd_names.priority_names[PRIORITY::HIGH] = arg3;
 		}
 	}
 }
@@ -239,7 +249,8 @@ void find_cmd_suggestion(const COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_com
 					skip_pa = true;
 					break;
 				}
-				if (!auto_input.input.ends_with(" ")) { // test is pa is fully typed
+				if (!auto_input.input.ends_with(" ") &&  (int)input_words.size() > pa_args.size()) { // test is pa is fully typed
+					skip_pa = true;
 					break;
 				}
 				if (pa_arg == PA::TAGS && (input_words.size()) >= count) { // if previous pa where set (1 arg per word), tags can be suggested
@@ -276,6 +287,10 @@ void find_cmd_suggestion(const COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_com
 					}
 					return;
 				}
+				else if (pa_arg == PA::TASK_NAME && (count == input_words.size() || count == input_words.size() - 1)) {
+					cout << "Implement autocomplete tasknames in autocomplete.cpp: 290" << endl;
+
+				}
 
 				count += 1;
 			}
@@ -295,6 +310,12 @@ void find_cmd_suggestion(const COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_com
 			for (const auto& [name, id] : auto_input.cmd_names.cmd_abbreviations) {
 				oa_strs.push_back(name);
 			}
+		}
+		else if (oa_arg == OA::PRIORITY || oa_arg == OA::DEMAND) {
+			for (const auto& [id, name] : auto_input.cmd_names.priority_names) {
+				oa_strs.push_back(name);
+			}
+
 		}
 		else {
 			oa_strs.push_back(auto_input.cmd_names.oa_names.right.at(oa_arg));
@@ -369,6 +390,17 @@ void find_cmd_suggestion(const COMMAND_INPUT& auto_input, AUTOCOMPLETE& auto_com
 					auto_comp.tags.findAutoSuggestion(input_words.back(), auto_suggestions.auto_sug);
 					auto_comp.tags.findAutoSuggestions(input_words.back(), auto_suggestions.auto_sugs);
 				}
+			}
+			else if (oa_args[active_oa].front() == OA::PRIORITY || oa_args[active_oa].front() == OA::DEMAND) {
+				if (auto_input.input.back() == ' ') {
+					auto_comp.priorities.findAutoSuggestion("", auto_suggestions.auto_sug);
+					auto_comp.priorities.findAutoSuggestions("", auto_suggestions.auto_sugs);
+				}
+				else {
+					auto_comp.priorities.findAutoSuggestion(input_words.back(), auto_suggestions.auto_sug);
+					auto_comp.priorities.findAutoSuggestions(input_words.back(), auto_suggestions.auto_sugs);
+				}
+				return;
 			}
 			return;
 		}
