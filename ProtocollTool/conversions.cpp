@@ -17,6 +17,12 @@ tm get_localtime(const time_t& tt) {
 #endif
 }
 
+void remove_time(tm* datetime) {
+    datetime->tm_sec = 0;
+    datetime->tm_min = 0;
+    datetime->tm_hour = 0;
+}
+
 CONV_ERROR str2int(int& i, char const* s, int base)
 {
     char* end;
