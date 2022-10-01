@@ -395,6 +395,7 @@
     <ClCompile Include="file_manager.cpp" />
     <ClCompile Include="log.cpp" />
     <ClCompile Include="ProtocollTool.cpp" />
+    <ClCompile Include="task.cpp" />
     <ClCompile Include="trietree.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="watcher_windows.cpp" />
@@ -403,6 +404,7 @@
     <ClInclude Include="autocomplete.h" />
     <ClInclude Include="commands.h" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="task.h" />
     <ClInclude Include="conversions.h" />
     <ClInclude Include="exceptions.h" />
     <ClInclude Include="file_manager.h" />

@@ -48,6 +48,9 @@
     <ClCompile Include="autocomplete.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="task.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utils.h">
@@ -81,6 +84,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="autocomplete.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="task.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
