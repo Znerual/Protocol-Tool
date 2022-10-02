@@ -1,10 +1,37 @@
 #include "task.h"
 #include "conversions.h"
 
+#include <limits>
 #include <time.h>
+#include <algorithm>
+#include <iostream>
 
 int Task::get_value() {
 	return -1;
+}
+
+TIMESLOT Task::get_valid_timeslot()
+{
+	TIMESLOT timeslot;
+	for (const DATE_CONSTRAINT& constr : date_constraints) {
+		if (constr.date_type == DATE_TYPE::AT) {
+			timeslot.start = constr.date;
+			timeslot.end = constr.date + duration;
+			return timeslot;
+		}
+		if (constr.date_type == DATE_TYPE::ANYTIME) {
+			timeslot.start = 0;
+			timeslot.end = std::numeric_limits<time_t>::max();
+			return timeslot;
+		}
+		if (constr.date_type == DATE_TYPE::AFTER) {
+			timeslot.start = constr.date;
+		}
+		if (constr.date_type == DATE_TYPE::BEFORE) {
+			timeslot.end = constr.date;
+		}
+	}
+	return timeslot;
 }
 
 TIMESLOT Schedule::next_free_timeslot(time_t date) {
@@ -27,13 +54,9 @@ TIMESLOT Schedule::next_free_timeslot(time_t date) {
 		}
 		it++;
 	}
-
-	tm* schedule_day = localtime(&date);
-	remove_time(schedule_day);
-	time_t schedule_day_start = mktime(schedule_day);
-	schedule_day_start += start_times.at(static_cast<WEEKDAY>(schedule_day->tm_wday));
-	time_t schedule_day_end = schedule_day_start + static_cast<time_t>(working_times.at(static_cast<WEEKDAY>(schedule_day->tm_wday)));
-
+	
+	time_t schedule_day_start = get_day_start(date, start_times);
+	time_t schedule_day_end = get_day_end(date, start_times, working_times);
 	// no event planned on this day
 	if (it == schedule.end() || it->first >= schedule_day_end) {
 		TIMESLOT timeslot;
@@ -132,6 +155,8 @@ TIMESLOT Schedule::can_add(time_t duration, time_t day) {
 
 TIMESLOT Schedule::add(Task task, time_t day) {
 	TIMESLOT timeslot = can_add(task.duration, day);
+
+	// not success full, TODO: try splitting task. Avoid too strong fragmentation, split into in roughly equal time parts
 	if (timeslot.start == -1 || timeslot.end == -1) {
 		return timeslot;
 	}
@@ -165,11 +190,8 @@ bool Schedule::remove(int task_id) {
 std::vector<Task> Schedule::get_day(time_t day) {
 	std::vector<Task> tasks = std::vector<Task>();
 
-	tm schedule_day = get_localtime(day);
-	remove_time(&schedule_day);
-	time_t schedule_day_start = mktime(&schedule_day);
-	schedule_day_start += start_times.at(static_cast<WEEKDAY>(schedule_day.tm_wday));
-	time_t schedule_day_end = schedule_day_start + static_cast<time_t>(working_times.at(static_cast<WEEKDAY>(schedule_day.tm_wday)));
+	time_t schedule_day_start = get_day_start(day, start_times);
+	time_t schedule_day_end = get_day_end(day, start_times, working_times);
 
 	std::map<time_t, Task>::iterator it = schedule.begin();
 	while (it != schedule.end()) {
@@ -198,3 +220,55 @@ std::vector<Task> Schedule::get_today() {
 	time_t now = time(NULL);
 	return get_day(now);
 }
+
+
+void ScheduleManager::update(std::list<Task> tasks)
+{
+
+
+	// sort tasks by end date
+	tasks.sort([](const Task& task1, const Task& task2) {return compare_date_constraints(task1, task2); });
+	std::list<Task>::iterator it = tasks.begin();
+
+	// get all tasks that are due to same day
+	time_t last_day_end = get_day_end(it->valid_timeslot.end, schedule.start_times, schedule.working_times);
+	std::list<Task> due_same_day;
+	while (it != tasks.end()) {
+		// collect tasks with same end date
+		if (it->valid_timeslot.end <= last_day_end) {
+			due_same_day.push_back(*it);
+			it++;
+		}
+
+		// sort by priority and fill schedule
+		// set new last_day_end
+		else {
+			due_same_day.sort([](const Task& task1, const Task& task2) {return compare_priority(task1, task2); });
+
+			// iterate over days and fill free gaps
+			time_t current_day = get_day_start(time(NULL), schedule.start_times);
+			while (due_same_day.size() > 0) {
+
+				// TODO: check if tasks should be splitted into subtasks because it is too large for one timeslot
+				// could add task to that day
+				TIMESLOT result = schedule.add(due_same_day.front(), current_day);
+				if (result.start != -1 && result.end != -1) {
+					due_same_day.pop_front();
+				}
+
+				// try again next day
+				else {
+					increase_by_day(current_day);
+					// task could not be scheduled until due date
+					if (current_day > last_day_end) {
+						std::cout << "Behaviour not defined. Task could not be scheduled because the schedule until the due date is already full. Implement switching out an existing low priority task." << std::endl;
+					}
+				}
+			}
+			last_day_end = get_day_end(it->valid_timeslot.end, schedule.start_times, schedule.working_times);
+		}
+		
+	}
+}
+
+
