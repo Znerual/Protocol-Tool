@@ -42,6 +42,12 @@
     <ClInclude Include="..\ProtocollTool\file_manager.h">
       <Filter>Headdateien</Filter>
     </ClInclude>
+    <ClInclude Include="..\ProtocollTool\task.h">
+      <Filter>Headdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ProtocollTool\enums.h">
+      <Filter>Headdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ProtocollTool\utils.cpp">
@@ -69,6 +75,9 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="..\ProtocollTool\file_manager.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ProtocollTool\task.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

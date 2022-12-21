@@ -54,6 +54,7 @@
     <ClInclude Include="..\ProtocollTool\autocomplete.h" />
     <ClInclude Include="..\ProtocollTool\Config.h" />
     <ClInclude Include="..\ProtocollTool\conversions.h" />
+    <ClInclude Include="..\ProtocollTool\enums.h" />
     <ClInclude Include="..\ProtocollTool\exceptions.h" />
     <ClInclude Include="..\ProtocollTool\file_manager.h" />
     <ClInclude Include="..\ProtocollTool\log.h">
@@ -83,6 +84,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\ProtocollTool\output.h" />
+    <ClInclude Include="..\ProtocollTool\task.h" />
     <ClInclude Include="..\ProtocollTool\trietree.h" />
     <ClInclude Include="..\ProtocollTool\utils.h" />
     <ClInclude Include="commands_linux.h" />
@@ -95,6 +97,7 @@
     <ClCompile Include="..\ProtocollTool\file_manager.cpp" />
     <ClCompile Include="..\ProtocollTool\log.cpp" />
     <ClCompile Include="..\ProtocollTool\ProtocollTool.cpp" />
+    <ClCompile Include="..\ProtocollTool\task.cpp" />
     <ClCompile Include="..\ProtocollTool\trietree.cpp" />
     <ClCompile Include="..\ProtocollTool\utils.cpp" />
   </ItemGroup>

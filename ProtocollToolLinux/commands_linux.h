@@ -226,6 +226,12 @@ private:
 	bool add_new_to_filter_selection;
 };
 
+class EditTask : public Command {
+public:
+	EditTask(Log* logger, PATHS* paths, Config* conf) : Command(logger, paths, conf) {};
+	void run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs);
+};
+
 void filter_notes(Log* logger, PATHS* paths, Config* conf, int* active_mode, std::vector<std::string>* mode_tags, std::map<std::string, std::vector<std::string>>* tag_map, std::vector<std::string>* filter_selection, std::vector<OA>& oaflags, std::map<OA, std::vector<std::string>>& oastrargs);
 
 void activate_mode(Log& logger, Config& conf, const PATHS& paths, int& active_mode, std::vector<std::string>& mode_tags, const std::string& file_ending);
