@@ -2,8 +2,8 @@
 
 #include <ctime>
 #include <string>
+#include "enums.h"
 
-enum CONV_ERROR { CONV_SUCCESS, CONV_OVERFLOW, CONV_UNDERFLOW, CONV_INCONVERTIBLE };
 
 tm get_localtime(const time_t& tt);
 
