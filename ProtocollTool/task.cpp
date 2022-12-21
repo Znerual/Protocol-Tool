@@ -6,9 +6,6 @@
 #include <algorithm>
 #include <iostream>
 
-int Task::get_value() {
-	return -1;
-}
 
 TIMESLOT Task::get_valid_timeslot()
 {
@@ -169,10 +166,10 @@ TIMESLOT Schedule::add(Task task, TIMESLOT timeslot) {
 		schedule[timeslot.start] = task;
 		return timeslot;
 	}
-	TIMESLOT timeslot;
-	timeslot.start = -1;
-	timeslot.end = -1;
-	return timeslot;
+	TIMESLOT empty_timeslot;
+	empty_timeslot.start = -1;
+	empty_timeslot.end = -1;
+	return empty_timeslot;
 }
 
 bool Schedule::remove(int task_id) {
