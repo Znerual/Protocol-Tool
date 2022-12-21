@@ -1401,7 +1401,7 @@ void Show_tags::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<O
 	{
 		*logger << "  " << tag << ": " << count << '\n';
 	}
-	logger->setColor(BLACK, WHITE);
+	(*logger).setColor(BLACK, WHITE);
 }
 
 void Quit::run(std::map<PA, std::vector<std::string>>& pargs, std::vector<OA>& oaflags, std::map<OA, std::vector<OA>>& oaoargs, std::map<OA, std::vector<std::string>>& oastrargs)
