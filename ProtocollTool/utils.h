@@ -14,23 +14,15 @@
 #ifdef _WIN32
 #include <tchar.h>
 #include <Windows.h>
+#include <Shlwapi.h>
 #endif
 
 #include "Config.h"
 #include "log.h"
 #include "trietree.h"
-#include "task.h"
+#include "enums.h"
+//#include "task.h"
 
-enum ARGUMENT_MODE {NONE, ARG_DATE, CONTAINS_TAGS, CONTAINS_ALL_TAGS, NO_TAGS, REG_TEXT, REG_TEXT_CONTENT, VERSIONS};
-enum OPEN_MODE { HTML, MARKDOWN, LATEX, PDF, DOCX };
-enum FOLDER_WATCHER_MODE { READ_NONE, READ_FOLDER, READ_TAGS};
-enum ALIGN {LEFT, MIDDLE, RIGHT};
-
-enum class CMD { NEW, FIND, FILTER, SHOW, ADD_DATA, DETAILS, TAGS, QUIT, CREATE_MODE, DELETE_MODE, EDIT_MODE, ACTIVATE, DEACTIVATE, MODES, UPDATE, OPEN, HELP, TODOS, ADD_TASK, REMOVE_TASK, EDIT_TASK, SHOW_TASKS };
-enum class PA { DATE, TAGS, MODE_NAME, CMD, TASK_NAME };
-
-// dont forget to add data fields to the OA_DATA set in utils.cpp
-enum class OA { DATA, DATE_R, CTAGS, CATAGS, NTAGS, REGT, REGC, VERS_R, STAGS, MDATA, TOC, NODATE, IMG, HTML, TEX, PDF, DOCX, MD, PATH, LPATH, LMOD, CONTENT, ADDOPT, REMOPT, ADDTAG, REMTAG, CHANAME, TAGS, DATES, REGTEXT, VERSIONS, NAME, CMD, STAGS_ARG, MDATA_ARG, TOC_ARG, NODATE_ARG, IMG_ARG, HTML_ARG, TEX_ARG, PDF_ARG, DOCX_ARG, MD_ARG, PATH_ARG, LPATH_ARG, LMOD_ARG, CONTENT_ARG, ADDWF, REMWF, PATHANDTAGS, PATHD, SHEAD, SIMG, SLINK, TASKNAME, TASKID_ARG, TASKID, TASKPRIORITIY_ARG, PRIORITY, TASKDEMAND_ARG, DEMAND, TASKDURATION_ARG, DURATION };
 extern std::set<OA> OA_DATA;
 
 
@@ -103,8 +95,10 @@ void load_config(const std::string init_path, Config& conf);
 void check_base_path(Config& conf, PATHS& paths);
 void check_standard_paths(PATHS& paths);
 
+void get_default_applications(PATHS& paths);
 #ifdef _WIN32
 void RunExternalProgram(Log& logger, std::filesystem::path executeable, std::filesystem::path file, HANDLE& hExit);
+/**
 /**
 * Similar to getline(stream, string, delimiter), but waits until a tag OR newline event occures
 * and returns the WinUser.h keycode for it (VK_TAB 9, VK_RETURN 13)
@@ -112,10 +106,10 @@ void RunExternalProgram(Log& logger, std::filesystem::path executeable, std::fil
 **/
 int getinput(std::string& c);
 bool parse_folder_watcher(std::string& argument, FOLDER_WATCHER_MODE& mode, std::string& current_folder, std::unordered_map<std::string, std::vector<std::string>>& folder_watcher_tags);
- void get_default_applications(PATHS& paths);
 void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, std::string& mode_name, std::vector<std::string>& mode_tags, std::unordered_map<std::string, std::vector<std::string>>& folder_watcher_tags, MODE_OPTIONS& mode_options);
 #else
 void parse_create_mode(Log& logger, std::istringstream& iss, Config& conf, std::string& mode_name, std::vector<std::string>& mode_tags,	MODE_OPTIONS& mode_options);
+
 #endif
 
 

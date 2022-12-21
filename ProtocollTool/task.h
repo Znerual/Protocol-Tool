@@ -1,17 +1,17 @@
 #pragma once
+
 #include <stdlib.h>
 #include <string>
 #include <list>
 #include <map>
 #include <vector>
+#include "conversions.h"
+#include "enums.h"
 
-enum class PRIORITY { LOW, NORMAL, HIGH };
-enum class DEMAND { LOW , NORMAL, HIGH };
-enum class DATE_TYPE { ANYTIME, BEFORE, AT, AFTER };
-enum class RANK_TYPE { ANYWHERE, BEFORE, AFTER };
-enum class WEEKDAY { SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY };
-enum class TASK_COLLITION { NONE, MOVE_NEW, MOVE_OLD};
-
+struct TIMESLOT {
+	time_t start = -1;
+	time_t end = -1;
+};
 /**
 * Check if child is in parent
 */
@@ -48,23 +48,14 @@ struct DATE_CONSTRAINT {
 	DATE_TYPE date_type;
 };
 
-bool compare_date_constraints(const Task& task1, const Task& task2) {
-	return (task1.valid_timeslot.end < task2.valid_timeslot.end);
-}
 
-bool compare_priority(const Task& task1, const Task& task2) {
-	return (task1.priority < task2.priority);
-}
 
 struct RANK_CONSTRAINT {
 	int task_id;
 	RANK_TYPE ranke_type;
 };
 
-struct TIMESLOT {
-	time_t start = -1;
-	time_t end = -1;
-};
+
 
 class Task {
 public:
@@ -72,7 +63,7 @@ public:
 	Task(int id, std::string name, time_t duration, time_t progress, PRIORITY priority, DEMAND demand, std::list<DATE_CONSTRAINT> date_constraints, int max_split_to_subtasks, std::list<RANK_CONSTRAINT> rank_constraints) : id(id), name(name), duration(duration), progress(progress), priority(priority), demand(demand), date_constraints(date_constraints),max_split_to_subtasks(max_split_to_subtasks), rank_constraints(rank_constraints) { valid_timeslot = get_valid_timeslot(); };
 	bool is_in_date_window(time_t start, time_t end) {};
 	int get_weight() { return int((duration) * DEMAND_WEIGHT[demand]); };
-	int get_value() {};
+	int get_value() { return -1; };
 	int id;
 	void set_date_constraints(std::list<DATE_CONSTRAINT> date_constraints) { this->date_constraints = date_constraints; get_valid_timeslot(); }
 	std::list<DATE_CONSTRAINT> get_date_constraints() { return date_constraints; };
@@ -118,3 +109,11 @@ public:
 	void update(std::list<Task> tasks);
 	Schedule schedule;
 };
+
+bool compare_date_constraints(const Task& task1, const Task& task2) {
+	return (task1.valid_timeslot.end < task2.valid_timeslot.end);
+}
+
+bool compare_priority(const Task& task1, const Task& task2) {
+	return (task1.priority < task2.priority);
+}
