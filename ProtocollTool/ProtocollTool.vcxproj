@@ -404,6 +404,7 @@
     <ClInclude Include="autocomplete.h" />
     <ClInclude Include="commands.h" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="enums.h" />
     <ClInclude Include="task.h" />
     <ClInclude Include="conversions.h" />
     <ClInclude Include="exceptions.h" />

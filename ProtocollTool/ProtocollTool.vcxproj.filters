@@ -89,6 +89,9 @@
     <ClInclude Include="task.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="enums.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="para.conf">
