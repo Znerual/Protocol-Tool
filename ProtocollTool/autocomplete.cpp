@@ -1,5 +1,5 @@
 #include "autocomplete.h"
-#include "task.h"
+//#include "task.h"
 
 #ifndef _WIN32
 #include <readline/readline.h>
